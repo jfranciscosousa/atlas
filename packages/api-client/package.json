@@ -1,0 +1,10 @@
+{
+  "name": "@lemonade-stand/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/ash_rpc.ts",
+    "./types": "./src/ash_types.ts"
+  }
+}

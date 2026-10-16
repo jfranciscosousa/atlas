@@ -1,0 +1,20 @@
+{
+  "name": "lemonade-stand",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/api-client"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @lemonade-stand/web",
+    "dev:api": "cd apps/api && mix phx.server",
+    "build": "npm run build --workspace @lemonade-stand/web",
+    "check": "npm run check --workspace @lemonade-stand/web",
+    "test": "npm test --workspace @lemonade-stand/web",
+    "generate:api": "cd apps/api && mix ash_typescript.codegen",
+    "precommit": "npm run build && npm run check && npm test && cd apps/api && mix precommit"
+  }
+}
