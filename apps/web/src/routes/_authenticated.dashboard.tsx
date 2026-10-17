@@ -73,10 +73,10 @@ function Dashboard() {
           id="sign-out"
           type="button"
           onClick={signOut}
-          disabled={signingOut}
+          isLoading={signingOut}
           variant="outline"
         >
-          {signingOut ? "Signing out…" : "Sign out"}
+          Sign out
         </Button>
       </div>
     </>

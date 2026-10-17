@@ -277,10 +277,11 @@ export function AuthForm(props: AuthFormProps) {
             <Button
               id="auth-submit"
               type="submit"
-              disabled={!canSubmit || submitting}
+              isLoading={submitting}
+              disabled={!canSubmit}
               className="w-full"
             >
-              {submitting ? "Please wait…" : copy.button}
+              {copy.button}
             </Button>
           )}
         </form.Subscribe>

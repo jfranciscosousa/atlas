@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form";
 
 import { Input } from "./ui/input";
 import { Field, FieldLabel } from "./ui/field";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "./ui/empty";
 import { Checkbox } from "./ui/checkbox";
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
@@ -84,9 +85,10 @@ export function TodoList({ userId }: { userId: string }) {
                 <Button
                   id="todo-add"
                   type="submit"
+                  isLoading={create.isPending}
                   disabled={isPending || !field.state.value.trim()}
                 >
-                  {create.isPending ? "Adding…" : "Add"}
+                  Add
                 </Button>
               </div>
             </Field>
@@ -99,9 +101,12 @@ export function TodoList({ userId }: { userId: string }) {
         </Alert>
       )}
       {todos.length === 0 ? (
-        <p id="todos-empty" className="mt-6 text-sm text-muted-foreground">
-          No todos yet. Add your first one above.
-        </p>
+        <Empty id="todos-empty" className="mt-6 p-6">
+          <EmptyHeader>
+            <EmptyTitle>No todos yet</EmptyTitle>
+            <EmptyDescription>Add your first one above.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <ul id="todo-list" className="mt-5 divide-y divide-border">
           {todos.map(todo => (
@@ -132,6 +137,7 @@ export function TodoList({ userId }: { userId: string }) {
               <Button
                 id={`todo-delete-${todo.id}`}
                 type="button"
+                isLoading={remove.isPending && remove.variables === todo.id}
                 disabled={isPending}
                 onClick={() => {
                   resetErrors();

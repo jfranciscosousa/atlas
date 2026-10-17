@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 
 import { Input } from "./ui/input";
-import { Field, FieldLabel } from "./ui/field";
+import { Field, FieldLabel, FieldDescription } from "./ui/field";
 import { Button } from "./ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Alert, AlertDescription } from "./ui/alert";
 import { readAvatar } from "../lib/avatar";
 import { useProfile, useProfileUpdate } from "../hooks/use-profile";
@@ -48,23 +49,20 @@ export function ProfileForm({ userId }: { userId: string }) {
           <Field>
             <FieldLabel htmlFor="profile-avatar">Profile photo</FieldLabel>
             <div className="flex items-center gap-4">
-              {field.state.value ? (
-                <img
+              <Avatar className="size-20">
+                <AvatarImage
                   id="profile-avatar-preview"
-                  src={field.state.value}
+                  src={field.state.value ?? undefined}
                   alt="Your profile photo"
-                  className="size-20 rounded-full border border-border object-cover"
                 />
-              ) : (
-                <div
-                  className="flex size-20 shrink-0 items-center justify-center rounded-full bg-muted text-2xl font-semibold text-muted-foreground"
+                <AvatarFallback
+                  role="img"
                   aria-label="No profile photo"
+                  className="text-2xl font-semibold"
                 >
-                  {(profile.displayName || profile.email)
-                    .slice(0, 1)
-                    .toUpperCase()}
-                </div>
-              )}
+                  {profile.displayName.slice(0, 1).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div className="min-w-0 flex-1">
                 <Input
                   id="profile-avatar"
@@ -92,12 +90,12 @@ export function ProfileForm({ userId }: { userId: string }) {
                     }
                   }}
                 />
-                <p
+                <FieldDescription
                   id="profile-avatar-help"
-                  className="mt-2 text-xs text-muted-foreground"
+                  className="mt-2 text-xs"
                 >
                   PNG, JPEG, or WebP. Up to 512 KB.
-                </p>
+                </FieldDescription>
               </div>
             </div>
             {(field.state.value || fileError) && (
@@ -161,14 +159,11 @@ export function ProfileForm({ userId }: { userId: string }) {
       <Button
         id="profile-save"
         type="submit"
-        disabled={busy || Boolean(fileError)}
+        isLoading={busy}
+        disabled={Boolean(fileError)}
         className="w-full"
       >
-        {reading
-          ? "Reading photo…"
-          : update.isPending
-            ? "Saving…"
-            : "Save profile"}
+        Save profile
       </Button>
     </form>
   );

@@ -79,10 +79,10 @@ function ConfirmEmail() {
                 <Button
                   id="confirm-email-submit"
                   type="submit"
-                  disabled={submitting}
+                  isLoading={submitting}
                   className="w-full"
                 >
-                  {submitting ? "Confirming…" : "Confirm email"}
+                  Confirm email
                 </Button>
               )}
             </form.Subscribe>
