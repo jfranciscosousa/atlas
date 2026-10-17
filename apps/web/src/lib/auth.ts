@@ -5,7 +5,10 @@ export type AuthField = "email" | "password" | "password_confirmation";
 export class AuthError extends Error {
   fields: Partial<Record<AuthField, string>>;
 
-  constructor(message: string, fields: Partial<Record<AuthField, string>> = {}) {
+  constructor(
+    message: string,
+    fields: Partial<Record<AuthField, string>> = {}
+  ) {
     super(message);
     this.name = "AuthError";
     this.fields = fields;
@@ -19,9 +22,14 @@ export type Session = {
 
 export async function sessionRequest(
   path: string,
-  options: { method?: string; user?: Record<string, string>; queryClient?: QueryClient } = {},
+  options: {
+    method?: string;
+    user?: Record<string, string>;
+    queryClient?: QueryClient;
+  } = {}
 ): Promise<Session> {
-  const csrfToken = options.queryClient?.getDefaultOptions().mutations?.meta?.csrfToken;
+  const csrfToken =
+    options.queryClient?.getDefaultOptions().mutations?.meta?.csrfToken;
   const response = await fetch(path, {
     method: options.method ?? "GET",
     credentials: "same-origin",
@@ -39,12 +47,17 @@ export async function sessionRequest(
   }
 
   if (!response.headers.get("content-type")?.includes("application/json")) {
-    throw new AuthError("The server is unavailable. Reload the page and try again.");
+    throw new AuthError(
+      "The server is unavailable. Reload the page and try again."
+    );
   }
 
   const data = await response.json();
   if (!response.ok) {
-    throw new AuthError(data.error ?? "Something went wrong. Please try again.", data.fields);
+    throw new AuthError(
+      data.error ?? "Something went wrong. Please try again.",
+      data.fields
+    );
   }
   if (options.queryClient) {
     const defaults = options.queryClient.getDefaultOptions();

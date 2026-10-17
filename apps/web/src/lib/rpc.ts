@@ -10,10 +10,14 @@ declare module "@tanstack/react-query" {
 }
 
 export function rpcOptions(meta: RpcMeta | undefined) {
-  if (!meta?.csrfToken) throw new Error("Your session expired. Reload the page and try again.");
+  if (!meta?.csrfToken)
+    throw new Error("Your session expired. Reload the page and try again.");
 
   return {
     headers: { "x-csrf-token": meta.csrfToken },
-    fetchOptions: { credentials: "same-origin", cache: "no-store" } satisfies RequestInit,
+    fetchOptions: {
+      credentials: "same-origin",
+      cache: "no-store",
+    } satisfies RequestInit,
   };
 }

@@ -1,10 +1,16 @@
 import { useForm } from "@tanstack/react-form";
-import { Button } from "./ui/button";
+
 import { Input } from "./ui/input";
-import { Checkbox } from "./ui/checkbox";
 import { Field, FieldLabel } from "./ui/field";
+import { Checkbox } from "./ui/checkbox";
+import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
-import { useTodosCreate, useTodosDelete, useTodosList, useTodosUpdate } from "../hooks/use-todos";
+import {
+  useTodosCreate,
+  useTodosDelete,
+  useTodosList,
+  useTodosUpdate,
+} from "../hooks/use-todos";
 
 export function TodoList({ userId }: { userId: string }) {
   const query = useTodosList(userId);
@@ -35,19 +41,33 @@ export function TodoList({ userId }: { userId: string }) {
   });
 
   return (
-    <section id="todos" aria-labelledby="todos-heading" className="mt-8 border-t border-border pt-7">
+    <section
+      id="todos"
+      aria-labelledby="todos-heading"
+      className="mt-8 border-t border-border pt-7"
+    >
       <div className="flex items-center justify-between gap-3">
-        <h2 id="todos-heading" className="text-lg font-semibold">Your todos</h2>
-        <span className="text-xs text-muted-foreground">{todos.filter((todo) => !todo.completed).length} remaining</span>
+        <h2 id="todos-heading" className="text-lg font-semibold">
+          Your todos
+        </h2>
+        <span className="text-xs text-muted-foreground">
+          {todos.filter(todo => !todo.completed).length} remaining
+        </span>
       </div>
-      <form id="todo-form" className="mt-5" onSubmit={(event) => {
-        event.preventDefault();
-        if (!isPending) void form.handleSubmit();
-      }}>
+      <form
+        id="todo-form"
+        className="mt-5"
+        onSubmit={event => {
+          event.preventDefault();
+          if (!isPending) void form.handleSubmit();
+        }}
+      >
         <form.Field name="title">
-          {(field) => (
+          {field => (
             <Field>
-              <FieldLabel htmlFor="todo-title">What do you need to do?</FieldLabel>
+              <FieldLabel htmlFor="todo-title">
+                What do you need to do?
+              </FieldLabel>
               <div className="flex gap-2">
                 <Input
                   id="todo-title"
@@ -56,12 +76,16 @@ export function TodoList({ userId }: { userId: string }) {
                   maxLength={200}
                   disabled={create.isPending}
                   value={field.state.value}
-                  onChange={(event) => field.handleChange(event.target.value)}
+                  onChange={event => field.handleChange(event.target.value)}
                   onBlur={field.handleBlur}
                   placeholder="Buy lemons"
                   className="min-w-0 flex-1"
                 />
-                <Button id="todo-add" type="submit" disabled={isPending || !field.state.value.trim()}>
+                <Button
+                  id="todo-add"
+                  type="submit"
+                  disabled={isPending || !field.state.value.trim()}
+                >
                   {create.isPending ? "Adding…" : "Add"}
                 </Button>
               </div>
@@ -69,23 +93,40 @@ export function TodoList({ userId }: { userId: string }) {
           )}
         </form.Field>
       </form>
-      {error && <Alert id="todo-error" variant="destructive" className="mt-4"><AlertDescription>{error.message}</AlertDescription></Alert>}
+      {error && (
+        <Alert id="todo-error" variant="destructive" className="mt-4">
+          <AlertDescription>{error.message}</AlertDescription>
+        </Alert>
+      )}
       {todos.length === 0 ? (
-        <p id="todos-empty" className="mt-6 text-sm text-muted-foreground">No todos yet. Add your first one above.</p>
+        <p id="todos-empty" className="mt-6 text-sm text-muted-foreground">
+          No todos yet. Add your first one above.
+        </p>
       ) : (
         <ul id="todo-list" className="mt-5 divide-y divide-border">
-          {todos.map((todo) => (
-            <li id={`todo-${todo.id}`} key={todo.id} aria-busy={(update.isPending && update.variables?.id === todo.id) || (remove.isPending && remove.variables === todo.id)} className="flex items-center gap-3 py-4">
+          {todos.map(todo => (
+            <li
+              id={`todo-${todo.id}`}
+              key={todo.id}
+              aria-busy={
+                (update.isPending && update.variables?.id === todo.id) ||
+                (remove.isPending && remove.variables === todo.id)
+              }
+              className="flex items-center gap-3 py-4"
+            >
               <Checkbox
                 id={`todo-completed-${todo.id}`}
                 checked={todo.completed}
                 disabled={isPending}
-                onCheckedChange={(completed) => {
+                onCheckedChange={completed => {
                   resetErrors();
                   update.mutate({ id: todo.id, completed });
                 }}
               />
-              <FieldLabel htmlFor={`todo-completed-${todo.id}`} className={`min-w-0 flex-1 break-words ${todo.completed ? "text-muted-foreground line-through" : ""}`}>
+              <FieldLabel
+                htmlFor={`todo-completed-${todo.id}`}
+                className={`min-w-0 flex-1 break-words ${todo.completed ? "text-muted-foreground line-through" : ""}`}
+              >
                 {todo.title}
               </FieldLabel>
               <Button
@@ -99,7 +140,9 @@ export function TodoList({ userId }: { userId: string }) {
                 aria-label={`Delete ${todo.title}`}
                 variant="ghost"
                 size="sm"
-              >Delete</Button>
+              >
+                Delete
+              </Button>
             </li>
           ))}
         </ul>

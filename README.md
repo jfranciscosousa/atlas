@@ -157,8 +157,17 @@ From the repository root:
 npm run precommit
 ```
 
-This builds the static SPA, checks TypeScript and the generated client, runs
-frontend tests, and runs the API's `mix precommit` alias.
+This checks web formatting, builds the static SPA, checks TypeScript and the
+generated client, runs frontend tests, and runs the API's `mix precommit` alias.
+
+Format the web app with `npm run web:format`. Check formatting without writing
+with `npm run web:format:check` or `npm run web:format -- --check`.
+Oxfmt sorts imports and Tailwind classes. It excludes the generated route tree.
+Backend and generated API client files are outside its scope.
+
+`npm ci` installs the Husky pre-commit hook. The hook formats staged web files
+with lint-staged. VS Code recommends the Oxc extension and enables format-on-save
+for web file types.
 
 For API-only checks:
 

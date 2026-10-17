@@ -14,11 +14,19 @@
     "web:build": "npm run build --workspace @atlas/web",
     "web:check": "npm run check --workspace @atlas/web",
     "web:test": "npm test --workspace @atlas/web",
+    "web:format": "npm run format --workspace @atlas/web --",
+    "web:format:check": "npm run format:check --workspace @atlas/web",
+    "prepare": "husky",
     "api:dev": "cd apps/api && mix phx.server",
     "api:generate": "cd apps/api && mix ash_typescript.codegen",
-    "precommit": "npm run web:build && npm run web:check && npm run web:test && cd apps/api && mix precommit"
+    "precommit": "npm run web:format:check && npm run web:build && npm run web:check && npm run web:test && cd apps/api && mix precommit"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx,js,jsx,json,jsonc,md,css}": "oxfmt --config apps/web/.oxfmtrc.jsonc --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
-    "concurrently": "^10.0.6"
+    "concurrently": "^10.0.6",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0"
   }
 }

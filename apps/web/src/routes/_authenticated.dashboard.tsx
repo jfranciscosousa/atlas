@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { sessionRequest } from "../lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
-import { TodoList } from "../components/todo-list";
+
+import { sessionRequest } from "../lib/auth";
 import { todosQueryOptions } from "../hooks/use-todos";
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
+import { TodoList } from "../components/todo-list";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(todosQueryOptions(context.user.id));
+    await context.queryClient.ensureQueryData(
+      todosQueryOptions(context.user.id)
+    );
   },
   component: Dashboard,
 });
@@ -46,7 +49,7 @@ function Dashboard() {
         You are signed in as{" "}
         <strong
           id="current-user-email"
-          className="break-all font-medium text-foreground"
+          className="font-medium break-all text-foreground"
         >
           {user.email}
         </strong>
