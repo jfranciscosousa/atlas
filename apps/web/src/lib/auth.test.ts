@@ -1,16 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { AuthError, sessionRequest } from "./auth.ts";
+import { QueryClient } from "@tanstack/react-query";
 
 test("auth requests send cookies and CSRF headers, without exposing tokens", async (t) => {
   const session = { user: { id: "123", email: "user@example.com" }, csrfToken: "next-csrf" };
+  const queryClient = new QueryClient({ defaultOptions: { mutations: { meta: { csrfToken: "csrf" } } } });
+  t.after(() => queryClient.clear());
   const request = t.mock.method(globalThis, "fetch", async (_url: RequestInfo | URL, _options?: RequestInit) =>
     Response.json(session),
   );
 
   assert.deepEqual(await sessionRequest("/auth/user/password/sign_in", {
     method: "POST",
-    csrfToken: "csrf",
+    queryClient,
     user: { email: "user@example.com", password: "password" },
   }), session);
 
@@ -23,6 +26,27 @@ test("auth requests send cookies and CSRF headers, without exposing tokens", asy
     headers: { Accept: "application/json", "x-csrf-token": "csrf", "Content-Type": "application/json" },
     body: JSON.stringify({ user: { email: "user@example.com", password: "password" } }),
   });
+});
+
+test("session responses update CSRF metadata for queries and mutations", async (t) => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 10_000 }, mutations: { retry: false } } });
+  t.after(() => queryClient.clear());
+  let revision = 0;
+  const request = t.mock.method(globalThis, "fetch", async () =>
+    Response.json({ user: null, csrfToken: `csrf-${++revision}` }),
+  );
+
+  await sessionRequest("/api/session", { queryClient });
+  await sessionRequest("/auth/user/password/sign_in", { method: "POST", queryClient });
+  await sessionRequest("/api/session", { method: "DELETE", queryClient });
+
+  assert.deepEqual(request.mock.calls.map(({ arguments: [, options] }) =>
+    (options?.headers as Record<string, string>)["x-csrf-token"],
+  ), [undefined, "csrf-1", "csrf-2"]);
+  assert.equal(queryClient.getDefaultOptions().queries?.meta?.csrfToken, "csrf-3");
+  assert.equal(queryClient.getDefaultOptions().mutations?.meta?.csrfToken, "csrf-3");
+  assert.equal(queryClient.getDefaultOptions().queries?.staleTime, 10_000);
+  assert.equal(queryClient.getDefaultOptions().mutations?.retry, false);
 });
 
 test("auth errors retain the safe server message", async (t) => {

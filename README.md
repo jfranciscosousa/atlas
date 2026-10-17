@@ -49,8 +49,8 @@ in `apps/web`. Phoenix does not start Vite.
 
 ## Routes and authentication
 
-Pathless layouts load session data in `beforeLoad` and expose it through route
-context:
+Pathless layouts load session data in `beforeLoad`. The authenticated layout
+exposes the current user through route context:
 
 - `_guest`: `/`, `/register`, `/sign-in`, and `/reset`.
 - `_authenticated`: `/dashboard`, with a non-null user in context.
@@ -79,6 +79,11 @@ Send `Accept: application/json` on API requests and an `x-csrf-token` header on
 mutations. Auth endpoints accept a JSON `user` object. The frontend does not
 receive or store authentication tokens.
 
+Session responses update the query client's default query and mutation metadata
+with the CSRF token. RPC functions read it from their execution context. Auth
+requests use the same client defaults. Components and hooks do not receive CSRF
+token props or arguments.
+
 Reset requests return the same response for existing and unknown addresses.
 Reset links are single-use. A password change revokes previous sessions.
 After a reset, sign in with the new password.
@@ -104,6 +109,29 @@ code can import `@lemonade-stand/api-client` or
 
 Generation is explicit. Normal API builds do not require Node or a frontend
 build. Normal web builds do not require Elixir or a running API.
+
+### Todos
+
+The dashboard uses the generated `listTodos`, `createTodo`, `updateTodo`, and
+`destroyTodo` RPC functions. Users can add todos, mark them complete, reopen
+them, and delete them. Titles must contain 1 to 200 characters after trimming.
+
+`useTodosList`, `useTodosCreate`, `useTodosUpdate`, and `useTodosDelete` use
+TanStack Query and call the generated RPC client directly. The dashboard loader
+fills the query cache before rendering. Successful mutations refetch the list.
+Cache keys include the user ID, and signing out clears the cache.
+Todo types are inferred from the generated RPC client.
+
+RPC endpoints require a signed-in session and a CSRF token. Ash policies limit
+todo access to the owner. The server sets ownership from the session; clients
+cannot assign or change it. Deleting an inaccessible or missing todo is a
+successful no-op.
+
+After pulling resource changes, apply database migrations from `apps/api`:
+
+```bash
+mix ash.migrate
+```
 
 ## Checks
 

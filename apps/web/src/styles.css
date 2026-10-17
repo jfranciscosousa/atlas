@@ -13,6 +13,17 @@ body {
   margin: 0;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation: page-enter 240ms ease-out;
+  }
+}
+
+@keyframes page-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 button, input, a {
   -webkit-tap-highlight-color: transparent;
 }

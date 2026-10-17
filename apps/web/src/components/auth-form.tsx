@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { AuthError, sessionRequest } from "../lib/auth";
 import type { AuthField } from "../lib/auth";
@@ -31,13 +32,13 @@ const modes = {
   },
 };
 
-type AuthFormProps = { csrfToken: string } & (
+type AuthFormProps =
   | { mode: "register" | "sign-in" | "reset-request" }
-  | { mode: "reset-password"; token: string }
-);
+  | { mode: "reset-password"; token: string };
 
 export function AuthForm(props: AuthFormProps) {
-  const { mode, csrfToken } = props;
+  const { mode } = props;
+  const queryClient = useQueryClient();
   const registering = mode === "register";
   const settingPassword = registering || mode === "reset-password";
   const copy = modes[mode];
@@ -57,7 +58,11 @@ export function AuthForm(props: AuthFormProps) {
           : mode === "reset-request"
             ? { email: value.email }
             : registering ? value : { email: value.email, password: value.password };
-        await sessionRequest(copy.endpoint, { method: "POST", csrfToken, user });
+        await sessionRequest(copy.endpoint, {
+          method: "POST",
+          queryClient,
+          user,
+        });
         if (mode === "reset-request" || mode === "reset-password") {
           if (mode === "reset-password") await router.invalidate();
           setComplete(true);

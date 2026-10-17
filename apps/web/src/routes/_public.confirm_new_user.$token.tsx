@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { AuthError, sessionRequest } from "../lib/auth";
 
@@ -7,7 +8,7 @@ export const Route = createFileRoute("/_public/confirm_new_user/$token")({ compo
 
 function ConfirmEmail() {
   const { token } = Route.useParams();
-  const { csrfToken } = Route.useRouteContext();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState("");
@@ -16,7 +17,11 @@ function ConfirmEmail() {
     onSubmit: async () => {
       setError("");
       try {
-        await sessionRequest("/auth/user/confirm_new_user", { method: "POST", csrfToken, user: { confirm: token } });
+        await sessionRequest("/auth/user/confirm_new_user", {
+          method: "POST",
+          queryClient,
+          user: { confirm: token },
+        });
         await router.invalidate();
         setConfirmed(true);
       } catch (reason) {

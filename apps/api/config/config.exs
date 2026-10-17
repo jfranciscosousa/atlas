@@ -92,7 +92,7 @@ config :spark,
 config :lemonade_stand,
   ecto_repos: [LemonadeStand.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [LemonadeStand.Accounts]
+  ash_domains: [LemonadeStand.Accounts, LemonadeStand.Tasks]
 
 # Configure the endpoint
 config :lemonade_stand, LemonadeStandWeb.Endpoint,

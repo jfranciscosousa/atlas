@@ -3,14 +3,72 @@
 
 
 
+export type UUID = string;
+
+// Todo Schema
+export type TodoResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "completed" | "id" | "title";
+  completed: boolean;
+  id: UUID;
+  title: string;
+};
 
 
 
+export type TodoAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "completed" | "id" | "title";
+  completed: boolean;
+  id: UUID;
+  title: string;
+};
 
 
+export type TodoFilterInput = {
+  and?: Array<TodoFilterInput>;
+  or?: Array<TodoFilterInput>;
+  not?: Array<TodoFilterInput>;
+
+  completed?: {
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  title?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
 
 
+};
 
+
+export const todoFilterFields = ["completed", "id", "title"] as const;
+export type TodoFilterField = (typeof todoFilterFields)[number];
+
+
+export const todoSortFields = ["completed", "id", "title"] as const;
+export type TodoSortField = (typeof todoSortFields)[number];
 
 
 // Utility Types
