@@ -9,12 +9,16 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "dev": "npm run dev --workspace @lemonade-stand/web",
-    "dev:api": "cd apps/api && mix phx.server",
-    "build": "npm run build --workspace @lemonade-stand/web",
-    "check": "npm run check --workspace @lemonade-stand/web",
-    "test": "npm test --workspace @lemonade-stand/web",
-    "generate:api": "cd apps/api && mix ash_typescript.codegen",
-    "precommit": "npm run build && npm run check && npm test && cd apps/api && mix precommit"
+    "dev": "concurrently --kill-others --names web,api \"npm run web:dev\" \"npm run api:dev\"",
+    "web:dev": "npm run dev --workspace @lemonade-stand/web",
+    "web:build": "npm run build --workspace @lemonade-stand/web",
+    "web:check": "npm run check --workspace @lemonade-stand/web",
+    "web:test": "npm test --workspace @lemonade-stand/web",
+    "api:dev": "cd apps/api && mix phx.server",
+    "api:generate": "cd apps/api && mix ash_typescript.codegen",
+    "precommit": "npm run web:build && npm run web:check && npm run web:test && cd apps/api && mix precommit"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
   }
 }

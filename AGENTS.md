@@ -3,7 +3,7 @@
 - `apps/api` is a JSON-only Phoenix/Ash application. Run Mix tasks from this directory.
 - `apps/web` is the TanStack Start SPA. All application pages belong here.
 - `packages/api-client` contains generated AshTypescript contracts. Run
-  `npm run generate:api` from the root after changing exposed actions.
+  `npm run api:generate` from the root after changing exposed actions.
 - Phoenix must not build or serve frontend assets or add application LiveViews.
 - The root `npm run precommit` checks both apps. The API's `mix precommit`
   checks the backend without Node.

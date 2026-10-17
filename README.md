@@ -29,12 +29,16 @@ mix setup
 PostgreSQL must run on `localhost:5432`, with username `postgres` and password
 `postgres`. Setup creates and migrates `lemonade_stand_dev`.
 
-Run these commands from the repository root in separate terminals:
+Start both apps from the repository root:
 
 ```bash
-npm run dev:api
 npm run dev
 ```
+
+Logs have `web` and `api` labels. Press Ctrl+C to stop both apps. If either
+process exits, the other process stops too.
+
+To start only one app, use `npm run web:dev` or `npm run api:dev`.
 
 - App: **http://localhost:3000**
 - API: **http://localhost:4000/api/session**
@@ -100,7 +104,7 @@ emails. The default adapter stores email locally.
 After changing exposed Ash resources or actions:
 
 ```bash
-npm run generate:api
+npm run api:generate
 ```
 
 This writes `packages/api-client/src/ash_rpc.ts` and `ash_types.ts`. Frontend
@@ -157,7 +161,7 @@ Build each application separately:
 
 ```bash
 npm ci
-npm run build
+npm run web:build
 cd apps/api
 MIX_ENV=prod mix deps.get --only prod
 MIX_ENV=prod mix release
