@@ -1,4 +1,4 @@
-defmodule LemonadeStand.Repo.Migrations.AddOban do
+defmodule Atlas.Repo.Migrations.AddOban do
   use Ecto.Migration
 
   def up, do: Oban.Migration.up()

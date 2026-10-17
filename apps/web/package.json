@@ -11,7 +11,7 @@
     "test": "node --test src/lib/*.test.ts"
   },
   "dependencies": {
-    "@lemonade-stand/api-client": "*",
+    "@atlas/api-client": "*",
     "@tanstack/react-form": "^1.33.5",
     "@tanstack/react-query": "^5.104.3",
     "@tanstack/react-router": "^1.170.45",
@@ -29,5 +29,5 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.4"
   },
-  "name": "@lemonade-stand/web"
+  "name": "@atlas/web"
 }

@@ -1,4 +1,4 @@
-defmodule LemonadeStand.Repo.Migrations.AddUserTodos do
+defmodule Atlas.Repo.Migrations.AddUserTodos do
   @moduledoc """
   Updates resources based on their most recent snapshots.
 

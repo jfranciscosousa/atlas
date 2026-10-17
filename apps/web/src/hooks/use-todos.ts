@@ -1,5 +1,5 @@
 import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createTodo, destroyTodo, listTodos, updateTodo } from "@lemonade-stand/api-client";
+import { createTodo, destroyTodo, listTodos, updateTodo } from "@atlas/api-client";
 import { rpcOptions } from "../lib/rpc.ts";
 
 export function todosQueryOptions(userId: string) {

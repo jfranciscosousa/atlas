@@ -20,7 +20,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "referrer", content: "no-referrer" },
-      { title: "Lemonade Stand" },
+      { title: "Atlas" },
     ],
     links: [{ rel: "stylesheet", href: styles }],
   }),
@@ -50,7 +50,7 @@ function Root() {
           >
             L
           </span>
-          LEMONADE STAND
+          ATLAS
         </Link>
         <section className="rounded-3xl border border-emerald-950/10 bg-white p-7 shadow-[0_16px_60px_-36px_#143c3055] sm:p-10">
           <Outlet />

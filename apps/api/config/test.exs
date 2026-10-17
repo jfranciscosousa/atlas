@@ -1,7 +1,7 @@
 import Config
-config :lemonade_stand, Oban, testing: :manual
-config :lemonade_stand, frontend_url: "http://localhost:3000"
-config :lemonade_stand, token_signing_secret: "yVKem4M/cAIV9zQ+BvC0f51FhShHH/hn"
+config :atlas, Oban, testing: :manual
+config :atlas, frontend_url: "http://localhost:3000"
+config :atlas, token_signing_secret: "yVKem4M/cAIV9zQ+BvC0f51FhShHH/hn"
 config :bcrypt_elixir, log_rounds: 1
 config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 
@@ -10,23 +10,23 @@ config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :lemonade_stand, LemonadeStand.Repo,
+config :atlas, Atlas.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",
-  database: "lemonade_stand_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: "atlas_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
-config :lemonade_stand, LemonadeStandWeb.Endpoint,
+config :atlas, AtlasWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "7c067g4xWs7xFFkZxr7zjwHrtlhZsgCc8pyGQNBTLiNLreU9bER14y1NPrwflRbt",
   server: false
 
 # In test we don't send emails
-config :lemonade_stand, LemonadeStand.Mailer, adapter: Swoosh.Adapters.Test
+config :atlas, Atlas.Mailer, adapter: Swoosh.Adapters.Test
 
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false

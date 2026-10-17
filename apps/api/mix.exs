@@ -1,9 +1,9 @@
-defmodule LemonadeStand.MixProject do
+defmodule Atlas.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :lemonade_stand,
+      app: :atlas,
       version: "0.1.0",
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -20,7 +20,7 @@ defmodule LemonadeStand.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {LemonadeStand.Application, []},
+      mod: {Atlas.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end

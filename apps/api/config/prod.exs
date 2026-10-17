@@ -1,11 +1,11 @@
 import Config
 
-config :lemonade_stand, secure_cookies: true
+config :atlas, secure_cookies: true
 
 # Force using SSL in production. This also sets the "strict-security-transport" header,
 # known as HSTS. If you have a health check endpoint, you may want to exclude it below.
 # Note `:force_ssl` is required to be set at compile-time.
-config :lemonade_stand, LemonadeStandWeb.Endpoint,
+config :atlas, AtlasWeb.Endpoint,
   force_ssl: [
     rewrite_on: [:x_forwarded_proto],
     exclude: [

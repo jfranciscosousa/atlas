@@ -5,7 +5,7 @@
 **/.fetch
 erl_crash.dump
 *.ez
-lemonade_stand-*.tar
+atlas-*.tar
 **/tmp/
 **/node_modules/
 **/dist/

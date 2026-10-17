@@ -141,7 +141,7 @@
     "global": null,
     "strategy": null
   },
-  "repo": "Elixir.LemonadeStand.Repo",
+  "repo": "Elixir.Atlas.Repo",
   "schema": null,
   "table": "todos",
   "temporal": null

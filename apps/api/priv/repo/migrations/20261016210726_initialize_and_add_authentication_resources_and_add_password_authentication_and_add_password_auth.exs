@@ -1,4 +1,4 @@
-defmodule LemonadeStand.Repo.Migrations.InitializeAndAddAuthenticationResourcesAndAddPasswordAuthenticationAndAddPasswordAuth do
+defmodule Atlas.Repo.Migrations.InitializeAndAddAuthenticationResourcesAndAddPasswordAuthenticationAndAddPasswordAuth do
   @moduledoc """
   Updates resources based on their most recent snapshots.
 

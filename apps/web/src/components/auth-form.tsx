@@ -14,7 +14,7 @@ const modes = {
   },
   "sign-in": {
     title: "Welcome back",
-    description: "Sign in to your Lemonade Stand account.",
+    description: "Sign in to your Atlas account.",
     button: "Sign in",
     endpoint: "/auth/user/password/sign_in",
   },

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { MutationObserver, QueryClient, type MutationFunctionContext } from "@tanstack/react-query";
-import { createTodo } from "@lemonade-stand/api-client";
+import { createTodo } from "@atlas/api-client";
 import { rpcOptions } from "./rpc.ts";
 import { todosQueryOptions } from "../hooks/use-todos.ts";
 

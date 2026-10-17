@@ -8,7 +8,7 @@
 import Config
 
 config :ash_typescript,
-  manifest: LemonadeStand.AshTypescriptManifest,
+  manifest: Atlas.AshTypescriptManifest,
   output_file: "../../packages/api-client/src/ash_rpc.ts",
   run_endpoint: "/rpc/run",
   validate_endpoint: "/rpc/validate",
@@ -27,13 +27,13 @@ config :ash_typescript,
 
 config :ash_oban, pro?: false
 
-config :lemonade_stand, Oban,
+config :atlas, Oban,
   engine: Oban.Engines.Basic,
   notifier: Oban.Notifiers.Postgres,
   queues: [default: 10],
   lifeline: [rescue_after: {2, :hours}],
   pruner: [max_age: {1, :day}],
-  repo: LemonadeStand.Repo,
+  repo: Atlas.Repo,
   cron: [crontab: []]
 
 # These enable behaviors that will become the default in the next major
@@ -89,20 +89,20 @@ config :spark,
     ]
   ]
 
-config :lemonade_stand,
-  ecto_repos: [LemonadeStand.Repo],
+config :atlas,
+  ecto_repos: [Atlas.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [LemonadeStand.Accounts, LemonadeStand.Tasks]
+  ash_domains: [Atlas.Accounts, Atlas.Tasks]
 
 # Configure the endpoint
-config :lemonade_stand, LemonadeStandWeb.Endpoint,
+config :atlas, AtlasWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [json: LemonadeStandWeb.ErrorJSON],
+    formats: [json: AtlasWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: LemonadeStand.PubSub
+  pubsub_server: Atlas.PubSub
 
 # Configure the mailer
 #
@@ -111,7 +111,7 @@ config :lemonade_stand, LemonadeStandWeb.Endpoint,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :lemonade_stand, LemonadeStand.Mailer, adapter: Swoosh.Adapters.Local
+config :atlas, Atlas.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure Elixir's Logger
 config :logger, :default_formatter,

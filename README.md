@@ -1,4 +1,4 @@
-# Lemonade Stand
+# Atlas
 
 A monorepo with two independent applications:
 
@@ -27,7 +27,7 @@ mix setup
 ```
 
 PostgreSQL must run on `localhost:5432`, with username `postgres` and password
-`postgres`. Setup creates and migrates `lemonade_stand_dev`.
+`postgres`. Setup creates and migrates `atlas_dev`.
 
 Start both apps from the repository root:
 
@@ -108,8 +108,8 @@ npm run api:generate
 ```
 
 This writes `packages/api-client/src/ash_rpc.ts` and `ash_types.ts`. Frontend
-code can import `@lemonade-stand/api-client` or
-`@lemonade-stand/api-client/types`. Do not edit generated files by hand.
+code can import `@atlas/api-client` or
+`@atlas/api-client/types`. Do not edit generated files by hand.
 
 Generation is explicit. Normal API builds do not require Node or a frontend
 build. Normal web builds do not require Elixir or a running API.

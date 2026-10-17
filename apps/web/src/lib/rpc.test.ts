@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createTodo, destroyTodo, listTodos, updateTodo, validateCreateTodo } from "@lemonade-stand/api-client";
+import { createTodo, destroyTodo, listTodos, updateTodo, validateCreateTodo } from "@atlas/api-client";
 import { rpcOptions } from "./rpc.ts";
 
 test("generated todo actions send same-origin cookies, CSRF, and typed RPC payloads", async (t) => {
