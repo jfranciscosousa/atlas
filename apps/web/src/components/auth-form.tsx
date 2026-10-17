@@ -56,7 +56,12 @@ export function AuthForm(props: AuthFormProps) {
     Partial<Record<AuthField, string>>
   >({});
   const form = useForm({
-    defaultValues: { email: "", password: "", password_confirmation: "" },
+    defaultValues: {
+      display_name: "",
+      email: "",
+      password: "",
+      password_confirmation: "",
+    },
     onSubmit: async ({ value }) => {
       setError("");
       setServerErrors({});
@@ -130,6 +135,16 @@ export function AuthForm(props: AuthFormProps) {
   }
 
   const fields = [
+    ...(registering
+      ? [
+          {
+            name: "display_name",
+            label: "Display name",
+            type: "text",
+            autoComplete: "name",
+          },
+        ]
+      : []),
     ...(mode !== "reset-password"
       ? [
           {
@@ -182,7 +197,10 @@ export function AuthForm(props: AuthFormProps) {
             name={name as AuthField}
             validators={{
               onBlur: ({ value, fieldApi }) => {
-                if (!value) return `${label} is required.`;
+                if (name === "display_name" ? !value.trim() : !value)
+                  return `${label} is required.`;
+                if (name === "display_name" && value.trim().length > 100)
+                  return "Use a name between 1 and 100 characters.";
                 if (
                   name === "email" &&
                   !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -212,9 +230,11 @@ export function AuthForm(props: AuthFormProps) {
                     name={name}
                     type={type}
                     autoComplete={autoComplete}
-                    autoCapitalize="none"
+                    autoCapitalize={name === "display_name" ? "words" : "none"}
                     spellCheck={false}
                     required
+                    maxLength={name === "display_name" ? 100 : undefined}
+                    pattern={name === "display_name" ? ".*\\S.*" : undefined}
                     minLength={
                       name === "password" && settingPassword ? 8 : undefined
                     }

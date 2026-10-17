@@ -59,7 +59,8 @@ defmodule AtlasWeb.AuthController do
 
   defp validation_fields(%Ash.Error.Invalid{errors: errors}) do
     Enum.reduce(errors, %{}, fn
-      %{field: field} = error, fields when field in [:email, :password, :password_confirmation] ->
+      %{field: field} = error, fields
+      when field in [:display_name, :email, :password, :password_confirmation] ->
         Map.put(fields, field, validation_message(field, error))
 
       %Ash.Error.Changes.InvalidChanges{fields: [:email], message: "has already been taken"},
@@ -82,12 +83,14 @@ defmodule AtlasWeb.AuthController do
 
   defp validation_message(field, %Ash.Error.Changes.Required{}) do
     case field do
+      :display_name -> "Display name is required."
       :email -> "Email address is required."
       :password -> "Password is required."
       :password_confirmation -> "Confirm your password."
     end
   end
 
+  defp validation_message(:display_name, _error), do: "Use a name between 1 and 100 characters."
   defp validation_message(:email, _error), do: "Enter a valid email address."
   defp validation_message(:password, _error), do: "Use at least 8 characters."
   defp validation_message(:password_confirmation, _error), do: "Passwords must match."

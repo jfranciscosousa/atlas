@@ -144,6 +144,7 @@ defmodule AtlasWeb.TodoRpcTest do
       post(conn, ~p"/auth/user/password/register",
         user: %{
           email: email,
+          display_name: "Test User",
           password: "a-secure-password",
           password_confirmation: "a-secure-password"
         }

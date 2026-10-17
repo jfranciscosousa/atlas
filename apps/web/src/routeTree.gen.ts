@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as GuestRouteImport } from './routes/_guest'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as GuestIndexRouteImport } from './routes/_guest.index'
 import { Route as GuestRegisterRouteImport } from './routes/_guest.register'
 import { Route as GuestResetRouteImport } from './routes/_guest.reset'
@@ -35,6 +36,11 @@ const PublicRoute = PublicRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const GuestIndexRoute = GuestIndexRouteImport.update({
@@ -73,6 +79,7 @@ const PublicPasswordResetTokenRoute =
 export interface FileRoutesByFullPath {
   '/': typeof GuestIndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/register': typeof GuestRegisterRoute
   '/reset': typeof GuestResetRoute
   '/sign-in': typeof GuestSignInRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof GuestIndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/register': typeof GuestRegisterRoute
   '/reset': typeof GuestResetRoute
   '/sign-in': typeof GuestSignInRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/_guest': typeof GuestRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_guest/register': typeof GuestRegisterRoute
   '/_guest/reset': typeof GuestResetRoute
   '/_guest/sign-in': typeof GuestSignInRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/profile'
     | '/register'
     | '/reset'
     | '/sign-in'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/profile'
     | '/register'
     | '/reset'
     | '/sign-in'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/_guest'
     | '/_public'
     | '/_authenticated/dashboard'
+    | '/_authenticated/profile'
     | '/_guest/register'
     | '/_guest/reset'
     | '/_guest/sign-in'
@@ -168,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_guest/': {
@@ -217,10 +236,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

@@ -4,7 +4,7 @@ defmodule Atlas.Accounts.User do
     domain: Atlas.Accounts,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
-    extensions: [AshAuthentication]
+    extensions: [AshAuthentication, AshTypescript.Resource]
 
   authentication do
     add_ons do
@@ -54,8 +54,23 @@ defmodule Atlas.Accounts.User do
     repo Atlas.Repo
   end
 
+  typescript do
+    type_name "User"
+  end
+
   actions do
     defaults [:read]
+
+    read :get_profile do
+      get? true
+      filter expr(id == ^actor(:id))
+    end
+
+    update :update_profile do
+      require_atomic? false
+      accept [:display_name, :avatar]
+      validate Atlas.Accounts.User.Validations.Avatar
+    end
 
     read :get_by_subject do
       description "Get a user by the subject claim in a JWT"
@@ -112,7 +127,8 @@ defmodule Atlas.Accounts.User do
     end
 
     create :register_with_password do
-      description "Register a new user with a email and password."
+      description "Register a new user with a name, email, and password."
+      accept [:display_name]
 
       argument :email, :ci_string do
         allow_nil? false
@@ -201,6 +217,11 @@ defmodule Atlas.Accounts.User do
   end
 
   policies do
+    policy action([:read, :get_profile, :update_profile]) do
+      forbid_unless actor_present()
+      authorize_if expr(id == ^actor(:id))
+    end
+
     bypass AshAuthentication.Checks.AshAuthenticationInteraction do
       authorize_if always()
     end
@@ -217,6 +238,17 @@ defmodule Atlas.Accounts.User do
     attribute :hashed_password, :string do
       allow_nil? false
       sensitive? true
+    end
+
+    attribute :display_name, :string do
+      allow_nil? false
+      public? true
+      constraints min_length: 1, max_length: 100, trim?: true
+    end
+
+    attribute :avatar, :string do
+      public? true
+      constraints max_length: 700_000, trim?: false
     end
 
     attribute :confirmed_at, :utc_datetime_usec

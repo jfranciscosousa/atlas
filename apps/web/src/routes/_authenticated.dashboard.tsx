@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { sessionRequest } from "../lib/auth";
 import { todosQueryOptions } from "../hooks/use-todos";
-import { Button } from "../components/ui/button";
+import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { TodoList } from "../components/todo-list";
 
@@ -61,7 +61,14 @@ function Dashboard() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <div className="mt-8">
+      <div className="mt-8 flex items-center gap-3">
+        <Link
+          id="edit-profile"
+          to="/profile"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Edit profile
+        </Link>
         <Button
           id="sign-out"
           type="button"

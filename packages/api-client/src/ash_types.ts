@@ -5,6 +5,28 @@
 
 export type UUID = string;
 
+// User Schema
+export type UserResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "avatar" | "displayName" | "email" | "id";
+  avatar: string | null;
+  displayName: string;
+  email: string;
+  id: UUID;
+};
+
+
+
+export type UserAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "avatar" | "displayName" | "email" | "id";
+  avatar: string | null;
+  displayName: string;
+  email: string;
+  id: UUID;
+};
+
+
 // Todo Schema
 export type TodoResourceSchema = {
   __type: "Resource";
@@ -25,6 +47,63 @@ export type TodoAttributesOnlySchema = {
 };
 
 
+export type UserFilterInput = {
+  and?: Array<UserFilterInput>;
+  or?: Array<UserFilterInput>;
+  not?: Array<UserFilterInput>;
+
+  avatar?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  displayName?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  email?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+
+};
 export type TodoFilterInput = {
   and?: Array<TodoFilterInput>;
   or?: Array<TodoFilterInput>;
@@ -63,9 +142,15 @@ export type TodoFilterInput = {
 };
 
 
+export const userFilterFields = ["avatar", "displayName", "email", "id"] as const;
+export type UserFilterField = (typeof userFilterFields)[number];
+
 export const todoFilterFields = ["completed", "id", "title"] as const;
 export type TodoFilterField = (typeof todoFilterFields)[number];
 
+
+export const userSortFields = ["avatar", "displayName", "email", "id"] as const;
+export type UserSortField = (typeof userSortFields)[number];
 
 export const todoSortFields = ["completed", "id", "title"] as const;
 export type TodoSortField = (typeof todoSortFields)[number];

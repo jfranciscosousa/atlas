@@ -21,6 +21,7 @@ defmodule AtlasWeb.AuthControllerTest do
              json_response(registered, 200)
 
     assert is_binary(id)
+    assert Ash.get!(Atlas.Accounts.User, id, authorize?: false).display_name == "New User"
     assert get_session(registered, :user_token)
     assert Map.keys(json_response(registered, 200)["user"]) == ["email", "id"]
 
@@ -64,10 +65,37 @@ defmodule AtlasWeb.AuthControllerTest do
         ] do
       response =
         post(conn, ~p"/auth/user/password/register",
-          user: Map.put(params, :email, "invalid@example.com")
+          user: Map.merge(params, %{email: "invalid@example.com", display_name: "Test User"})
         )
 
       assert %{"fields" => %{^field => ^message}} = json_response(response, 422)
+      refute get_session(response, :user_token)
+    end
+  end
+
+  test "registration requires a nonblank name of at most 100 characters", %{conn: conn} do
+    for input <- [
+          %{},
+          %{display_name: nil},
+          %{display_name: ""},
+          %{display_name: "   "},
+          %{display_name: String.duplicate("a", 101)}
+        ] do
+      response =
+        post(conn, ~p"/auth/user/password/register",
+          user:
+            Map.merge(
+              %{
+                email: "invalid@example.com",
+                password: @password,
+                password_confirmation: @password
+              },
+              input
+            )
+        )
+
+      assert %{"fields" => %{"display_name" => message}} = json_response(response, 422)
+      assert message in ["Display name is required.", "Use a name between 1 and 100 characters."]
       refute get_session(response, :user_token)
     end
   end
@@ -89,7 +117,12 @@ defmodule AtlasWeb.AuthControllerTest do
   test "registration rejects invalid email addresses", %{conn: conn} do
     response =
       post(conn, ~p"/auth/user/password/register",
-        user: %{email: "not-an-email", password: @password, password_confirmation: @password}
+        user: %{
+          email: "not-an-email",
+          display_name: "Test User",
+          password: @password,
+          password_confirmation: @password
+        }
       )
 
     assert %{"fields" => %{"email" => "Enter a valid email address."}} =
@@ -300,7 +333,12 @@ defmodule AtlasWeb.AuthControllerTest do
 
   defp register(conn) do
     post(conn, ~p"/auth/user/password/register",
-      user: %{email: "new@example.com", password: @password, password_confirmation: @password}
+      user: %{
+        email: "new@example.com",
+        display_name: "  New User  ",
+        password: @password,
+        password_confirmation: @password
+      }
     )
   end
 end

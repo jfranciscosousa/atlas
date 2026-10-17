@@ -97,6 +97,7 @@ test("auth errors retain the safe server message", async t => {
 
 test("validation errors preserve field messages", async t => {
   const fields = {
+    display_name: "Display name is required.",
     email:
       "An account with this email already exists. Sign in or reset your password.",
   };

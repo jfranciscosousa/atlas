@@ -1,6 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-export type AuthField = "email" | "password" | "password_confirmation";
+export type AuthField =
+  | "display_name"
+  | "email"
+  | "password"
+  | "password_confirmation";
 
 export class AuthError extends Error {
   fields: Partial<Record<AuthField, string>>;
