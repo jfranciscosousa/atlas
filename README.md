@@ -21,6 +21,7 @@ Install the runtimes, start PostgreSQL, and install dependencies:
 
 ```bash
 mise install
+mise run db:start
 npm ci
 cd apps/api
 mix setup
@@ -28,6 +29,17 @@ mix setup
 
 PostgreSQL must run on `localhost:5432`, with username `postgres` and password
 `postgres`. Setup creates and migrates `atlas_dev`.
+
+`mise run db:start` initializes the PostgreSQL cluster on first use and starts
+it. `PGDATA` defaults to `~/.local/share/postgres`. An existing `PGDATA` takes
+precedence. No global mise configuration is required. Data and logs stay in
+that directory. The server listens only on localhost.
+
+Stop it with `mise run db:stop`; this stops the shared server for all projects
+and worktrees.
+
+Port 5432 must be free unless this cluster already runs there. These tasks do
+not stop an existing system PostgreSQL service.
 
 Start both apps from the repository root:
 
