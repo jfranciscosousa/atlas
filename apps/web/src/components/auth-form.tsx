@@ -4,6 +4,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { AuthError, sessionRequest } from "../lib/auth";
 import type { AuthField } from "../lib/auth";
+import { Button, buttonVariants } from "./ui/button";
+import { Input } from "./ui/input";
+import { Field, FieldLabel, FieldDescription, FieldError } from "./ui/field";
+import { Alert, AlertDescription } from "./ui/alert";
 
 const modes = {
   register: {
@@ -90,12 +94,12 @@ export function AuthForm(props: AuthFormProps) {
     return (
       <div id={mode === "reset-request" ? "reset-request-sent" : "password-reset-complete"} role="status">
         <h1 className="text-3xl font-semibold tracking-tight">{mode === "reset-request" ? "Check your inbox" : "Password reset"}</h1>
-        <p className="mt-4 text-sm leading-7 text-emerald-950/65">
+        <p className="mt-4 text-sm leading-7 text-muted-foreground">
           {mode === "reset-request"
             ? "If an account exists for this email address, you will receive a password reset link."
             : "Sign in with your new password. Your previous sessions have been signed out."}
         </p>
-        <Link to="/sign-in" className="mt-6 inline-block font-semibold underline">Back to sign in</Link>
+        <Link to="/sign-in" className={buttonVariants({ variant: "link", className: "mt-6" })}>Back to sign in</Link>
       </div>
     );
   }
@@ -109,7 +113,7 @@ export function AuthForm(props: AuthFormProps) {
   return (
     <>
       <h1 className="text-3xl font-semibold tracking-tight">{copy.title}</h1>
-      <p className="mt-3 text-sm leading-6 text-emerald-950/65">{copy.description}</p>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy.description}</p>
       <form id={`${mode}-form`} className="mt-8 space-y-5" onSubmit={(event) => {
         event.preventDefault();
         void form.handleSubmit();
@@ -132,9 +136,9 @@ export function AuthForm(props: AuthFormProps) {
               const serverError = serverErrors[name as AuthField];
               const invalid = !!serverError || (field.state.meta.isTouched && !field.state.meta.isValid);
               return (
-                <div>
-                  <label htmlFor={name} className="mb-2 block text-sm font-medium">{label}</label>
-                  <input
+                <Field data-invalid={invalid}>
+                  <FieldLabel htmlFor={name}>{label}</FieldLabel>
+                  <Input
                     id={name}
                     name={name}
                     type={type}
@@ -151,33 +155,32 @@ export function AuthForm(props: AuthFormProps) {
                     onBlur={field.handleBlur}
                     aria-invalid={invalid}
                     aria-describedby={invalid ? `${name}-error` : undefined}
-                    className="w-full rounded-xl border border-emerald-950/20 bg-white px-4 py-3 text-base outline-none transition focus:border-emerald-700 focus:ring-3 focus:ring-emerald-100 aria-invalid:border-red-600"
                   />
-                  {invalid && <p id={`${name}-error`} className="mt-2 text-sm text-red-700">{serverError ?? field.state.meta.errors.join(" ")}</p>}
-                </div>
+                  {invalid && <FieldError id={`${name}-error`}>{serverError ?? field.state.meta.errors.join(" ")}</FieldError>}
+                </Field>
               );
             }}
           </form.Field>
         ))}
-        {settingPassword && <p className="text-xs leading-5 text-emerald-950/70">Use at least 8 characters for your password.</p>}
-        {error && <p id="auth-error" role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+        {settingPassword && <FieldDescription>Use at least 8 characters for your password.</FieldDescription>}
+        {error && <Alert id="auth-error" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
         <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
           {([canSubmit, submitting]) => (
-            <button id="auth-submit" type="submit" disabled={!canSubmit || submitting} className="primary-button w-full">
+            <Button id="auth-submit" type="submit" disabled={!canSubmit || submitting} className="w-full">
               {submitting ? "Please wait…" : copy.button}
-            </button>
+            </Button>
           )}
         </form.Subscribe>
       </form>
-      {(registering || mode === "sign-in") && <p className="mt-6 text-center text-sm text-emerald-950/65">
+      {(registering || mode === "sign-in") && <p className="mt-6 text-center text-sm text-muted-foreground">
         {registering ? "Already have an account? " : "New here? "}
-        <Link to={registering ? "/sign-in" : "/register"} className="font-semibold text-emerald-900 underline underline-offset-4">
+        <Link to={registering ? "/sign-in" : "/register"} className={buttonVariants({ variant: "link", className: "h-auto p-0" })}>
           {registering ? "Sign in" : "Create an account"}
         </Link>
       </p>}
-      {mode === "sign-in" && <p className="mt-4 text-center text-sm"><Link to="/reset" className="text-emerald-950/65 underline underline-offset-4">Forgot password?</Link></p>}
-      {mode === "reset-request" && <p className="mt-6 text-center text-sm"><Link to="/sign-in" className="font-semibold underline">Back to sign in</Link></p>}
-      {mode === "reset-password" && <p className="mt-6 text-center text-sm"><Link to="/reset" className="font-semibold underline">Request a new reset link</Link></p>}
+      {mode === "sign-in" && <p className="mt-4 text-center text-sm"><Link to="/reset" className={buttonVariants({ variant: "link" })}>Forgot password?</Link></p>}
+      {mode === "reset-request" && <p className="mt-6 text-center text-sm"><Link to="/sign-in" className={buttonVariants({ variant: "link" })}>Back to sign in</Link></p>}
+      {mode === "reset-password" && <p className="mt-6 text-center text-sm"><Link to="/reset" className={buttonVariants({ variant: "link" })}>Request a new reset link</Link></p>}
     </>
   );
 }

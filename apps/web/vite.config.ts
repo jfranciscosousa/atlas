@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -9,6 +10,7 @@ const api = {
 };
 
 export default defineConfig({
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   plugins: [tanstackStart({ spa: { enabled: true, prerender: { outputPath: "/index" } } }), react(), tailwindcss()],
   server: {
     host: "127.0.0.1",

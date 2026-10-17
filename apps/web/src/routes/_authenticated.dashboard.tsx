@@ -4,6 +4,8 @@ import { sessionRequest } from "../lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { TodoList } from "../components/todo-list";
 import { todosQueryOptions } from "../hooks/use-todos";
+import { Button } from "../components/ui/button";
+import { Alert, AlertDescription } from "../components/ui/alert";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   loader: async ({ context }) => {
@@ -40,11 +42,11 @@ function Dashboard() {
   return (
     <>
       <h1 className="text-3xl font-semibold tracking-tight">Welcome back.</h1>
-      <p className="mt-4 text-sm leading-7 text-emerald-950/65">
+      <p className="mt-4 text-sm leading-7 text-muted-foreground">
         You are signed in as{" "}
         <strong
           id="current-user-email"
-          className="break-all font-medium text-emerald-950"
+          className="break-all font-medium text-foreground"
         >
           {user.email}
         </strong>
@@ -52,20 +54,20 @@ function Dashboard() {
       </p>
       <TodoList key={user.id} userId={user.id} />
       {error && (
-        <p role="alert" className="mt-4 text-sm text-red-700">
-          {error}
-        </p>
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
       <div className="mt-8">
-        <button
+        <Button
           id="sign-out"
           type="button"
           onClick={signOut}
           disabled={signingOut}
-          className="primary-button"
+          variant="outline"
         >
           {signingOut ? "Signing out…" : "Sign out"}
-        </button>
+        </Button>
       </div>
     </>
   );

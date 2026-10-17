@@ -11,6 +11,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import styles from "../styles.css?url";
 import { LoadingScreen } from "../components/loading-screen";
+import { Button, buttonVariants } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Alert, AlertDescription } from "../components/ui/alert";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   ssr: false,
@@ -29,7 +32,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   notFoundComponent: () => (
     <section>
       <h1 className="text-3xl font-semibold">Page not found</h1>
-      <Link to="/" className="mt-6 inline-block underline">
+      <Link to="/" className={buttonVariants({ variant: "link", className: "mt-6" })}>
         Back to home
       </Link>
     </section>
@@ -44,18 +47,14 @@ function Root() {
           to="/"
           className="mb-8 flex items-center justify-center gap-3 text-sm font-semibold tracking-wide"
         >
-          <span
-            aria-hidden="true"
-            className="flex size-9 items-center justify-center rounded-full bg-amber-200 text-lg"
-          >
-            L
-          </span>
           ATLAS
         </Link>
-        <section className="rounded-3xl border border-emerald-950/10 bg-white p-7 shadow-[0_16px_60px_-36px_#143c3055] sm:p-10">
-          <Outlet />
-        </section>
-        <p className="mt-6 text-center text-xs text-emerald-950/70">
+        <Card>
+          <CardContent>
+            <Outlet />
+          </CardContent>
+        </Card>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           A fresh start, one step at a time.
         </p>
       </div>
@@ -67,15 +66,12 @@ function SessionError() {
   const router = useRouter();
   return (
     <main className="flex min-h-screen items-center justify-center px-5">
-      <div role="alert">
-        <p>Could not connect to the server. Please try again.</p>
-        <button
-          onClick={() => void router.invalidate()}
-          className="mt-4 font-semibold underline"
-        >
+      <Alert variant="destructive" className="max-w-md">
+        <AlertDescription>Could not connect to the server. Please try again.</AlertDescription>
+        <Button variant="outline" onClick={() => void router.invalidate()}>
           Try again
-        </button>
-      </div>
+        </Button>
+      </Alert>
     </main>
   );
 }
@@ -103,7 +99,7 @@ function Document({ children }: { children: ReactNode }) {
         {isLoading && <LoadingScreen />}
 
         <div
-          className={isLoading ? "invisible" : "page-enter"}
+          className={isLoading ? "invisible" : undefined}
           inert={isLoading}
         >
           {children}
