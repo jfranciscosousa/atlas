@@ -10,7 +10,7 @@ atlas-*.tar
 **/node_modules/
 **/dist/
 **/.tanstack/
-npm-debug.log
+pnpm-debug.log
 .env
 .env.*
 !.env.example

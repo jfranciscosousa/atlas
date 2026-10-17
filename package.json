@@ -1,28 +1,25 @@
 {
   "name": "atlas",
   "private": true,
-  "workspaces": [
-    "apps/web",
-    "packages/api-client"
-  ],
+  "packageManager": "pnpm@12.14.0",
   "engines": {
     "node": ">=22.18.0"
   },
   "scripts": {
-    "dev": "concurrently --kill-others --names web,api \"npm run web:dev\" \"npm run api:dev\"",
-    "web:dev": "npm run dev --workspace @atlas/web",
-    "web:build": "npm run build --workspace @atlas/web",
-    "web:check": "npm run check --workspace @atlas/web",
-    "web:test": "npm test --workspace @atlas/web",
-    "web:format": "npm run format --workspace @atlas/web --",
-    "web:format:check": "npm run format:check --workspace @atlas/web",
+    "dev": "concurrently --kill-others --names web,api \"pnpm run web:dev\" \"pnpm run api:dev\"",
+    "web:dev": "pnpm --filter @atlas/web run dev",
+    "web:build": "pnpm --filter @atlas/web run build",
+    "web:check": "pnpm --filter @atlas/web run check",
+    "web:test": "pnpm --filter @atlas/web run test",
+    "web:format": "pnpm --filter @atlas/web run format",
+    "web:format:check": "pnpm --filter @atlas/web run format:check",
     "prepare": "husky",
     "api:dev": "cd apps/api && mix phx.server",
     "api:generate": "cd apps/api && mix ash_typescript.codegen",
-    "precommit": "npm run web:format:check && npm run web:build && npm run web:check && npm run web:test && cd apps/api && mix precommit"
+    "precommit": "pnpm run web:format:check && pnpm run web:build && pnpm run web:check && pnpm run web:test && cd apps/api && mix precommit"
   },
   "lint-staged": {
-    "apps/web/**/*.{ts,tsx,js,jsx,json,jsonc,md,css}": "oxfmt --config apps/web/.oxfmtrc.jsonc --no-error-on-unmatched-pattern"
+    "apps/web/**/*.{ts,tsx,js,jsx,json,jsonc,md,css}": "pnpm --filter @atlas/web exec oxfmt --config .oxfmtrc.jsonc --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",

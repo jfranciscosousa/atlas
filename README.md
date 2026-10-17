@@ -17,12 +17,15 @@ inbox.
 
 ## Development
 
+Mise pins Node, pnpm 12.14.0, Elixir, Erlang, and PostgreSQL. Use pnpm for all
+JavaScript dependencies and scripts.
+
 Install the runtimes, start PostgreSQL, and install dependencies:
 
 ```bash
 mise install
 mise run db:start
-npm ci
+pnpm install --frozen-lockfile
 cd apps/api
 mix setup
 ```
@@ -44,13 +47,13 @@ not stop an existing system PostgreSQL service.
 Start both apps from the repository root:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Logs have `web` and `api` labels. Press Ctrl+C to stop both apps. If either
 process exits, the other process stops too.
 
-To start only one app, use `npm run web:dev` or `npm run api:dev`.
+To start only one app, use `pnpm run web:dev` or `pnpm run api:dev`.
 
 - App: **http://localhost:3000**
 - API: **http://localhost:4000/api/session**
@@ -60,7 +63,7 @@ Vite proxies `/api`, `/auth`, and `/rpc` to Phoenix. Set `API_URL` when starting
 Vite to use a different backend address. API requests must use the app origin,
 not port 4000 directly. This keeps cookies and CSRF protection same-origin.
 
-Each app also runs directly: `mix phx.server` in `apps/api`, or `npm run dev`
+Each app also runs directly: `mix phx.server` in `apps/api`, or `pnpm run dev`
 in `apps/web`. Phoenix does not start Vite.
 
 ## Routes and authentication
@@ -116,7 +119,7 @@ emails. The default adapter stores email locally.
 After changing exposed Ash resources or actions:
 
 ```bash
-npm run api:generate
+pnpm run api:generate
 ```
 
 This writes `packages/api-client/src/ash_rpc.ts` and `ash_types.ts`. Frontend
@@ -154,18 +157,18 @@ mix ash.migrate
 From the repository root:
 
 ```bash
-npm run precommit
+pnpm run precommit
 ```
 
 This checks web formatting, builds the static SPA, checks TypeScript and the
 generated client, runs frontend tests, and runs the API's `mix precommit` alias.
 
-Format the web app with `npm run web:format`. Check formatting without writing
-with `npm run web:format:check` or `npm run web:format -- --check`.
+Format the web app with `pnpm run web:format`. Check formatting without writing
+with `pnpm run web:format:check` or `pnpm run web:format --check`.
 Oxfmt sorts imports and Tailwind classes. It excludes the generated route tree.
 Backend and generated API client files are outside its scope.
 
-`npm ci` installs the Husky pre-commit hook. The hook formats staged web files
+`pnpm install --frozen-lockfile` installs the Husky pre-commit hook. The hook formats staged web files
 with lint-staged. VS Code recommends the Oxc extension and enables format-on-save
 for web file types.
 
@@ -181,8 +184,8 @@ mix precommit
 Build each application separately:
 
 ```bash
-npm ci
-npm run web:build
+pnpm install --frozen-lockfile
+pnpm run web:build
 cd apps/api
 MIX_ENV=prod mix deps.get --only prod
 MIX_ENV=prod mix release
