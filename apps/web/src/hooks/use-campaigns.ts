@@ -1,9 +1,4 @@
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   createCampaign,
   getCampaign,
@@ -17,29 +12,24 @@ import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import type { SaveOutcome } from "../lib/autosave.ts";
 
 import { rpcOptions } from "../lib/rpc.ts";
+import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
 
 export type Section = "description" | "progress_rewards";
 type Meta = Parameters<typeof rpcOptions>[0];
 
+export const campaignsKey = (userId: string) =>
+  rpcKey(listCampaigns, undefined, userId);
+
 export function campaignsQueryOptions(userId: string) {
-  return queryOptions({
-    queryKey: ["campaigns", userId],
-    queryFn: async ({ signal, meta }) => {
-      const config = rpcOptions(meta);
-      const result = await listCampaigns({
-        ...config,
-        fields: ["id", "name", "isGm"],
-        fetchOptions: { ...config.fetchOptions, signal },
-      });
-      if (!result.success)
-        throw new Error(
-          result.errors[0]?.message ?? "Could not load your campaigns."
-        );
-      return result.data;
-    },
-    staleTime: 30_000,
-    retry: false,
-  });
+  return rpcQuery(
+    listCampaigns,
+    run => run({ fields: ["id", "name", "isGm"] }),
+    {
+      fallback: "Could not load your campaigns.",
+      scope: userId,
+      staleTime: 30_000,
+    }
+  );
 }
 
 export function useCampaignsList(userId: string) {
@@ -47,32 +37,21 @@ export function useCampaignsList(userId: string) {
 }
 
 export function useCampaignCreate(userId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (name: string, { meta }) => {
-      const result = await createCampaign({
-        ...rpcOptions(meta),
-        input: { name },
-        fields: ["id"],
-      });
-      if (!result.success)
-        throw new Error(
-          result.errors[0]?.message ?? "Could not create the campaign."
-        );
-      return result.data;
-    },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["campaigns", userId] }),
-  });
+  return useRpcMutation(
+    createCampaign,
+    (run, name: string) => run({ input: { name }, fields: ["id"] }),
+    {
+      fallback: "Could not create the campaign.",
+      invalidate: [campaignsKey(userId)],
+    }
+  );
 }
 
 export function campaignQueryOptions(campaignId: string) {
-  return queryOptions({
-    queryKey: ["campaign", campaignId],
-    queryFn: async ({ signal, meta }) => {
-      const config = rpcOptions(meta);
-      const result = await getCampaign({
-        ...config,
+  return rpcQuery(
+    getCampaign,
+    run =>
+      run({
         getBy: { id: campaignId },
         fields: [
           "id",
@@ -84,16 +63,13 @@ export function campaignQueryOptions(campaignId: string) {
           "progressRewardsJson",
           "progressRewardsRevision",
         ],
-        fetchOptions: { ...config.fetchOptions, signal },
-      });
-      if (!result.success)
-        throw new Error(result.errors[0]?.message ?? "Campaign not found.");
-      return result.data;
-    },
-    // The editors own the document after load. A refetch must not replace it.
-    staleTime: Infinity,
-    retry: false,
-  });
+      }),
+    {
+      fallback: "Campaign not found.",
+      // The editors own the document after load. A refetch must not replace it.
+      staleTime: Infinity,
+    }
+  );
 }
 
 export function useCampaign(campaignId: string) {

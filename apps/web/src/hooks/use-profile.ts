@@ -1,37 +1,15 @@
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import {
-  getProfile,
-  updateProfile,
-  type UpdateProfileInput,
-} from "@atlas/api-client";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { getProfile, updateProfile } from "@atlas/api-client";
 
-import { rpcOptions } from "../lib/rpc.ts";
+import { rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
 
 const fields = ["id", "email", "displayName", "avatar"] as const;
 
 export function profileQueryOptions(userId: string) {
-  return queryOptions({
-    queryKey: ["profile", userId],
-    queryFn: async ({ signal, meta }) => {
-      const config = rpcOptions(meta);
-      const result = await getProfile({
-        ...config,
-        fields: [...fields],
-        fetchOptions: { ...config.fetchOptions, signal },
-      });
-      if (!result.success)
-        throw new Error(
-          result.errors[0]?.message ?? "Could not load your profile."
-        );
-      return result.data;
-    },
+  return rpcQuery(getProfile, run => run({ fields: [...fields] }), {
+    fallback: "Could not load your profile.",
+    scope: userId,
     staleTime: 30_000,
-    retry: false,
   });
 }
 
@@ -40,23 +18,13 @@ export function useProfile(userId: string) {
 }
 
 export function useProfileUpdate(userId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: UpdateProfileInput, { meta }) => {
-      const result = await updateProfile({
-        ...rpcOptions(meta),
-        identity: userId,
-        input,
-        fields: [...fields],
-      });
-      if (!result.success)
-        throw new Error(
-          result.errors[0]?.message ?? "Could not save your profile."
-        );
-      return result.data;
-    },
-    onSuccess: profile => {
-      queryClient.setQueryData(profileQueryOptions(userId).queryKey, profile);
-    },
-  });
+  return useRpcMutation(
+    updateProfile,
+    (run, input) => run({ identity: userId, input, fields: [...fields] }),
+    {
+      fallback: "Could not save your profile.",
+      onSuccess: (profile, queryClient) =>
+        queryClient.setQueryData(profileQueryOptions(userId).queryKey, profile),
+    }
+  );
 }

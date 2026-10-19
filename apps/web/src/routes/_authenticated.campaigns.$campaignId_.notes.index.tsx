@@ -9,6 +9,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
   notesQueryOptions,
   useNoteArchive,
+  useNoteRestore,
   useNotesList,
 } from "../hooks/use-notes";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
@@ -62,7 +63,9 @@ function NotesPage() {
   const { archived = false } = Route.useSearch();
   const campaign = useCampaign(campaignId).data;
   const notes = useNotesList(campaignId, archived).data;
-  const archive = useNoteArchive(campaignId);
+  const archiveNote = useNoteArchive(campaignId);
+  const restoreNote = useNoteRestore(campaignId);
+  const archive = archived ? restoreNote : archiveNote;
 
   return (
     <div className="space-y-8">
@@ -150,9 +153,7 @@ function NotesPage() {
                 }
                 title={archived ? "Restore" : "Archive"}
                 disabled={archive.isPending}
-                onClick={() =>
-                  archive.mutate({ id: note.id, archive: !archived })
-                }
+                onClick={() => archive.mutate(note.id)}
               >
                 {archived ? <ArchiveRestoreIcon /> : <ArchiveIcon />}
               </Button>

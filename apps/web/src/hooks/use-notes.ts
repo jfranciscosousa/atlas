@@ -1,9 +1,4 @@
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   archiveNote,
   createNote,
@@ -18,28 +13,20 @@ import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import type { SaveOutcome } from "../lib/autosave.ts";
 
 import { rpcOptions } from "../lib/rpc.ts";
+import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
 
 type Meta = Parameters<typeof rpcOptions>[0];
 
+// Matches the active and the archived list of one campaign.
+const notesKey = (campaignId: string) =>
+  rpcKey(listNotes, { input: { campaignId } });
+
 export function notesQueryOptions(campaignId: string, archived = false) {
-  return queryOptions({
-    queryKey: ["notes", campaignId, { archived }],
-    queryFn: async ({ signal, meta }) => {
-      const config = rpcOptions(meta);
-      const result = await listNotes({
-        ...config,
-        input: { campaignId, archived },
-        fields: ["id", "title"],
-        fetchOptions: { ...config.fetchOptions, signal },
-      });
-      if (!result.success)
-        throw new Error(
-          result.errors[0]?.message ?? "Could not load the notes."
-        );
-      return result.data;
-    },
-    retry: false,
-  });
+  return rpcQuery(
+    listNotes,
+    run => run({ input: { campaignId, archived }, fields: ["id", "title"] }),
+    { fallback: "Could not load the notes." }
+  );
 }
 
 export function useNotesList(campaignId: string, archived: boolean) {
@@ -48,69 +35,52 @@ export function useNotesList(campaignId: string, archived: boolean) {
 
 /** Archives or restores a note from the list. Both views refetch. */
 export function useNoteArchive(campaignId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (
-      { id, archive }: { id: string; archive: boolean },
-      { meta }
-    ) => {
-      const options = {
-        ...rpcOptions(meta),
-        identity: id,
-        fields: ["id"] as ["id"],
-      };
-      const result = archive
-        ? await archiveNote(options)
-        : await restoreNote(options);
-      if (!result.success)
-        throw new Error(
-          result.errors[0]?.message ?? "Could not update the note."
-        );
-      return result.data;
-    },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["notes", campaignId] }),
-  });
+  return useRpcMutation(
+    archiveNote,
+    (run, id: string) => run({ identity: id, fields: ["id"] }),
+    {
+      fallback: "Could not update the note.",
+      invalidate: [notesKey(campaignId)],
+    }
+  );
+}
+
+export function useNoteRestore(campaignId: string) {
+  return useRpcMutation(
+    restoreNote,
+    (run, id: string) => run({ identity: id, fields: ["id"] }),
+    {
+      fallback: "Could not update the note.",
+      invalidate: [notesKey(campaignId)],
+    }
+  );
 }
 
 // No list refetch here: the list route reloads on every visit, and a refetch would flash the
 // new note in the list before the note page opens.
 export function useNoteCreate(campaignId: string) {
-  return useMutation({
-    mutationFn: async (_: void, { meta }) => {
-      const result = await createNote({
-        ...rpcOptions(meta),
-        input: { campaignId, title: "Untitled note" },
-        fields: ["id"],
-      });
-      if (!result.success)
-        throw new Error(
-          result.errors[0]?.message ?? "Could not create the note."
-        );
-      return result.data;
-    },
-  });
+  return useRpcMutation(
+    createNote,
+    (run, _: void) =>
+      run({ input: { campaignId, title: "Untitled note" }, fields: ["id"] }),
+    { fallback: "Could not create the note." }
+  );
 }
 
 export function noteQueryOptions(noteId: string) {
-  return queryOptions({
-    queryKey: ["note", noteId],
-    queryFn: async ({ signal, meta }) => {
-      const config = rpcOptions(meta);
-      const result = await getNote({
-        ...config,
+  return rpcQuery(
+    getNote,
+    run =>
+      run({
         getBy: { id: noteId },
         fields: ["id", "campaignId", "title", "bodyJson", "bodyRevision"],
-        fetchOptions: { ...config.fetchOptions, signal },
-      });
-      if (!result.success)
-        throw new Error(result.errors[0]?.message ?? "Note not found.");
-      return result.data;
-    },
-    // The editor owns the document after load. A refetch must not replace it.
-    staleTime: Infinity,
-    retry: false,
-  });
+      }),
+    {
+      fallback: "Note not found.",
+      // The editor owns the document after load. A refetch must not replace it.
+      staleTime: Infinity,
+    }
+  );
 }
 
 export function useNote(noteId: string) {
@@ -118,30 +88,21 @@ export function useNote(noteId: string) {
 }
 
 export function useNoteRename(campaignId: string, noteId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (title: string, { meta }) => {
-      const result = await renameNote({
-        ...rpcOptions(meta),
-        identity: noteId,
-        input: { title },
-        fields: ["title"],
-      });
-      if (!result.success)
-        throw new Error(
-          result.errors[0]?.message ?? "Could not rename the note."
-        );
-      return result.data;
-    },
-    // Refetching the note would hand the open editor an older body revision.
-    onSuccess: ({ title }) => {
-      queryClient.setQueryData(
-        noteQueryOptions(noteId).queryKey,
-        note => note && { ...note, title }
-      );
-      return queryClient.invalidateQueries({ queryKey: ["notes", campaignId] });
-    },
-  });
+  return useRpcMutation(
+    renameNote,
+    (run, title: string) =>
+      run({ identity: noteId, input: { title }, fields: ["title"] }),
+    {
+      fallback: "Could not rename the note.",
+      // Refetching the note would hand the open editor an older body revision.
+      onSuccess: ({ title }, queryClient) =>
+        queryClient.setQueryData(
+          noteQueryOptions(noteId).queryKey,
+          note => note && { ...note, title }
+        ),
+      invalidate: [notesKey(campaignId)],
+    }
+  );
 }
 
 export async function saveNoteDocument(
