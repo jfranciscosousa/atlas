@@ -21,8 +21,12 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 
 ## Git
 
-- Do not create branches. Work in a worktree by default.
+- Do not create branches. Work in a worktree by default. A worktree has its own `fs/` branch;
+  that is the only branch you create.
 - Commit to `master` and push only when the user says to push to `master`.
+- Keep the git state in Notion true. After a push, or after a merge to `master`, update every
+  Notion statement about it (for example "on local master, not pushed"). Search the plan, the
+  decision map, and the tasks for the old wording. Name the commit and the date.
 
 ## Documentation
 
@@ -30,40 +34,7 @@ Notion is the single source of truth for product documentation. All documentatio
 not in this repository. The only exception is `GLOSSARY.md`. Do not add other Markdown
 documentation or decision records here. Use the `ntn` CLI, not the Notion MCP.
 
-- Before any feature, read the whole Atlas plan and every subpage that touches the feature. This
-  includes the UX rules in Product & content (creation, lists, navigation, entry layout). Read the
-  live pages with `ntn`. Never rely on a cached copy or on memory.
-- Implement what Notion says. If the code needs to differ, stop and report the conflict.
-- Save everything in Notion before you report completion: decisions, product and UX rules,
-  what you built, deviations, gaps, and the task status.
-- Update the page that owns the rule. Do not leave a new rule only in code or in chat.
-
-### Keep Notion current while you work
-
-- Update Notion as you go, not only at the end. Record a decision, a product or UX rule, or a
-  deviation when it is made. Do not wait for the final report.
-- At the start of a task, re-read the live pages and fix any drift between them and the code. Do
-  this before you build.
-- Create or update the Atlas task before you build. Set it to `In progress`. Set it to `Done` only
-  after its acceptance criteria and `pnpm run precommit` pass.
-- When a slice is built, update all of these:
-  - The decision map: a "built" section, the decisions made while building, and what is not done.
-  - Each plan page that owns an affected rule (Product & content, Access & collaboration, Ash
-    domain model). Replace stale statements such as "not built" or "today only the GM can read".
-  - "Where we paused" on the Atlas plan.
-  - The task: result and deferred work.
-  - `GLOSSARY.md`, when a new term is resolved.
-- A user answer to a product question is a decision. Record it on the page that owns the rule in
-  the same session.
-- Verify each Notion write. Read the block back. Do not assume a silent `ntn` call succeeded.
-
-`ntn` pitfalls:
-
-- Quote paths that contain `?` in zsh, for example `"v1/blocks/<id>/children?page_size=100"`.
-- Pass request bodies with `-d @file.json` and set the method with `-X PATCH` or `-X POST`.
-- Close stdin when you call `ntn` from a script (`stdin=subprocess.DEVNULL`). It can hang
-  otherwise.
-- Do not use `pkill -f` with a pattern that appears in your own command line.
+### Pages
 
 - [Atlas hub](https://app.notion.com/p/Atlas-3fd556c92b9f8180a81cd471d362e4cb)
 - [Atlas plan](https://app.notion.com/p/Atlas-plan-3fd556c92b9f806487dfd0a7994f37b4):
@@ -74,9 +45,46 @@ documentation or decision records here. Use the `ntn` CLI, not the Notion MCP.
   implementation work. Database ID `407fd26b-3535-40d2-9f29-1477adba0508`,
   data source ID `714c7cbb-62cb-4538-b8b2-9fb3e733cbdb`.
 
-Read Atlas plan and the relevant subpages before planning or implementing work. Preserve agreed
-product rules. Treat proposals and open questions as unresolved, and ask for a decision when they
-block the task. Report conflicts with an existing decision. Do not override it silently.
+### Before you build
+
+- Read the whole Atlas plan and every subpage that touches the feature. This includes the UX rules
+  in Product & content (creation, lists, navigation, entry layout). Read the live pages with
+  `ntn`. Never rely on a cached copy or on memory.
+- Fix any drift between the live pages and the code before you start.
+- Implement what Notion says. If the code needs to differ, stop and report the conflict. Do not
+  override a decision silently.
+- Preserve agreed product rules. Treat proposals and open questions as unresolved. Ask for a
+  decision when they block the task.
+- Create or update the Atlas task. Set it to `In progress`.
+
+### While you build
+
+- Update Notion as you go, not only at the end. Record a decision, a product or UX rule, or a
+  deviation when it is made.
+- A user answer to a product question is a decision. Record it the same session.
+- Update the page that owns the rule. Do not leave a new rule only in code or in chat.
+
+### When a slice is built
+
+Update all of these before you report completion:
+
+- The decision map: a "built" section, the decisions made while building, and what is not done.
+- Each plan page that owns an affected rule (Product & content, Access & collaboration, Ash domain
+  model). Replace stale statements such as "not built" or "today only the GM can read".
+- "Where we paused" on the Atlas plan.
+- The task: result and deferred work. Set it to `Done` only after its acceptance criteria and
+  `pnpm run precommit` pass.
+- `GLOSSARY.md`, when a new term is resolved.
+- The git state (see Git).
+
+### `ntn`
+
+- Verify each write. Read the block back. Do not assume a silent call succeeded.
+- Quote paths that contain `?` in zsh, for example `"v1/blocks/<id>/children?page_size=100"`.
+- Pass request bodies with `-d @file.json` and set the method with `-X PATCH` or `-X POST`.
+- Close stdin when you call `ntn` from a script (`stdin=subprocess.DEVNULL`). It can hang
+  otherwise.
+- Do not use `pkill -f` with a pattern that appears in your own command line.
 
 ## Agent skills
 
