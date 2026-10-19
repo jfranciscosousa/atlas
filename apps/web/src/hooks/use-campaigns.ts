@@ -28,7 +28,7 @@ export function campaignsQueryOptions(userId: string) {
       const config = rpcOptions(meta);
       const result = await listCampaigns({
         ...config,
-        fields: ["id", "name"],
+        fields: ["id", "name", "isGm"],
         fetchOptions: { ...config.fetchOptions, signal },
       });
       if (!result.success)
@@ -77,6 +77,8 @@ export function campaignQueryOptions(campaignId: string) {
         fields: [
           "id",
           "name",
+          "isGm",
+          "gmName",
           "descriptionJson",
           "descriptionRevision",
           "progressRewardsJson",

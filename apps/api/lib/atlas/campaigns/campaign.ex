@@ -38,14 +38,19 @@ defmodule Atlas.Campaigns.Campaign do
     end
   end
 
-  # Only the GM can see or change a campaign. Everyone else gets not found.
+  # The GM and the players can read a campaign. Only the GM can change it.
+  # Everyone else gets not found.
   policies do
     policy always() do
       forbid_unless actor_present()
       authorize_if always()
     end
 
-    policy action_type([:read, :update]) do
+    policy action_type(:read) do
+      authorize_if expr(gm_id == ^actor(:id) or exists(players, user_id == ^actor(:id)))
+    end
+
+    policy action_type(:update) do
       authorize_if expr(gm_id == ^actor(:id))
     end
   end
@@ -68,5 +73,12 @@ defmodule Atlas.Campaigns.Campaign do
       allow_nil? false
       attribute_writable? false
     end
+
+    has_many :players, Atlas.Campaigns.CampaignPlayer
+  end
+
+  calculations do
+    calculate :is_gm, :boolean, expr(gm_id == ^actor(:id)), public?: true
+    calculate :gm_name, :string, expr(gm.display_name), public?: true
   end
 end

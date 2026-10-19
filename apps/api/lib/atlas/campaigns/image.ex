@@ -55,8 +55,14 @@ defmodule Atlas.Campaigns.Image do
       authorize_if always()
     end
 
+    # Both sections are readable by every member, so an image follows the same rule.
     policy action_type(:read) do
-      authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
+      authorize_if expr(
+                     exists(
+                       campaign,
+                       gm_id == ^actor(:id) or exists(players, user_id == ^actor(:id))
+                     )
+                   )
     end
 
     policy action_type(:create) do

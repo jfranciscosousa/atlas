@@ -10,6 +10,7 @@ Product rules live in the Notion Atlas plan.
 - **Player**: a member of a campaign who is not the GM.
 - **Account**: a signed-in user. An account is not a player character.
 - **Member**: the GM or a player of a campaign.
+- **Invitation**: a reusable invite link to a campaign. It has no expiry and works until the GM revokes it. A campaign has at most one active invitation. Revoking stops future joins and keeps existing players.
 
 ## Content
 

@@ -31,11 +31,13 @@ export type UserAttributesOnlySchema = {
 // Campaign Schema
 export type CampaignResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "name" | "progressRewardsJson" | "progressRewardsRevision" | "progressRewardsSchemaVersion";
+  __primitiveFields: "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "gmName" | "id" | "isGm" | "name" | "progressRewardsJson" | "progressRewardsRevision" | "progressRewardsSchemaVersion";
   descriptionJson: Array<Record<string, unknown>>;
   descriptionRevision: number;
   descriptionSchemaVersion: number;
+  gmName: string | null;
   id: UUID;
+  isGm: boolean | null;
   name: string;
   progressRewardsJson: Array<Record<string, unknown>>;
   progressRewardsRevision: number;
@@ -58,6 +60,26 @@ export type CampaignAttributesOnlySchema = {
 };
 
 
+// CampaignPlayer Schema
+export type CampaignPlayerResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "campaignId" | "displayName" | "id";
+  campaignId: UUID;
+  displayName: string | null;
+  id: UUID;
+  campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
+};
+
+
+
+export type CampaignPlayerAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "campaignId" | "id";
+  campaignId: UUID;
+  id: UUID;
+};
+
+
 // CampaignImage Schema
 export type CampaignImageResourceSchema = {
   __type: "Resource";
@@ -71,6 +93,31 @@ export type CampaignImageAttributesOnlySchema = {
   __type: "Resource";
   __primitiveFields: "id";
   id: UUID;
+};
+
+
+// Invitation Schema
+export type InvitationResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "campaignId" | "campaignName" | "gmName" | "id" | "revokedAt" | "token";
+  campaignId: UUID;
+  campaignName: string | null;
+  gmName: string | null;
+  id: UUID;
+  revokedAt: UtcDateTimeUsec | null;
+  token: string;
+  campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
+};
+
+
+
+export type InvitationAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "campaignId" | "id" | "revokedAt" | "token";
+  campaignId: UUID;
+  id: UUID;
+  revokedAt: UtcDateTimeUsec | null;
+  token: string;
 };
 
 
@@ -195,6 +242,20 @@ export type CampaignFilterInput = {
     greaterThanOrEqual?: number;
   };
 
+  gmName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
   id?: {
     eq?: UUID;
     notEq?: UUID;
@@ -203,6 +264,13 @@ export type CampaignFilterInput = {
     greaterThan?: UUID;
     lessThanOrEqual?: UUID;
     greaterThanOrEqual?: UUID;
+  };
+
+  isGm?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
   };
 
   name?: {
@@ -250,6 +318,48 @@ export type CampaignFilterInput = {
 
 
 };
+export type CampaignPlayerFilterInput = {
+  and?: Array<CampaignPlayerFilterInput>;
+  or?: Array<CampaignPlayerFilterInput>;
+  not?: Array<CampaignPlayerFilterInput>;
+
+  campaignId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  displayName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  campaign?: CampaignFilterInput;
+
+};
 export type CampaignImageFilterInput = {
   and?: Array<CampaignImageFilterInput>;
   or?: Array<CampaignImageFilterInput>;
@@ -265,6 +375,86 @@ export type CampaignImageFilterInput = {
     greaterThanOrEqual?: UUID;
   };
 
+
+};
+export type InvitationFilterInput = {
+  and?: Array<InvitationFilterInput>;
+  or?: Array<InvitationFilterInput>;
+  not?: Array<InvitationFilterInput>;
+
+  campaignId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  campaignName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  gmName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  revokedAt?: {
+    isNil?: boolean;
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
+  };
+
+  token?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  campaign?: CampaignFilterInput;
 
 };
 export type NoteFilterInput = {
@@ -354,11 +544,17 @@ export type NoteFilterInput = {
 export const userFilterFields = ["avatar", "displayName", "email", "id"] as const;
 export type UserFilterField = (typeof userFilterFields)[number];
 
-export const campaignFilterFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "id", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
+export const campaignFilterFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isGm", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
 export type CampaignFilterField = (typeof campaignFilterFields)[number];
+
+export const campaignPlayerFilterFields = ["campaignId", "displayName", "id", "campaign"] as const;
+export type CampaignPlayerFilterField = (typeof campaignPlayerFilterFields)[number];
 
 export const campaignImageFilterFields = ["id"] as const;
 export type CampaignImageFilterField = (typeof campaignImageFilterFields)[number];
+
+export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
+export type InvitationFilterField = (typeof invitationFilterFields)[number];
 
 export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "title", "campaign"] as const;
 export type NoteFilterField = (typeof noteFilterFields)[number];
@@ -367,11 +563,17 @@ export type NoteFilterField = (typeof noteFilterFields)[number];
 export const userSortFields = ["avatar", "displayName", "email", "id"] as const;
 export type UserSortField = (typeof userSortFields)[number];
 
-export const campaignSortFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "id", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
+export const campaignSortFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isGm", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
 export type CampaignSortField = (typeof campaignSortFields)[number];
+
+export const campaignPlayerSortFields = ["campaignId", "displayName", "id"] as const;
+export type CampaignPlayerSortField = (typeof campaignPlayerSortFields)[number];
 
 export const campaignImageSortFields = ["id"] as const;
 export type CampaignImageSortField = (typeof campaignImageSortFields)[number];
+
+export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;
+export type InvitationSortField = (typeof invitationSortFields)[number];
 
 export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "title"] as const;
 export type NoteSortField = (typeof noteSortFields)[number];

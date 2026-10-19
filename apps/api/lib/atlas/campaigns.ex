@@ -15,10 +15,24 @@ defmodule Atlas.Campaigns do
     resource Atlas.Campaigns.Image do
       rpc_action :get_campaign_image_url, :signed_url
     end
+
+    resource Atlas.Campaigns.CampaignPlayer do
+      rpc_action :list_campaign_players, :list
+      rpc_action :join_campaign, :join
+    end
+
+    resource Atlas.Campaigns.Invitation do
+      rpc_action :get_active_invitation, :active, not_found_error?: false
+      rpc_action :get_invitation_by_token, :by_token, not_found_error?: false
+      rpc_action :create_invitation, :create
+      rpc_action :revoke_invitation, :revoke
+    end
   end
 
   resources do
     resource Atlas.Campaigns.Campaign
     resource Atlas.Campaigns.Image
+    resource Atlas.Campaigns.CampaignPlayer
+    resource Atlas.Campaigns.Invitation
   end
 end

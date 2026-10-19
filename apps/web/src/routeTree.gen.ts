@@ -19,6 +19,7 @@ import { Route as GuestResetRouteImport } from './routes/_guest.reset'
 import { Route as GuestSignInRouteImport } from './routes/_guest.sign-in'
 import { Route as AuthenticatedCampaignsIndexRouteImport } from './routes/_authenticated.campaigns.index'
 import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_authenticated.campaigns.$campaignId'
+import { Route as AuthenticatedJoinTokenRouteImport } from './routes/_authenticated.join.$token'
 import { Route as PublicConfirm_new_userTokenRouteImport } from './routes/_public.confirm_new_user.$token'
 import { Route as PublicPasswordResetTokenRouteImport } from './routes/_public.password-reset.$token'
 import { Route as AuthenticatedCampaignsCampaignIdPreviewRouteImport } from './routes/_authenticated.campaigns.$campaignId_.preview'
@@ -74,6 +75,11 @@ const AuthenticatedCampaignsCampaignIdRoute =
     path: '/campaigns/$campaignId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedJoinTokenRoute = AuthenticatedJoinTokenRouteImport.update({
+  id: '/join/$token',
+  path: '/join/$token',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const PublicConfirm_new_userTokenRoute =
   PublicConfirm_new_userTokenRouteImport.update({
     id: '/confirm_new_user/$token',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/reset': typeof GuestResetRoute
   '/sign-in': typeof GuestSignInRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/join/$token': typeof AuthenticatedJoinTokenRoute
   '/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/reset': typeof GuestResetRoute
   '/sign-in': typeof GuestSignInRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/join/$token': typeof AuthenticatedJoinTokenRoute
   '/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns': typeof AuthenticatedCampaignsIndexRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/_guest/sign-in': typeof GuestSignInRoute
   '/_guest/': typeof GuestIndexRoute
   '/_authenticated/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/_authenticated/join/$token': typeof AuthenticatedJoinTokenRoute
   '/_public/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/_public/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/reset'
     | '/sign-in'
     | '/campaigns/$campaignId'
+    | '/join/$token'
     | '/confirm_new_user/$token'
     | '/password-reset/$token'
     | '/campaigns/'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/reset'
     | '/sign-in'
     | '/campaigns/$campaignId'
+    | '/join/$token'
     | '/confirm_new_user/$token'
     | '/password-reset/$token'
     | '/campaigns'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/_guest/sign-in'
     | '/_guest/'
     | '/_authenticated/campaigns/$campaignId'
+    | '/_authenticated/join/$token'
     | '/_public/confirm_new_user/$token'
     | '/_public/password-reset/$token'
     | '/_authenticated/campaigns/'
@@ -277,6 +289,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/join/$token': {
+      id: '/_authenticated/join/$token'
+      path: '/join/$token'
+      fullPath: '/join/$token'
+      preLoaderRoute: typeof AuthenticatedJoinTokenRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_public/confirm_new_user/$token': {
       id: '/_public/confirm_new_user/$token'
       path: '/confirm_new_user/$token'
@@ -318,6 +337,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedCampaignsCampaignIdRoute: typeof AuthenticatedCampaignsCampaignIdRoute
+  AuthenticatedJoinTokenRoute: typeof AuthenticatedJoinTokenRoute
   AuthenticatedCampaignsIndexRoute: typeof AuthenticatedCampaignsIndexRoute
   AuthenticatedCampaignsCampaignIdPreviewRoute: typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   AuthenticatedCampaignsCampaignIdNotesNoteIdRoute: typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
@@ -327,6 +347,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedCampaignsCampaignIdRoute: AuthenticatedCampaignsCampaignIdRoute,
+  AuthenticatedJoinTokenRoute: AuthenticatedJoinTokenRoute,
   AuthenticatedCampaignsIndexRoute: AuthenticatedCampaignsIndexRoute,
   AuthenticatedCampaignsCampaignIdPreviewRoute:
     AuthenticatedCampaignsCampaignIdPreviewRoute,

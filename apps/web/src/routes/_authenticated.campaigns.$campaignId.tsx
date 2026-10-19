@@ -6,6 +6,8 @@ import { buttonVariants } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
 import { PageHeader } from "../components/page-header";
+import { CampaignReadOnly } from "../components/campaign-read-only";
+import { InvitePlayersButton } from "../components/campaign-players";
 import { CampaignAvatar } from "../components/campaign-avatar";
 
 // BlockNote only runs in the browser, so it stays out of the main bundle.
@@ -47,6 +49,17 @@ function CampaignPage() {
   const campaign = useCampaign(campaignId).data;
   const RichTextEditor = getEditor();
 
+  if (!campaign.isGm)
+    return (
+      <CampaignReadOnly
+        campaign={campaign}
+        crumbs={[
+          { label: "Campaigns", to: "/campaigns" },
+          { label: campaign.name },
+        ]}
+      />
+    );
+
   return (
     <div className="space-y-10">
       <PageHeader
@@ -65,6 +78,10 @@ function CampaignPage() {
         actions={
           <div className="flex items-center gap-3">
             <Badge variant="secondary">You are the GM</Badge>
+            <InvitePlayersButton
+              campaignId={campaign.id}
+              gmName={campaign.gmName}
+            />
             <Link
               id="campaign-notes"
               to="/campaigns/$campaignId/notes"

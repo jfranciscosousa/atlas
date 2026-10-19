@@ -28,7 +28,7 @@ function Campaigns() {
       <PageHeader
         crumbs={[{ label: "Campaigns" }]}
         title="Campaigns"
-        description="The worlds you run. Open one to write its story."
+        description="The worlds you run or play in. Open one to read or write its story."
         actions={campaigns.length > 0 && <NewCampaignButton userId={user.id} />}
       />
       {campaigns.length === 0 ? (
@@ -72,7 +72,7 @@ function Campaigns() {
                     {campaign.name}
                   </span>
                   <Badge variant="secondary" className="mt-1">
-                    You are the GM
+                    {campaign.isGm ? "You are the GM" : "Player"}
                   </Badge>
                 </span>
                 <ChevronRightIcon

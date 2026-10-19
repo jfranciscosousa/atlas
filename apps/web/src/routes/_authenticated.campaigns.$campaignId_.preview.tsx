@@ -3,9 +3,8 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import { buttonVariants } from "../components/ui/button";
-import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
-import { PageHeader } from "../components/page-header";
-import { CampaignAvatar } from "../components/campaign-avatar";
+import { loadEditor } from "../components/rich-text-editor-loader";
+import { CampaignReadOnly } from "../components/campaign-read-only";
 
 export const Route = createFileRoute(
   "/_authenticated/campaigns/$campaignId_/preview"
@@ -31,7 +30,6 @@ export const Route = createFileRoute(
 function PreviewPage() {
   const { campaignId } = Route.useParams();
   const campaign = useCampaign(campaignId).data;
-  const RichTextEditor = getEditor();
 
   return (
     <div className="space-y-10">
@@ -53,36 +51,9 @@ function PreviewPage() {
           Back to editing
         </Link>
       </div>
-      <PageHeader
+      <CampaignReadOnly
+        campaign={campaign}
         crumbs={[{ label: campaign.name }]}
-        title={campaign.name}
-        leading={
-          <CampaignAvatar
-            id={campaign.id}
-            name={campaign.name}
-            className="size-14 rounded-xl text-2xl"
-          />
-        }
-      />
-      <RichTextEditor
-        key={`${campaign.id}-description`}
-        campaignId={campaign.id}
-        section="description"
-        label="Description"
-        hint="The world, the premise, and what the table should know first."
-        initial={campaign.descriptionJson}
-        revision={campaign.descriptionRevision}
-        readOnly
-      />
-      <RichTextEditor
-        key={`${campaign.id}-progress_rewards`}
-        campaignId={campaign.id}
-        section="progress_rewards"
-        label="Progress and rewards"
-        hint="Milestones reached, loot earned, and what comes next."
-        initial={campaign.progressRewardsJson}
-        revision={campaign.progressRewardsRevision}
-        readOnly
       />
     </div>
   );

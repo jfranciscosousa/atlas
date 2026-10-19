@@ -39,7 +39,7 @@ export const Route = createFileRoute(
   staleTime: 0,
   loader: async ({ context, params, deps }) => {
     try {
-      await Promise.all([
+      const [campaign] = await Promise.all([
         context.queryClient.ensureQueryData(
           campaignQueryOptions(params.campaignId)
         ),
@@ -48,6 +48,8 @@ export const Route = createFileRoute(
           staleTime: 0,
         }),
       ]);
+      // Players cannot read notes yet: every note starts hidden from them.
+      if (!campaign.isGm) throw new Error("not the GM");
     } catch {
       throw notFound();
     }

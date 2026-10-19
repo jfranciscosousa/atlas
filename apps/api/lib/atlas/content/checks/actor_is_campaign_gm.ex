@@ -1,7 +1,8 @@
 defmodule Atlas.Content.Checks.ActorIsCampaignGm do
   @moduledoc """
   Passes when the actor is the GM of the campaign the changeset names. A campaign the actor
-  cannot read counts as not theirs, so the check never reveals whether it exists.
+  cannot read counts as not theirs, so the check never reveals whether it exists. A player
+  can read the campaign but is not its GM.
   """
   use Ash.Policy.SimpleCheck
 
@@ -15,8 +16,14 @@ defmodule Atlas.Content.Checks.ActorIsCampaignGm do
 
   def match?(actor, %{subject: %Ash.Changeset{} = changeset}, _opts) do
     case Ash.Changeset.get_attribute(changeset, :campaign_id) do
-      nil -> false
-      campaign_id -> match?({:ok, %Campaign{}}, Ash.get(Campaign, campaign_id, actor: actor))
+      nil ->
+        false
+
+      campaign_id ->
+        match?(
+          {:ok, %Campaign{gm_id: gm_id}} when gm_id == actor.id,
+          Ash.get(Campaign, campaign_id, actor: actor)
+        )
     end
   end
 

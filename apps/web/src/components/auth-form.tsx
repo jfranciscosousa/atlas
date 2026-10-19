@@ -39,7 +39,8 @@ const modes = {
 };
 
 type AuthFormProps =
-  | { mode: "register" | "sign-in" | "reset-request" }
+  | { mode: "register" | "sign-in"; redirect?: string }
+  | { mode: "reset-request" }
   | { mode: "reset-password"; token: string };
 
 export function AuthForm(props: AuthFormProps) {
@@ -88,7 +89,10 @@ export function AuthForm(props: AuthFormProps) {
           setComplete(true);
         } else {
           await router.invalidate();
-          await navigate({ to: "/campaigns" });
+          // The guest route already redirects a signed-in person; this covers the same page load.
+          if (props.mode === "sign-in" || props.mode === "register")
+            await navigate({ href: props.redirect ?? "/campaigns" });
+          else await navigate({ to: "/campaigns" });
         }
       } catch (reason) {
         if (reason instanceof AuthError) {
@@ -291,6 +295,12 @@ export function AuthForm(props: AuthFormProps) {
           {registering ? "Already have an account? " : "New here? "}
           <Link
             to={registering ? "/sign-in" : "/register"}
+            search={{
+              redirect:
+                props.mode === "sign-in" || props.mode === "register"
+                  ? props.redirect
+                  : undefined,
+            }}
             className={buttonVariants({
               variant: "link",
               className: "h-auto p-0",
