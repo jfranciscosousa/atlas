@@ -27,6 +27,52 @@ export type UserAttributesOnlySchema = {
 };
 
 
+// Campaign Schema
+export type CampaignResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "name" | "progressRewardsJson" | "progressRewardsRevision" | "progressRewardsSchemaVersion";
+  descriptionJson: Array<Record<string, unknown>>;
+  descriptionRevision: number;
+  descriptionSchemaVersion: number;
+  id: UUID;
+  name: string;
+  progressRewardsJson: Array<Record<string, unknown>>;
+  progressRewardsRevision: number;
+  progressRewardsSchemaVersion: number;
+};
+
+
+
+export type CampaignAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "name" | "progressRewardsJson" | "progressRewardsRevision" | "progressRewardsSchemaVersion";
+  descriptionJson: Array<Record<string, unknown>>;
+  descriptionRevision: number;
+  descriptionSchemaVersion: number;
+  id: UUID;
+  name: string;
+  progressRewardsJson: Array<Record<string, unknown>>;
+  progressRewardsRevision: number;
+  progressRewardsSchemaVersion: number;
+};
+
+
+// CampaignImage Schema
+export type CampaignImageResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "id";
+  id: UUID;
+};
+
+
+
+export type CampaignImageAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "id";
+  id: UUID;
+};
+
+
 // Todo Schema
 export type TodoResourceSchema = {
   __type: "Resource";
@@ -104,6 +150,113 @@ export type UserFilterInput = {
 
 
 };
+export type CampaignFilterInput = {
+  and?: Array<CampaignFilterInput>;
+  or?: Array<CampaignFilterInput>;
+  not?: Array<CampaignFilterInput>;
+
+  descriptionJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  descriptionRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  descriptionSchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  name?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  progressRewardsJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  progressRewardsRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  progressRewardsSchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+
+};
+export type CampaignImageFilterInput = {
+  and?: Array<CampaignImageFilterInput>;
+  or?: Array<CampaignImageFilterInput>;
+  not?: Array<CampaignImageFilterInput>;
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+
+};
 export type TodoFilterInput = {
   and?: Array<TodoFilterInput>;
   or?: Array<TodoFilterInput>;
@@ -145,12 +298,24 @@ export type TodoFilterInput = {
 export const userFilterFields = ["avatar", "displayName", "email", "id"] as const;
 export type UserFilterField = (typeof userFilterFields)[number];
 
+export const campaignFilterFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "id", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
+export type CampaignFilterField = (typeof campaignFilterFields)[number];
+
+export const campaignImageFilterFields = ["id"] as const;
+export type CampaignImageFilterField = (typeof campaignImageFilterFields)[number];
+
 export const todoFilterFields = ["completed", "id", "title"] as const;
 export type TodoFilterField = (typeof todoFilterFields)[number];
 
 
 export const userSortFields = ["avatar", "displayName", "email", "id"] as const;
 export type UserSortField = (typeof userSortFields)[number];
+
+export const campaignSortFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "id", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
+export type CampaignSortField = (typeof campaignSortFields)[number];
+
+export const campaignImageSortFields = ["id"] as const;
+export type CampaignImageSortField = (typeof campaignImageSortFields)[number];
 
 export const todoSortFields = ["completed", "id", "title"] as const;
 export type TodoSortField = (typeof todoSortFields)[number];

@@ -21,12 +21,21 @@ defmodule AtlasWeb.Router do
     post "/rpc/run", AshTypescriptRpcController, :run
     post "/rpc/validate", AshTypescriptRpcController, :validate
 
+    post "/api/campaigns/:campaign_id/sections/:section/images",
+         ImageUploadController,
+         :create
+
     for name <- [:password, :confirm_new_user],
         strategy = AshAuthentication.Info.strategy!(Atlas.Accounts.User, name),
         {path, phase} <- AshAuthentication.Strategy.routes(strategy),
         AshAuthentication.Strategy.method_for_phase(strategy, phase) == :post do
       post "/auth" <> path, AuthController, {:user, name, phase}, private: %{strategy: strategy}
     end
+  end
+
+  # Signed-URL delivery. The URL is the credential, so there is no session or JSON negotiation.
+  scope "/", AtlasWeb do
+    get "/api/images/:token", ImageController, :show
   end
 
   if Application.compile_env(:atlas, :dev_routes) do

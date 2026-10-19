@@ -2,6 +2,7 @@ import Config
 config :atlas, Oban, testing: :manual
 config :atlas, frontend_url: "http://localhost:3000"
 config :atlas, token_signing_secret: "yVKem4M/cAIV9zQ+BvC0f51FhShHH/hn"
+config :atlas, Atlas.Storage, adapter: Atlas.Storage.LocalDisk, root: "tmp/test_storage"
 config :bcrypt_elixir, log_rounds: 1
 config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 
@@ -14,6 +15,7 @@ config :atlas, Atlas.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",
+  port: String.to_integer(System.get_env("PGPORT", "5432")),
   database: "atlas_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2

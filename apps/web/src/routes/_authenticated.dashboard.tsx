@@ -63,6 +63,13 @@ function Dashboard() {
       )}
       <div className="mt-8 flex items-center gap-3">
         <Link
+          id="campaigns-link"
+          to="/campaigns"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Campaigns
+        </Link>
+        <Link
           id="edit-profile"
           to="/profile"
           className={buttonVariants({ variant: "outline" })}

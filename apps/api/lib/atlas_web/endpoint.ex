@@ -24,7 +24,8 @@ defmodule AtlasWeb.Endpoint do
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
   plug Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
+    # Multipart carries image uploads: 25 MB plus form overhead.
+    parsers: [:urlencoded, {:multipart, length: 27_000_000}, :json],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
 

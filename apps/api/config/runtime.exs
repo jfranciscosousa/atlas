@@ -20,8 +20,7 @@ if System.get_env("PHX_SERVER") do
   config :atlas, AtlasWeb.Endpoint, server: true
 end
 
-config :atlas, AtlasWeb.Endpoint,
-  http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+config :atlas, AtlasWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 if config_env() == :prod do
   database_url =
@@ -30,6 +29,13 @@ if config_env() == :prod do
       environment variable DATABASE_URL is missing.
       For example: ecto://USER:PASS@HOST/DATABASE
       """
+
+  config :atlas, Atlas.Storage,
+    adapter: Atlas.Storage.R2,
+    bucket: System.fetch_env!("R2_BUCKET"),
+    endpoint_url: "https://#{System.fetch_env!("R2_ACCOUNT_ID")}.r2.cloudflarestorage.com",
+    access_key_id: System.fetch_env!("R2_ACCESS_KEY_ID"),
+    secret_access_key: System.fetch_env!("R2_SECRET_ACCESS_KEY")
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 

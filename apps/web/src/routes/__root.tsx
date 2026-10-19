@@ -24,7 +24,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     head: () => ({
       meta: [
         { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        {
+          name: "viewport",
+          content:
+            "width=device-width, initial-scale=1, interactive-widget=resizes-content",
+        },
         { name: "referrer", content: "no-referrer" },
         { title: "Atlas" },
       ],
@@ -47,9 +51,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 );
 
 function Root() {
+  // The campaign editor needs more room than the sign-in cards.
+  const wide = useRouterState({
+    select: state => state.location.pathname.startsWith("/campaigns"),
+  });
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-12">
-      <div className="w-full max-w-md">
+      <div className={wide ? "w-full max-w-3xl" : "w-full max-w-md"}>
         <Link
           to="/"
           className="mb-8 flex items-center justify-center gap-3 text-sm font-semibold tracking-wide"

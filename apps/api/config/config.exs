@@ -23,7 +23,11 @@ config :ash_typescript,
   generate_valibot_schemas: false,
   valibot_import_path: "valibot",
   valibot_schema_suffix: "ValibotSchema",
-  phoenix_import_path: "phoenix"
+  phoenix_import_path: "phoenix",
+  type_mapping_overrides: [{Atlas.RichText.Document, "Array<Record<string, unknown>>"}]
+
+# Dev and test store images on local disk. Production switches to R2 in runtime.exs.
+config :atlas, Atlas.Storage, adapter: Atlas.Storage.LocalDisk, root: "tmp/storage"
 
 config :ash_oban, pro?: false
 
@@ -92,7 +96,7 @@ config :spark,
 config :atlas,
   ecto_repos: [Atlas.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Atlas.Accounts, Atlas.Tasks]
+  ash_domains: [Atlas.Accounts, Atlas.Tasks, Atlas.Campaigns]
 
 # Configure the endpoint
 config :atlas, AtlasWeb.Endpoint,

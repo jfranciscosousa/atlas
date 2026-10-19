@@ -62,6 +62,8 @@ defmodule Atlas.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:swoosh, "~> 1.16"},
       {:req, "~> 0.5"},
+      {:req_s3, "~> 0.2.5"},
+      {:image, "~> 0.72"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
