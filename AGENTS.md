@@ -38,6 +38,33 @@ documentation or decision records here. Use the `ntn` CLI, not the Notion MCP.
   what you built, deviations, gaps, and the task status.
 - Update the page that owns the rule. Do not leave a new rule only in code or in chat.
 
+### Keep Notion current while you work
+
+- Update Notion as you go, not only at the end. Record a decision, a product or UX rule, or a
+  deviation when it is made. Do not wait for the final report.
+- At the start of a task, re-read the live pages and fix any drift between them and the code. Do
+  this before you build.
+- Create or update the Atlas task before you build. Set it to `In progress`. Set it to `Done` only
+  after its acceptance criteria and `pnpm run precommit` pass.
+- When a slice is built, update all of these:
+  - The decision map: a "built" section, the decisions made while building, and what is not done.
+  - Each plan page that owns an affected rule (Product & content, Access & collaboration, Ash
+    domain model). Replace stale statements such as "not built" or "today only the GM can read".
+  - "Where we paused" on the Atlas plan.
+  - The task: result and deferred work.
+  - `GLOSSARY.md`, when a new term is resolved.
+- A user answer to a product question is a decision. Record it on the page that owns the rule in
+  the same session.
+- Verify each Notion write. Read the block back. Do not assume a silent `ntn` call succeeded.
+
+`ntn` pitfalls:
+
+- Quote paths that contain `?` in zsh, for example `"v1/blocks/<id>/children?page_size=100"`.
+- Pass request bodies with `-d @file.json` and set the method with `-X PATCH` or `-X POST`.
+- Close stdin when you call `ntn` from a script (`stdin=subprocess.DEVNULL`). It can hang
+  otherwise.
+- Do not use `pkill -f` with a pattern that appears in your own command line.
+
 - [Atlas hub](https://app.notion.com/p/Atlas-3fd556c92b9f8180a81cd471d362e4cb)
 - [Atlas plan](https://app.notion.com/p/Atlas-plan-3fd556c92b9f806487dfd0a7994f37b4):
   product rules, technical model, research, and open questions.
