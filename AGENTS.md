@@ -17,6 +17,11 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 - For backend-only changes, run `mix precommit` from `apps/api`; it does not require Node.
 - Fix failures before reporting completion.
 
+## Git
+
+- Do not create branches. Work in a worktree by default.
+- Commit to `master` and push only when the user says to push to `master`.
+
 ## Documentation
 
 All documentation lives in Notion, not in this repository. The only exception is `GLOSSARY.md`.
