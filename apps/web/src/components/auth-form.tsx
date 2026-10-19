@@ -88,7 +88,7 @@ export function AuthForm(props: AuthFormProps) {
           setComplete(true);
         } else {
           await router.invalidate();
-          await navigate({ to: "/dashboard" });
+          await navigate({ to: "/campaigns" });
         }
       } catch (reason) {
         if (reason instanceof AuthError) {

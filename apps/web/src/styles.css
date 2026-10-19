@@ -2,48 +2,50 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/fraunces";
 
 @custom-variant dark (&:is(.dark *));
 @source "./";
 @source "../node_modules/@blocknote/shadcn/dist/blocknote-shadcn.js";
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.148 0.004 228.8);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.148 0.004 228.8);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.148 0.004 228.8);
-  --primary: oklch(0.488 0.243 264.376);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.963 0.002 197.1);
-  --muted-foreground: oklch(0.56 0.021 213.5);
-  --accent: oklch(0.963 0.002 197.1);
-  --accent-foreground: oklch(0.218 0.008 223.9);
+  --background: oklch(0.982 0.005 85);
+  --foreground: oklch(0.23 0.02 270);
+  --card: oklch(0.996 0.003 85);
+  --card-foreground: oklch(0.23 0.02 270);
+  --popover: oklch(0.996 0.003 85);
+  --popover-foreground: oklch(0.23 0.02 270);
+  --primary: oklch(0.44 0.15 280);
+  --primary-foreground: oklch(0.98 0.01 280);
+  --secondary: oklch(0.953 0.01 85);
+  --secondary-foreground: oklch(0.28 0.03 270);
+  --muted: oklch(0.953 0.008 85);
+  --muted-foreground: oklch(0.5 0.02 270);
+  --accent: oklch(0.94 0.018 85);
+  --accent-foreground: oklch(0.25 0.03 270);
+  --gold: oklch(0.78 0.14 75);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.925 0.005 214.3);
-  --input: oklch(0.925 0.005 214.3);
-  --ring: oklch(0.723 0.014 214.4);
+  --border: oklch(0.905 0.01 85);
+  --input: oklch(0.89 0.01 85);
+  --ring: oklch(0.55 0.12 280);
   --chart-1: oklch(0.865 0.127 207.078);
   --chart-2: oklch(0.715 0.143 215.221);
   --chart-3: oklch(0.609 0.126 221.723);
   --chart-4: oklch(0.52 0.105 223.128);
   --chart-5: oklch(0.45 0.085 224.283);
   --radius: 0.625rem;
-  --sidebar: oklch(0.987 0.002 197.1);
-  --sidebar-foreground: oklch(0.148 0.004 228.8);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.963 0.002 197.1);
-  --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-  --sidebar-border: oklch(0.925 0.005 214.3);
-  --sidebar-ring: oklch(0.723 0.014 214.4);
+  --sidebar: oklch(0.21 0.035 275);
+  --sidebar-foreground: oklch(0.9 0.01 85);
+  --sidebar-primary: oklch(0.78 0.14 75);
+  --sidebar-primary-foreground: oklch(0.21 0.035 275);
+  --sidebar-accent: oklch(0.28 0.045 275);
+  --sidebar-accent-foreground: oklch(0.98 0.008 85);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.78 0.14 75);
 }
 
 @theme inline {
-  --font-heading: var(--font-sans);
+  --font-heading: "Fraunces Variable", Georgia, serif;
   --font-sans: "Inter Variable", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -58,6 +60,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-gold: var(--gold);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -131,4 +134,25 @@
   html {
     font-family: var(--font-sans);
   }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-optical-sizing: auto;
+  }
+}
+
+/* BlockNote reserves 54px on each side for its drag handle; small screens need that space. */
+.bn-container .bn-editor {
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .bn-container .bn-editor {
+    padding-inline: 3rem;
+  }
+}
+
+/* The editor sits on a cream card, so it must not paint its own white background. */
+.bn-container[data-color-scheme] {
+  --bn-colors-editor-background: transparent;
 }

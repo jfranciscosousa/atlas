@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useBlocker } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { BlockNoteView } from "@blocknote/shadcn";
 import {
@@ -43,19 +44,29 @@ type Props = {
   campaignId: string;
   section: Section;
   label: string;
+  hint: string;
   initial: BlockNoteDocument;
   revision: number;
+  readOnly?: boolean;
 };
 
 export default function RichTextEditor({
   campaignId,
   section,
   label,
+  hint,
   initial,
   revision,
+  readOnly = false,
 }: Props) {
   const queryClient = useQueryClient();
   const [state, setState] = useState<SaveState>({ status: "idle" });
+  // The blocker reads the latest state outside React's render cycle.
+  const stateRef = useRef(state);
+  const report = (next: SaveState) => {
+    stateRef.current = next;
+    setState(next);
+  };
   const meta = () => queryClient.getDefaultOptions().mutations?.meta;
 
   const resolveFileUrl = useMemo(
@@ -92,10 +103,26 @@ export default function RichTextEditor({
 
   const autosaver =
     useRef<ReturnType<typeof createAutosaver<BlockNoteDocument>>>(null);
+
+  // Leaving waits for a pending save. A failed save asks before the edits are dropped.
+  useBlocker({
+    shouldBlockFn: async () => {
+      if (stateRef.current.status === "saving")
+        await autosaver.current?.flush();
+      return (
+        stateRef.current.status === "error" &&
+        !window.confirm("Your latest edits are not saved. Leave anyway?")
+      );
+    },
+    enableBeforeUnload: () =>
+      stateRef.current.status === "saving" ||
+      stateRef.current.status === "error",
+  });
   useEffect(() => {
+    if (readOnly) return;
     const saver = createAutosaver<BlockNoteDocument>({
       revision,
-      onState: setState,
+      onState: report,
       save: (doc, expected) =>
         saveCampaignSection(
           queryClient.getDefaultOptions().mutations?.meta,
@@ -113,18 +140,20 @@ export default function RichTextEditor({
       void saver.flush();
       saver.dispose();
     };
-  }, [queryClient, campaignId, section, revision]);
+  }, [queryClient, campaignId, section, revision, readOnly]);
 
   return (
-    <section
-      id={`${section}-section`}
-      aria-labelledby={`${section}-heading`}
-      className="mt-8"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 id={`${section}-heading`} className="text-lg font-semibold">
-          {label}
-        </h2>
+    <section id={`${section}-section`} aria-labelledby={`${section}-heading`}>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h2
+            id={`${section}-heading`}
+            className="font-heading text-xl font-semibold tracking-tight"
+          >
+            {label}
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">{hint}</p>
+        </div>
         <span
           id={`${section}-status`}
           role="status"
@@ -137,11 +166,12 @@ export default function RichTextEditor({
       </div>
       <div
         id={`${section}-editor`}
-        className="mt-3 min-h-40 rounded-lg border border-border py-2"
+        className="mt-4 min-h-48 rounded-2xl border bg-card py-4 shadow-xs transition-shadow focus-within:shadow-md [&_.bn-editor]:min-h-36"
       >
         <BlockNoteView
           editor={editor}
           theme="light"
+          editable={!readOnly}
           filePanel={false}
           onChange={() =>
             autosaver.current?.change(

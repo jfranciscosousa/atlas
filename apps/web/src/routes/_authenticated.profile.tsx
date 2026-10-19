@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { profileQueryOptions } from "../hooks/use-profile";
-import { buttonVariants } from "../components/ui/button";
 import { ProfileForm } from "../components/profile-form";
+import { PageHeader } from "../components/page-header";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   loader: async ({ context }) => {
@@ -16,18 +16,18 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function Profile() {
   const { user } = Route.useRouteContext();
   return (
-    <>
-      <Link
-        to="/dashboard"
-        className={buttonVariants({ variant: "link", className: "mb-5 px-0" })}
-      >
-        Back to dashboard
-      </Link>
-      <h1 className="text-3xl font-semibold tracking-tight">Your profile</h1>
-      <p className="mt-3 text-sm text-muted-foreground">
-        Choose your name and profile photo.
-      </p>
-      <ProfileForm key={user.id} userId={user.id} />
-    </>
+    <div className="mx-auto max-w-2xl space-y-8">
+      <PageHeader
+        crumbs={[
+          { label: "Campaigns", to: "/campaigns" },
+          { label: "Profile" },
+        ]}
+        title="Your profile"
+        description="Choose your name and profile photo."
+      />
+      <div className="rounded-2xl border bg-card p-6 shadow-xs sm:p-8">
+        <ProfileForm key={user.id} userId={user.id} />
+      </div>
+    </div>
   );
 }

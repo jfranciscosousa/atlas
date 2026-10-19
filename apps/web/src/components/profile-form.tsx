@@ -37,7 +37,7 @@ export function ProfileForm({ userId }: { userId: string }) {
   return (
     <form
       id="profile-form"
-      className="mt-7 space-y-6"
+      className="space-y-6"
       aria-busy={busy}
       onSubmit={event => {
         event.preventDefault();

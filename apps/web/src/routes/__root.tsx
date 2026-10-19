@@ -12,7 +12,6 @@ import {
 } from "@tanstack/react-router";
 
 import styles from "../styles.css?url";
-import { Card, CardContent } from "../components/ui/card";
 import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { LoadingScreen } from "../components/loading-screen";
@@ -37,12 +36,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     component: Root,
     shellComponent: Document,
     notFoundComponent: () => (
-      <section>
+      <section className="flex min-h-[60vh] flex-col items-center justify-center gap-2 px-6 text-center">
+        <p className="text-sm font-medium text-muted-foreground">404</p>
         <h1 className="text-3xl font-semibold">Page not found</h1>
-        <Link
-          to="/"
-          className={buttonVariants({ variant: "link", className: "mt-6" })}
-        >
+        <p className="text-sm text-muted-foreground">
+          This part of the map is still blank.
+        </p>
+        <Link to="/" className={buttonVariants({ className: "mt-4" })}>
           Back to home
         </Link>
       </section>
@@ -51,30 +51,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 );
 
 function Root() {
-  // The campaign editor needs more room than the sign-in cards.
-  const wide = useRouterState({
-    select: state => state.location.pathname.startsWith("/campaigns"),
-  });
-  return (
-    <main className="flex min-h-screen items-center justify-center px-5 py-12">
-      <div className={wide ? "w-full max-w-3xl" : "w-full max-w-md"}>
-        <Link
-          to="/"
-          className="mb-8 flex items-center justify-center gap-3 text-sm font-semibold tracking-wide"
-        >
-          ATLAS
-        </Link>
-        <Card>
-          <CardContent>
-            <Outlet />
-          </CardContent>
-        </Card>
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          A fresh start, one step at a time.
-        </p>
-      </div>
-    </main>
-  );
+  return <Outlet />;
 }
 
 function SessionError() {
@@ -105,7 +82,13 @@ function Document({ children }: { children: ReactNode }) {
     [router]
   );
 
-  const isLoading = !hasResolved || isPending;
+  // Only the first load hides the app, until the page itself has rendered.
+  // Later navigations keep the shell on screen.
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    if (hasResolved && !isPending) setRevealed(true);
+  }, [hasResolved, isPending]);
+  const isLoading = !revealed;
 
   return (
     <html lang="en">
@@ -115,6 +98,13 @@ function Document({ children }: { children: ReactNode }) {
       <body>
         {isLoading && <LoadingScreen />}
 
+        {revealed && isPending && (
+          <div
+            role="progressbar"
+            aria-label="Loading page"
+            className="fixed inset-x-0 top-0 z-50 h-0.5 animate-pulse bg-primary"
+          />
+        )}
         <div className={isLoading ? "invisible" : undefined} inert={isLoading}>
           {children}
         </div>

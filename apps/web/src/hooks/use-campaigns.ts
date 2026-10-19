@@ -90,7 +90,6 @@ export function campaignQueryOptions(campaignId: string) {
     },
     // The editors own the document after load. A refetch must not replace it.
     staleTime: Infinity,
-    gcTime: 0,
     retry: false,
   });
 }

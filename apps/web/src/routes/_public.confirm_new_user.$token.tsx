@@ -50,7 +50,7 @@ function ConfirmEmail() {
             Your email address has been confirmed.
           </p>
           <Link
-            to="/dashboard"
+            to="/campaigns"
             className={buttonVariants({ className: "mt-6" })}
           >
             Continue

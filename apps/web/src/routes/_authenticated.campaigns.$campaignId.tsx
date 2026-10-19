@@ -1,30 +1,40 @@
-import { lazy, Suspense } from "react";
+import { Eye } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
-import { Spinner } from "../components/ui/spinner";
 import { buttonVariants } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
+import { PageHeader } from "../components/page-header";
+import { CampaignAvatar } from "../components/campaign-avatar";
 
 // BlockNote only runs in the browser, so it stays out of the main bundle.
-const RichTextEditor = lazy(() => import("../components/rich-text-editor"));
 
 export const Route = createFileRoute("/_authenticated/campaigns/$campaignId")({
+  // Saving does not update the cached campaign, so a kept route would show old text.
+  // The router must drop the route on leave and run the loader on every visit.
+  gcTime: 0,
+  staleTime: 0,
   loader: async ({ context, params }) => {
+    const editor = loadEditor();
     try {
-      await context.queryClient.ensureQueryData(
-        campaignQueryOptions(params.campaignId)
-      );
+      // Always fetch: a cached copy predates the edits saved since it loaded.
+      await context.queryClient.fetchQuery({
+        ...campaignQueryOptions(params.campaignId),
+        staleTime: 0,
+      });
     } catch {
       throw notFound();
     }
+    await editor;
   },
   notFoundComponent: () => (
-    <section>
+    <section className="flex min-h-[50vh] flex-col items-center justify-center gap-2 text-center">
       <h1 className="text-3xl font-semibold">Campaign not found</h1>
-      <Link
-        to="/campaigns"
-        className={buttonVariants({ variant: "link", className: "mt-6 px-0" })}
-      >
+      <p className="text-sm text-muted-foreground">
+        It may not exist, or you may not have access to it.
+      </p>
+      <Link to="/campaigns" className={buttonVariants({ className: "mt-4" })}>
         Back to campaigns
       </Link>
     </section>
@@ -35,34 +45,57 @@ export const Route = createFileRoute("/_authenticated/campaigns/$campaignId")({
 function CampaignPage() {
   const { campaignId } = Route.useParams();
   const campaign = useCampaign(campaignId).data;
+  const RichTextEditor = getEditor();
 
   return (
-    <>
-      <Link
-        to="/campaigns"
-        className={buttonVariants({ variant: "link", className: "mb-5 px-0" })}
-      >
-        Back to campaigns
-      </Link>
-      <h1 id="campaign-name" className="text-3xl font-semibold tracking-tight">
-        {campaign.name}
-      </h1>
-      <Suspense fallback={<Spinner className="mt-8" />}>
-        <RichTextEditor
-          campaignId={campaign.id}
-          section="description"
-          label="Description"
-          initial={campaign.descriptionJson}
-          revision={campaign.descriptionRevision}
-        />
-        <RichTextEditor
-          campaignId={campaign.id}
-          section="progress_rewards"
-          label="Progress and rewards"
-          initial={campaign.progressRewardsJson}
-          revision={campaign.progressRewardsRevision}
-        />
-      </Suspense>
-    </>
+    <div className="space-y-10">
+      <PageHeader
+        crumbs={[
+          { label: "Campaigns", to: "/campaigns" },
+          { label: campaign.name },
+        ]}
+        title={campaign.name}
+        leading={
+          <CampaignAvatar
+            id={campaign.id}
+            name={campaign.name}
+            className="size-14 rounded-xl text-2xl"
+          />
+        }
+        actions={
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary">You are the GM</Badge>
+            <Link
+              id="preview-as-player"
+              to="/campaigns/$campaignId/preview"
+              params={{ campaignId: campaign.id }}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Eye />
+              Preview as player
+            </Link>
+          </div>
+        }
+      />
+      {/* The key gives each campaign its own editor; BlockNote reads its content only once. */}
+      <RichTextEditor
+        key={`${campaign.id}-description`}
+        campaignId={campaign.id}
+        section="description"
+        label="Description"
+        hint="The world, the premise, and what the table should know first."
+        initial={campaign.descriptionJson}
+        revision={campaign.descriptionRevision}
+      />
+      <RichTextEditor
+        key={`${campaign.id}-progress_rewards`}
+        campaignId={campaign.id}
+        section="progress_rewards"
+        label="Progress and rewards"
+        hint="Milestones reached, loot earned, and what comes next."
+        initial={campaign.progressRewardsJson}
+        revision={campaign.progressRewardsRevision}
+      />
+    </div>
   );
 }

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as GuestRouteImport } from './routes/_guest'
 import { Route as PublicRouteImport } from './routes/_public'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as GuestIndexRouteImport } from './routes/_guest.index'
 import { Route as GuestRegisterRouteImport } from './routes/_guest.register'
@@ -22,6 +21,7 @@ import { Route as AuthenticatedCampaignsIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_authenticated.campaigns.$campaignId'
 import { Route as PublicConfirm_new_userTokenRouteImport } from './routes/_public.confirm_new_user.$token'
 import { Route as PublicPasswordResetTokenRouteImport } from './routes/_public.password-reset.$token'
+import { Route as AuthenticatedCampaignsCampaignIdPreviewRouteImport } from './routes/_authenticated.campaigns.$campaignId_.preview'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -34,11 +34,6 @@ const GuestRoute = GuestRouteImport.update({
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
@@ -89,10 +84,15 @@ const PublicPasswordResetTokenRoute =
     path: '/password-reset/$token',
     getParentRoute: () => PublicRoute,
   } as any)
+const AuthenticatedCampaignsCampaignIdPreviewRoute =
+  AuthenticatedCampaignsCampaignIdPreviewRouteImport.update({
+    id: '/campaigns/$campaignId_/preview',
+    path: '/campaigns/$campaignId/preview',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof GuestIndexRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/register': typeof GuestRegisterRoute
   '/reset': typeof GuestResetRoute
@@ -101,10 +101,10 @@ export interface FileRoutesByFullPath {
   '/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
+  '/campaigns/$campaignId/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof GuestIndexRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/register': typeof GuestRegisterRoute
   '/reset': typeof GuestResetRoute
@@ -113,13 +113,13 @@ export interface FileRoutesByTo {
   '/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns': typeof AuthenticatedCampaignsIndexRoute
+  '/campaigns/$campaignId/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_guest': typeof GuestRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_guest/register': typeof GuestRegisterRoute
   '/_guest/reset': typeof GuestResetRoute
@@ -129,12 +129,12 @@ export interface FileRoutesById {
   '/_public/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/_public/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
+  '/_authenticated/campaigns/$campaignId_/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
     | '/profile'
     | '/register'
     | '/reset'
@@ -143,10 +143,10 @@ export interface FileRouteTypes {
     | '/confirm_new_user/$token'
     | '/password-reset/$token'
     | '/campaigns/'
+    | '/campaigns/$campaignId/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
     | '/profile'
     | '/register'
     | '/reset'
@@ -155,12 +155,12 @@ export interface FileRouteTypes {
     | '/confirm_new_user/$token'
     | '/password-reset/$token'
     | '/campaigns'
+    | '/campaigns/$campaignId/preview'
   id:
     | '__root__'
     | '/_authenticated'
     | '/_guest'
     | '/_public'
-    | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/_guest/register'
     | '/_guest/reset'
@@ -170,6 +170,7 @@ export interface FileRouteTypes {
     | '/_public/confirm_new_user/$token'
     | '/_public/password-reset/$token'
     | '/_authenticated/campaigns/'
+    | '/_authenticated/campaigns/$campaignId_/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -200,13 +201,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
@@ -271,21 +265,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicPasswordResetTokenRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_authenticated/campaigns/$campaignId_/preview': {
+      id: '/_authenticated/campaigns/$campaignId_/preview'
+      path: '/campaigns/$campaignId/preview'
+      fullPath: '/campaigns/$campaignId/preview'
+      preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdPreviewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedCampaignsCampaignIdRoute: typeof AuthenticatedCampaignsCampaignIdRoute
   AuthenticatedCampaignsIndexRoute: typeof AuthenticatedCampaignsIndexRoute
+  AuthenticatedCampaignsCampaignIdPreviewRoute: typeof AuthenticatedCampaignsCampaignIdPreviewRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedCampaignsCampaignIdRoute: AuthenticatedCampaignsCampaignIdRoute,
   AuthenticatedCampaignsIndexRoute: AuthenticatedCampaignsIndexRoute,
+  AuthenticatedCampaignsCampaignIdPreviewRoute:
+    AuthenticatedCampaignsCampaignIdPreviewRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

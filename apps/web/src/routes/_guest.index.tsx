@@ -9,9 +9,9 @@ function Home() {
     <>
       <h1 className="text-3xl font-semibold tracking-tight">A fresh start.</h1>
       <p className="mt-4 text-sm leading-7 text-muted-foreground">
-        Create your account or sign in to get started.
+        Create your account or sign in to start building your campaign.
       </p>
-      <div className="mt-8 flex flex-wrap items-center gap-5">
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         <Link id="sign-up" to="/register" className={buttonVariants()}>
           Create account
         </Link>
