@@ -16,6 +16,8 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 - Run `pnpm run precommit` from the root to check the frontend and backend.
 - For backend-only changes, run `mix precommit` from `apps/api`; it does not require Node.
 - Fix failures before reporting completion.
+- Apply every new migration to the development database yourself. Do not ask. Find the database
+  the running dev server uses first: its `PGPORT` is not always the default.
 
 ## Git
 
@@ -24,9 +26,17 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 
 ## Documentation
 
-All documentation lives in Notion, not in this repository. The only exception is `GLOSSARY.md`.
-Do not add other Markdown documentation or decision records here. Use the `ntn` CLI,
-not the Notion MCP.
+Notion is the single source of truth for product documentation. All documentation lives in Notion,
+not in this repository. The only exception is `GLOSSARY.md`. Do not add other Markdown
+documentation or decision records here. Use the `ntn` CLI, not the Notion MCP.
+
+- Before any feature, read the whole Atlas plan and every subpage that touches the feature. This
+  includes the UX rules in Product & content (creation, lists, navigation, entry layout). Read the
+  live pages with `ntn`. Never rely on a cached copy or on memory.
+- Implement what Notion says. If the code needs to differ, stop and report the conflict.
+- Save everything in Notion before you report completion: decisions, product and UX rules,
+  what you built, deviations, gaps, and the task status.
+- Update the page that owns the rule. Do not leave a new rule only in code or in chat.
 
 - [Atlas hub](https://app.notion.com/p/Atlas-3fd556c92b9f8180a81cd471d362e4cb)
 - [Atlas plan](https://app.notion.com/p/Atlas-plan-3fd556c92b9f806487dfd0a7994f37b4):

@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+import { Eye, ScrollText } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
@@ -65,6 +65,15 @@ function CampaignPage() {
         actions={
           <div className="flex items-center gap-3">
             <Badge variant="secondary">You are the GM</Badge>
+            <Link
+              id="campaign-notes"
+              to="/campaigns/$campaignId/notes"
+              params={{ campaignId: campaign.id }}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <ScrollText />
+              Notes
+            </Link>
             <Link
               id="preview-as-player"
               to="/campaigns/$campaignId/preview"

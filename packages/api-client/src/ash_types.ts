@@ -4,6 +4,7 @@
 
 
 export type UUID = string;
+export type UtcDateTimeUsec = string;
 
 // User Schema
 export type UserResourceSchema = {
@@ -70,6 +71,35 @@ export type CampaignImageAttributesOnlySchema = {
   __type: "Resource";
   __primitiveFields: "id";
   id: UUID;
+};
+
+
+// Note Schema
+export type NoteResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "id" | "title";
+  archivedAt: UtcDateTimeUsec | null;
+  bodyJson: Array<Record<string, unknown>>;
+  bodyRevision: number;
+  bodySchemaVersion: number;
+  campaignId: UUID;
+  id: UUID;
+  title: string;
+  campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
+};
+
+
+
+export type NoteAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "id" | "title";
+  archivedAt: UtcDateTimeUsec | null;
+  bodyJson: Array<Record<string, unknown>>;
+  bodyRevision: number;
+  bodySchemaVersion: number;
+  campaignId: UUID;
+  id: UUID;
+  title: string;
 };
 
 
@@ -237,6 +267,88 @@ export type CampaignImageFilterInput = {
 
 
 };
+export type NoteFilterInput = {
+  and?: Array<NoteFilterInput>;
+  or?: Array<NoteFilterInput>;
+  not?: Array<NoteFilterInput>;
+
+  archivedAt?: {
+    isNil?: boolean;
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
+  };
+
+  bodyJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  bodyRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  bodySchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  campaignId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  title?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  campaign?: CampaignFilterInput;
+
+};
 
 
 export const userFilterFields = ["avatar", "displayName", "email", "id"] as const;
@@ -248,6 +360,9 @@ export type CampaignFilterField = (typeof campaignFilterFields)[number];
 export const campaignImageFilterFields = ["id"] as const;
 export type CampaignImageFilterField = (typeof campaignImageFilterFields)[number];
 
+export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "title", "campaign"] as const;
+export type NoteFilterField = (typeof noteFilterFields)[number];
+
 
 export const userSortFields = ["avatar", "displayName", "email", "id"] as const;
 export type UserSortField = (typeof userSortFields)[number];
@@ -257,6 +372,9 @@ export type CampaignSortField = (typeof campaignSortFields)[number];
 
 export const campaignImageSortFields = ["id"] as const;
 export type CampaignImageSortField = (typeof campaignImageSortFields)[number];
+
+export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "title"] as const;
+export type NoteSortField = (typeof noteSortFields)[number];
 
 
 // Utility Types

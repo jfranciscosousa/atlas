@@ -16,8 +16,9 @@ import "@blocknote/shadcn/style.css";
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
 import { createImageResolver, uploadImage } from "../lib/images";
-import { schema } from "../lib/blocknote-schema";
+import { schema, textSchema } from "../lib/blocknote-schema";
 import { createAutosaver, type SaveState } from "../lib/autosave";
+import { saveNoteDocument } from "../hooks/use-notes";
 import {
   fetchImageUrl,
   saveCampaignSection,
@@ -42,7 +43,9 @@ function UploadOnlyFilePanel(props: FilePanelProps) {
 
 type Props = {
   campaignId: string;
-  section: Section;
+  // Set for a note body. Notes are text only, so they have no image upload.
+  noteId?: string;
+  section: Section | "body";
   label: string;
   hint: string;
   initial: BlockNoteDocument;
@@ -52,6 +55,7 @@ type Props = {
 
 export default function RichTextEditor({
   campaignId,
+  noteId,
   section,
   label,
   hint,
@@ -76,7 +80,7 @@ export default function RichTextEditor({
           fetchImageUrl(
             queryClient.getDefaultOptions().mutations?.meta,
             campaignId,
-            section,
+            section as Section,
             id
           ),
       }),
@@ -84,7 +88,7 @@ export default function RichTextEditor({
   );
 
   const editor = useCreateBlockNote({
-    schema,
+    schema: noteId ? (textSchema as unknown as typeof schema) : schema,
     // The server owns validation. A document saved earlier is always one this schema accepts.
     initialContent: initial.length
       ? (initial as unknown as NonNullable<
@@ -124,13 +128,20 @@ export default function RichTextEditor({
       revision,
       onState: report,
       save: (doc, expected) =>
-        saveCampaignSection(
-          queryClient.getDefaultOptions().mutations?.meta,
-          campaignId,
-          section,
-          doc,
-          expected
-        ),
+        noteId
+          ? saveNoteDocument(
+              queryClient.getDefaultOptions().mutations?.meta,
+              noteId,
+              doc,
+              expected
+            )
+          : saveCampaignSection(
+              queryClient.getDefaultOptions().mutations?.meta,
+              campaignId,
+              section as Section,
+              doc,
+              expected
+            ),
     });
     autosaver.current = saver;
     const flush = () => void saver.flush();
@@ -140,7 +151,7 @@ export default function RichTextEditor({
       void saver.flush();
       saver.dispose();
     };
-  }, [queryClient, campaignId, section, revision, readOnly]);
+  }, [queryClient, campaignId, noteId, section, revision, readOnly]);
 
   return (
     <section id={`${section}-section`} aria-labelledby={`${section}-heading`}>

@@ -22,6 +22,8 @@ import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_
 import { Route as PublicConfirm_new_userTokenRouteImport } from './routes/_public.confirm_new_user.$token'
 import { Route as PublicPasswordResetTokenRouteImport } from './routes/_public.password-reset.$token'
 import { Route as AuthenticatedCampaignsCampaignIdPreviewRouteImport } from './routes/_authenticated.campaigns.$campaignId_.preview'
+import { Route as AuthenticatedCampaignsCampaignIdNotesIndexRouteImport } from './routes/_authenticated.campaigns.$campaignId_.notes.index'
+import { Route as AuthenticatedCampaignsCampaignIdNotesNoteIdRouteImport } from './routes/_authenticated.campaigns.$campaignId_.notes.$noteId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -90,6 +92,18 @@ const AuthenticatedCampaignsCampaignIdPreviewRoute =
     path: '/campaigns/$campaignId/preview',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCampaignsCampaignIdNotesIndexRoute =
+  AuthenticatedCampaignsCampaignIdNotesIndexRouteImport.update({
+    id: '/campaigns/$campaignId_/notes/',
+    path: '/campaigns/$campaignId/notes/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedCampaignsCampaignIdNotesNoteIdRoute =
+  AuthenticatedCampaignsCampaignIdNotesNoteIdRouteImport.update({
+    id: '/campaigns/$campaignId_/notes/$noteId',
+    path: '/campaigns/$campaignId/notes/$noteId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof GuestIndexRoute
@@ -102,6 +116,8 @@ export interface FileRoutesByFullPath {
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
   '/campaigns/$campaignId/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
+  '/campaigns/$campaignId/notes/$noteId': typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
+  '/campaigns/$campaignId/notes/': typeof AuthenticatedCampaignsCampaignIdNotesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof GuestIndexRoute
@@ -114,6 +130,8 @@ export interface FileRoutesByTo {
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns': typeof AuthenticatedCampaignsIndexRoute
   '/campaigns/$campaignId/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
+  '/campaigns/$campaignId/notes/$noteId': typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
+  '/campaigns/$campaignId/notes': typeof AuthenticatedCampaignsCampaignIdNotesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -130,6 +148,8 @@ export interface FileRoutesById {
   '/_public/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
   '/_authenticated/campaigns/$campaignId_/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
+  '/_authenticated/campaigns/$campaignId_/notes/$noteId': typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
+  '/_authenticated/campaigns/$campaignId_/notes/': typeof AuthenticatedCampaignsCampaignIdNotesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -144,6 +164,8 @@ export interface FileRouteTypes {
     | '/password-reset/$token'
     | '/campaigns/'
     | '/campaigns/$campaignId/preview'
+    | '/campaigns/$campaignId/notes/$noteId'
+    | '/campaigns/$campaignId/notes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -156,6 +178,8 @@ export interface FileRouteTypes {
     | '/password-reset/$token'
     | '/campaigns'
     | '/campaigns/$campaignId/preview'
+    | '/campaigns/$campaignId/notes/$noteId'
+    | '/campaigns/$campaignId/notes'
   id:
     | '__root__'
     | '/_authenticated'
@@ -171,6 +195,8 @@ export interface FileRouteTypes {
     | '/_public/password-reset/$token'
     | '/_authenticated/campaigns/'
     | '/_authenticated/campaigns/$campaignId_/preview'
+    | '/_authenticated/campaigns/$campaignId_/notes/$noteId'
+    | '/_authenticated/campaigns/$campaignId_/notes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -272,6 +298,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdPreviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/campaigns/$campaignId_/notes/': {
+      id: '/_authenticated/campaigns/$campaignId_/notes/'
+      path: '/campaigns/$campaignId/notes'
+      fullPath: '/campaigns/$campaignId/notes/'
+      preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdNotesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/campaigns/$campaignId_/notes/$noteId': {
+      id: '/_authenticated/campaigns/$campaignId_/notes/$noteId'
+      path: '/campaigns/$campaignId/notes/$noteId'
+      fullPath: '/campaigns/$campaignId/notes/$noteId'
+      preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -280,6 +320,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCampaignsCampaignIdRoute: typeof AuthenticatedCampaignsCampaignIdRoute
   AuthenticatedCampaignsIndexRoute: typeof AuthenticatedCampaignsIndexRoute
   AuthenticatedCampaignsCampaignIdPreviewRoute: typeof AuthenticatedCampaignsCampaignIdPreviewRoute
+  AuthenticatedCampaignsCampaignIdNotesNoteIdRoute: typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
+  AuthenticatedCampaignsCampaignIdNotesIndexRoute: typeof AuthenticatedCampaignsCampaignIdNotesIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -288,6 +330,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCampaignsIndexRoute: AuthenticatedCampaignsIndexRoute,
   AuthenticatedCampaignsCampaignIdPreviewRoute:
     AuthenticatedCampaignsCampaignIdPreviewRoute,
+  AuthenticatedCampaignsCampaignIdNotesNoteIdRoute:
+    AuthenticatedCampaignsCampaignIdNotesNoteIdRoute,
+  AuthenticatedCampaignsCampaignIdNotesIndexRoute:
+    AuthenticatedCampaignsCampaignIdNotesIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
