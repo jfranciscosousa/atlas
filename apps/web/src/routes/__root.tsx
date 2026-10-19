@@ -31,7 +31,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "referrer", content: "no-referrer" },
         { title: "Atlas" },
       ],
-      links: [{ rel: "stylesheet", href: styles }],
+      links: [
+        { rel: "stylesheet", href: styles },
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      ],
     }),
     component: Root,
     shellComponent: Document,
