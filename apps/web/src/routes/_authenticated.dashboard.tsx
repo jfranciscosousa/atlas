@@ -3,17 +3,10 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { sessionRequest } from "../lib/auth";
-import { todosQueryOptions } from "../hooks/use-todos";
 import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { TodoList } from "../components/todo-list";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      todosQueryOptions(context.user.id)
-    );
-  },
   component: Dashboard,
 });
 
@@ -55,7 +48,6 @@ function Dashboard() {
         </strong>
         .
       </p>
-      <TodoList key={user.id} userId={user.id} />
       {error && (
         <Alert variant="destructive" className="mt-4">
           <AlertDescription>{error}</AlertDescription>

@@ -129,23 +129,6 @@ code can import `@atlas/api-client` or
 Generation is explicit. Normal API builds do not require Node or a frontend
 build. Normal web builds do not require Elixir or a running API.
 
-### Todos
-
-The dashboard uses the generated `listTodos`, `createTodo`, `updateTodo`, and
-`destroyTodo` RPC functions. Users can add todos, mark them complete, reopen
-them, and delete them. Titles must contain 1 to 200 characters after trimming.
-
-`useTodosList`, `useTodosCreate`, `useTodosUpdate`, and `useTodosDelete` use
-TanStack Query and call the generated RPC client directly. The dashboard loader
-fills the query cache before rendering. Successful mutations refetch the list.
-Cache keys include the user ID, and signing out clears the cache.
-Todo types are inferred from the generated RPC client.
-
-RPC endpoints require a signed-in session and a CSRF token. Ash policies limit
-todo access to the owner. The server sets ownership from the session; clients
-cannot assign or change it. Deleting an inaccessible or missing todo is a
-successful no-op.
-
 After pulling resource changes, apply database migrations from `apps/api`:
 
 ```bash
