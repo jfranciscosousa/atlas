@@ -37,10 +37,7 @@ defmodule AtlasWeb.RpcHelpers do
     |> json_response(status)
   end
 
-  def upload(conn, campaign_id, section, binary, status \\ 201),
-    do: upload_to(conn, "campaigns", campaign_id, section, binary, status)
-
-  def upload_to(conn, parent, parent_id, section, binary, status \\ 201) do
+  def upload(conn, binary, status \\ 201) do
     path = Path.join(System.tmp_dir!(), "upload-#{System.unique_integer([:positive])}")
     File.write!(path, binary)
     {session, token} = csrf(conn)
@@ -50,7 +47,7 @@ defmodule AtlasWeb.RpcHelpers do
     |> put_private(:plug_skip_csrf_protection, false)
     |> put_req_header("x-csrf-token", token)
     |> put_req_header("accept", "application/json")
-    |> post("/api/#{parent}/#{parent_id}/sections/#{section}/images", %{
+    |> post("/api/images", %{
       "file" => %Plug.Upload{path: path, filename: "x", content_type: "image/png"}
     })
     |> json_response(status)

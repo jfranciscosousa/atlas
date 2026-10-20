@@ -3,8 +3,6 @@ import assert from "node:assert/strict";
 
 import { createImageResolver, uploadImage } from "./images.ts";
 
-const campaignId = "5f1f6f2e-0000-4000-8000-000000000000";
-
 test("an upload posts multipart with the CSRF token and returns a stable reference", async t => {
   const request = t.mock.fn(
     async (_url: RequestInfo | URL, _init?: RequestInit) =>
@@ -13,8 +11,6 @@ test("an upload posts multipart with the CSRF token and returns a stable referen
   const file = new File(["x"], "a.png", { type: "image/png" });
 
   const reference = await uploadImage({
-    parent: { kind: "campaign", id: campaignId },
-    section: "description",
     file,
     csrfToken: "csrf",
     fetchImpl: request as unknown as typeof fetch,
@@ -22,7 +18,7 @@ test("an upload posts multipart with the CSRF token and returns a stable referen
 
   assert.equal(reference, "atlas-image:img-1");
   const [url, init] = request.mock.calls[0]!.arguments;
-  assert.equal(url, `/api/campaigns/${campaignId}/sections/description/images`);
+  assert.equal(url, "/api/images");
   assert.equal(init?.method, "POST");
   assert.equal(init?.credentials, "same-origin");
   assert.equal(
@@ -30,29 +26,6 @@ test("an upload posts multipart with the CSRF token and returns a stable referen
     "csrf"
   );
   assert.ok(init?.body instanceof FormData);
-});
-
-test("an upload into a note or a session goes to that parent's route", async t => {
-  const request = t.mock.fn(
-    async (_url: RequestInfo | URL, _init?: RequestInit) =>
-      Response.json({ id: "img-2" }, { status: 201 })
-  );
-  const file = new File(["x"], "a.png", { type: "image/png" });
-
-  for (const [kind, path, section] of [
-    ["note", "notes", "body"],
-    ["session", "sessions", "prep"],
-  ] as const) {
-    await uploadImage({
-      parent: { kind, id: "abc" },
-      section,
-      file,
-      csrfToken: "csrf",
-      fetchImpl: request as unknown as typeof fetch,
-    });
-    const [url] = request.mock.calls.at(-1)!.arguments;
-    assert.equal(url, `/api/${path}/abc/sections/${section}/images`);
-  }
 });
 
 test("an upload shows the server message when it fails", async () => {
@@ -64,8 +37,6 @@ test("an upload shows the server message when it fails", async () => {
 
   await assert.rejects(
     uploadImage({
-      parent: { kind: "campaign", id: campaignId },
-      section: "description",
       file: new File(["x"], "a.pdf"),
       csrfToken: "csrf",
       fetchImpl,
@@ -82,8 +53,6 @@ test("an upload over 25 MB is refused before any request", async () => {
 
   await assert.rejects(
     uploadImage({
-      parent: { kind: "campaign", id: campaignId },
-      section: "description",
       file: big,
       csrfToken: "csrf",
       fetchImpl,

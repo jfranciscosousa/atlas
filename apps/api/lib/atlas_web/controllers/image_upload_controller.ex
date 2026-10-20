@@ -3,15 +3,10 @@ defmodule AtlasWeb.ImageUploadController do
 
   alias Atlas.Images.Uploads
 
-  def create(conn, %{
-        "parent" => parent,
-        "parent_id" => parent_id,
-        "section" => section,
-        "file" => %Plug.Upload{path: path}
-      }) do
+  def create(conn, %{"file" => %Plug.Upload{path: path}}) do
     case conn.assigns[:current_user] do
       nil -> error(conn, :unauthorized, "Sign in to continue.")
-      user -> respond(conn, Uploads.upload_image(user, parent, parent_id, section, path))
+      user -> respond(conn, Uploads.upload_image(user, path))
     end
   end
 

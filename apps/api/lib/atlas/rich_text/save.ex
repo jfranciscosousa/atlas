@@ -43,32 +43,27 @@ defmodule Atlas.RichText.Save do
         )
         |> Ash.Changeset.force_change_attribute(version, Document.schema_version())
         |> Ash.Changeset.force_change_attribute(revision, expected + 1)
-        |> verify_images(section, Ash.Changeset.get_argument(changeset, :json))
+        |> verify_images(Ash.Changeset.get_argument(changeset, :json))
     end
   end
 
   # An invalid document already carries its own argument error.
-  defp verify_images(changeset, _section, nil), do: changeset
+  defp verify_images(changeset, nil), do: changeset
 
-  defp verify_images(changeset, section, json) do
+  defp verify_images(changeset, json) do
     case Document.image_ids(json) do
       [] ->
         changeset
 
       ids ->
         Ash.Changeset.before_action(changeset, fn changeset ->
-          if Atlas.Images.Image.all_in_section?(
-               Atlas.Images.Parent.kind(changeset.resource),
-               changeset.data.id,
-               section,
-               ids
-             ),
-             do: changeset,
-             else:
-               Ash.Changeset.add_error(changeset,
-                 field: :json,
-                 message: "references an image that does not belong to this section"
-               )
+          if Atlas.Images.Image.all_exist?(ids),
+            do: changeset,
+            else:
+              Ash.Changeset.add_error(changeset,
+                field: :json,
+                message: "references an image that does not exist"
+              )
         end)
     end
   end

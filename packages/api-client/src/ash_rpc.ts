@@ -2224,9 +2224,6 @@ export async function validateSaveNoteBody(
 
 export type GetImageUrlInput = {
   id: UUID;
-  parentType: "campaign" | "note" | "session";
-  parentId: UUID;
-  section: "body" | "description" | "log" | "prep" | "progress_rewards";
 };
 
 export type InferGetImageUrlResult = string;

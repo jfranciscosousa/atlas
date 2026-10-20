@@ -21,9 +21,7 @@ defmodule AtlasWeb.Router do
     post "/rpc/run", AshTypescriptRpcController, :run
     post "/rpc/validate", AshTypescriptRpcController, :validate
 
-    post "/api/:parent/:parent_id/sections/:section/images",
-         ImageUploadController,
-         :create
+    post "/api/images", ImageUploadController, :create
 
     for name <- [:password, :confirm_new_user],
         strategy = AshAuthentication.Info.strategy!(Atlas.Accounts.User, name),

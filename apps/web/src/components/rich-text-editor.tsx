@@ -15,11 +15,7 @@ import "@blocknote/shadcn/style.css";
 
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
-import {
-  createImageResolver,
-  uploadImage,
-  type ImageParent,
-} from "../lib/images";
+import { createImageResolver, uploadImage } from "../lib/images";
 import { schema } from "../lib/blocknote-schema";
 import { createAutosaver, type SaveState } from "../lib/autosave";
 import {
@@ -50,8 +46,8 @@ function UploadOnlyFilePanel(props: FilePanelProps) {
 }
 
 type Props = {
-  // The campaign, note, or session that owns this section. Images follow its access rules.
-  parent: ImageParent;
+  // The campaign, note, or session that owns this section. It decides where a save goes.
+  parent: { kind: "campaign" | "note" | "session"; id: string };
   section: Section | "body" | SessionSection;
   label: string;
   hint: string;
@@ -83,14 +79,9 @@ export default function RichTextEditor({
     () =>
       createImageResolver({
         fetchUrl: id =>
-          fetchImageUrl(
-            queryClient.getDefaultOptions().mutations?.meta,
-            parent,
-            section,
-            id
-          ),
+          fetchImageUrl(queryClient.getDefaultOptions().mutations?.meta, id),
       }),
-    [queryClient, parent.kind, parent.id, section]
+    [queryClient]
   );
 
   const editor = useCreateBlockNote({
@@ -101,13 +92,7 @@ export default function RichTextEditor({
           Parameters<typeof useCreateBlockNote>[0]
         >["initialContent"])
       : undefined,
-    uploadFile: file =>
-      uploadImage({
-        parent,
-        section,
-        file,
-        csrfToken: meta()?.csrfToken,
-      }),
+    uploadFile: file => uploadImage({ file, csrfToken: meta()?.csrfToken }),
     resolveFileUrl,
   });
 

@@ -1,10 +1,10 @@
 defmodule Atlas.Images.Image do
   @moduledoc """
-  A converted image. The file lives in object storage; this row holds its metadata and the
-  section it was uploaded into: a section of a campaign, a note, or a session.
+  A converted image. The file lives in object storage (Cloudflare R2 in production, local disk in
+  development); this row holds its metadata. An image belongs to no campaign, note, or session.
 
-  Access always follows the section that owns the image. Documents store only the image ID,
-  and signed URLs are issued per request after the section check.
+  Documents store only the image ID. The ID is a random UUID that nobody can guess, and whoever
+  has it, signed in, can ask for a signed URL that lasts a few minutes (the model Discord uses).
   """
   use Ash.Resource,
     otp_app: :atlas,
@@ -15,18 +15,11 @@ defmodule Atlas.Images.Image do
 
   require Ash.Query
 
-  alias Atlas.Images.Checks.CanEditSection
-
-  @sections [:description, :progress_rewards, :body, :log, :prep]
-  @kinds Atlas.Images.Parent.kinds()
+  alias Atlas.Images.Checks.ActorIsCampaignMember
 
   postgres do
     table "images"
     repo Atlas.Repo
-
-    custom_indexes do
-      index [:parent_type, :parent_id, :section]
-    end
   end
 
   typescript do
@@ -38,27 +31,12 @@ defmodule Atlas.Images.Image do
 
     create :create do
       primary? true
-
-      accept [
-        :parent_type,
-        :parent_id,
-        :section,
-        :storage_key,
-        :byte_size,
-        :width,
-        :height,
-        :animated
-      ]
-
+      accept [:storage_key, :byte_size, :width, :height, :animated]
       change relate_actor(:uploader)
     end
 
     action :signed_url, :string do
       argument :id, :uuid, allow_nil?: false
-      argument :parent_type, :atom, allow_nil?: false, constraints: [one_of: @kinds]
-      argument :parent_id, :uuid, allow_nil?: false
-      argument :section, :atom, allow_nil?: false, constraints: [one_of: @sections]
-
       run Atlas.Images.Image.SignedUrl
     end
   end
@@ -69,35 +47,23 @@ defmodule Atlas.Images.Image do
       authorize_if always()
     end
 
-    # The row holds only metadata, and no RPC action reads it. The signed-URL action checks
-    # that the actor can read the section that holds the image.
+    # No RPC action reads a row. The signed-URL action is the only way to get a file.
     policy action_type(:read) do
-      authorize_if actor_present()
+      authorize_if always()
     end
 
+    # Storage costs money, so only people who play in some campaign may upload.
     policy action_type(:create) do
-      authorize_if CanEditSection
+      authorize_if ActorIsCampaignMember
     end
 
     policy action(:signed_url) do
-      authorize_if actor_present()
+      authorize_if always()
     end
   end
 
   attributes do
     uuid_primary_key :id
-
-    attribute :parent_type, :atom do
-      allow_nil? false
-      constraints one_of: @kinds
-    end
-
-    attribute :parent_id, :uuid, allow_nil?: false
-
-    attribute :section, :atom do
-      allow_nil? false
-      constraints one_of: @sections
-    end
 
     attribute :storage_key, :string, allow_nil?: false
     attribute :content_type, :string, allow_nil?: false, default: "image/webp"
@@ -116,17 +82,11 @@ defmodule Atlas.Images.Image do
     end
   end
 
-  @doc "True when every ID names an image uploaded into this section of this parent."
-  def all_in_section?(parent_type, parent_id, section, ids) do
-    # Internal integrity check on server-derived values. It reveals nothing to the caller.
-    count =
-      __MODULE__
-      |> Ash.Query.filter(
-        parent_type == ^parent_type and parent_id == ^parent_id and section == ^section and
-          id in ^ids
-      )
-      |> Ash.count!(authorize?: false)
-
+  @doc "True when every ID names a stored image."
+  def all_exist?(ids) do
+    ids = Enum.uniq(ids)
+    # Internal integrity check on document content. It reveals nothing to the caller.
+    count = __MODULE__ |> Ash.Query.filter(id in ^ids) |> Ash.count!(authorize?: false)
     count == length(ids)
   end
 end
