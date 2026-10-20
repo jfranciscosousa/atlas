@@ -1,11 +1,10 @@
-defmodule Atlas.Campaigns.Uploads do
+defmodule Atlas.Images.Uploads do
   @moduledoc """
   Accepts an image for one section of a campaign, a note, or a session. Authorization comes
   first, so an unauthorized caller never costs image-processing time or storage.
   """
 
-  alias Atlas.Campaigns.Image
-  alias Atlas.Images.{Parent, Processor}
+  alias Atlas.Images.{Image, Parent, Processor}
 
   @spec upload_image(Atlas.Accounts.User.t(), String.t(), String.t(), String.t(), Path.t()) ::
           {:ok, Image.t()} | {:error, :not_found | Processor.error()}
@@ -16,13 +15,11 @@ defmodule Atlas.Campaigns.Uploads do
          true <- Ash.can?({parent, :"save_#{section}"}, actor) || {:error, :not_found},
          :ok <- check_size(path),
          {:ok, processed} <- path |> File.read!() |> Processor.process(),
-         campaign_id = Parent.campaign_id(parent),
-         key = "campaigns/#{campaign_id}/images/#{Ecto.UUID.generate()}.webp",
+         key = "images/#{Ecto.UUID.generate()}.webp",
          :ok <- Atlas.Storage.put(key, processed.webp, "image/webp") do
       Ash.create(
         Image,
         %{
-          campaign_id: campaign_id,
           parent_type: kind,
           parent_id: parent.id,
           section: section,

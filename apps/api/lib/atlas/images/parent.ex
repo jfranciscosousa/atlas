@@ -19,10 +19,6 @@ defmodule Atlas.Images.Parent do
 
   def from_path(path), do: Map.fetch(@paths, path)
 
-  @doc "The campaign a parent belongs to. A campaign belongs to itself."
-  def campaign_id(%Campaign{id: id}), do: id
-  def campaign_id(%{campaign_id: id}), do: id
-
   @doc "True when the actor may read this section. Field policies hide a section the actor lacks."
   def section_readable?(kind, parent_id, section, actor) do
     case Ash.get(module(kind), parent_id, actor: actor) do

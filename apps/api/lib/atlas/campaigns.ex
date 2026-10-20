@@ -12,10 +12,6 @@ defmodule Atlas.Campaigns do
       rpc_action :save_campaign_progress_rewards, :save_progress_rewards
     end
 
-    resource Atlas.Campaigns.Image do
-      rpc_action :get_image_url, :signed_url
-    end
-
     resource Atlas.Campaigns.Session do
       rpc_action :list_sessions, :list
       rpc_action :get_session, :read, get_by: [:id]
@@ -40,7 +36,6 @@ defmodule Atlas.Campaigns do
 
   resources do
     resource Atlas.Campaigns.Campaign
-    resource Atlas.Campaigns.Image
     resource Atlas.Campaigns.Session
     resource Atlas.Campaigns.CampaignPlayer
     resource Atlas.Campaigns.Invitation

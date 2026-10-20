@@ -1,10 +1,10 @@
-defmodule Atlas.Campaigns.Image.SignedUrl do
+defmodule Atlas.Images.Image.SignedUrl do
   @moduledoc false
   use Ash.Resource.Actions.Implementation
 
   require Ash.Query
 
-  alias Atlas.Campaigns.Image
+  alias Atlas.Images.Image
   alias Atlas.Images.Parent
 
   @impl true

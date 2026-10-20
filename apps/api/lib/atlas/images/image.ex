@@ -1,30 +1,30 @@
-defmodule Atlas.Campaigns.Image do
+defmodule Atlas.Images.Image do
   @moduledoc """
-  A converted image uploaded into one section of a campaign, a note, or a session.
+  A converted image. The file lives in object storage; this row holds its metadata and the
+  section it was uploaded into: a section of a campaign, a note, or a session.
 
   Access always follows the section that owns the image. Documents store only the image ID,
   and signed URLs are issued per request after the section check.
   """
   use Ash.Resource,
     otp_app: :atlas,
-    domain: Atlas.Campaigns,
+    domain: Atlas.Images,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
     extensions: [AshTypescript.Resource]
 
   require Ash.Query
 
-  alias Atlas.Campaigns.Checks.CanEditSection
+  alias Atlas.Images.Checks.CanEditSection
 
   @sections [:description, :progress_rewards, :body, :log, :prep]
   @kinds Atlas.Images.Parent.kinds()
 
   postgres do
-    table "campaign_images"
+    table "images"
     repo Atlas.Repo
 
     custom_indexes do
-      index [:campaign_id, :section]
       index [:parent_type, :parent_id, :section]
     end
   end
@@ -40,7 +40,6 @@ defmodule Atlas.Campaigns.Image do
       primary? true
 
       accept [
-        :campaign_id,
         :parent_type,
         :parent_id,
         :section,
@@ -60,7 +59,7 @@ defmodule Atlas.Campaigns.Image do
       argument :parent_id, :uuid, allow_nil?: false
       argument :section, :atom, allow_nil?: false, constraints: [one_of: @sections]
 
-      run Atlas.Campaigns.Image.SignedUrl
+      run Atlas.Images.Image.SignedUrl
     end
   end
 
@@ -70,14 +69,10 @@ defmodule Atlas.Campaigns.Image do
       authorize_if always()
     end
 
-    # Reading the row is open to every member. The signed-URL action checks the section.
+    # The row holds only metadata, and no RPC action reads it. The signed-URL action checks
+    # that the actor can read the section that holds the image.
     policy action_type(:read) do
-      authorize_if expr(
-                     exists(
-                       campaign,
-                       gm_id == ^actor(:id) or exists(players, user_id == ^actor(:id))
-                     )
-                   )
+      authorize_if actor_present()
     end
 
     policy action_type(:create) do
@@ -115,11 +110,6 @@ defmodule Atlas.Campaigns.Image do
   end
 
   relationships do
-    belongs_to :campaign, Atlas.Campaigns.Campaign do
-      allow_nil? false
-      attribute_writable? true
-    end
-
     belongs_to :uploader, Atlas.Accounts.User do
       allow_nil? false
       attribute_writable? false

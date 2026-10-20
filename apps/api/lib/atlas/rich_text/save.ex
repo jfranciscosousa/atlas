@@ -57,7 +57,7 @@ defmodule Atlas.RichText.Save do
 
       ids ->
         Ash.Changeset.before_action(changeset, fn changeset ->
-          if Atlas.Campaigns.Image.all_in_section?(
+          if Atlas.Images.Image.all_in_section?(
                Atlas.Images.Parent.kind(changeset.resource),
                changeset.data.id,
                section,

@@ -1,4 +1,4 @@
-defmodule Atlas.Campaigns.Checks.CanEditSection do
+defmodule Atlas.Images.Checks.CanEditSection do
   @moduledoc """
   Passes when the actor can run the parent's `save_<section>` action on the campaign, note, or
   session the changeset names. Uploading into a section needs the same access as editing it.

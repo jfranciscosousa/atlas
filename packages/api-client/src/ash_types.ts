@@ -81,22 +81,6 @@ export type CampaignPlayerAttributesOnlySchema = {
 };
 
 
-// Image Schema
-export type ImageResourceSchema = {
-  __type: "Resource";
-  __primitiveFields: "id";
-  id: UUID;
-};
-
-
-
-export type ImageAttributesOnlySchema = {
-  __type: "Resource";
-  __primitiveFields: "id";
-  id: UUID;
-};
-
-
 // Invitation Schema
 export type InvitationResourceSchema = {
   __type: "Resource";
@@ -189,6 +173,22 @@ export type NoteAttributesOnlySchema = {
   id: UUID;
   revealed: boolean;
   title: string;
+};
+
+
+// Image Schema
+export type ImageResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "id";
+  id: UUID;
+};
+
+
+
+export type ImageAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "id";
+  id: UUID;
 };
 
 
@@ -400,23 +400,6 @@ export type CampaignPlayerFilterInput = {
   };
 
   campaign?: CampaignFilterInput;
-
-};
-export type ImageFilterInput = {
-  and?: Array<ImageFilterInput>;
-  or?: Array<ImageFilterInput>;
-  not?: Array<ImageFilterInput>;
-
-  id?: {
-    eq?: UUID;
-    notEq?: UUID;
-    in?: Array<UUID>;
-    lessThan?: UUID;
-    greaterThan?: UUID;
-    lessThanOrEqual?: UUID;
-    greaterThanOrEqual?: UUID;
-  };
-
 
 };
 export type InvitationFilterInput = {
@@ -731,6 +714,23 @@ export type NoteFilterInput = {
   campaign?: CampaignFilterInput;
 
 };
+export type ImageFilterInput = {
+  and?: Array<ImageFilterInput>;
+  or?: Array<ImageFilterInput>;
+  not?: Array<ImageFilterInput>;
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+
+};
 
 
 export const userFilterFields = ["avatar", "displayName", "email", "id"] as const;
@@ -742,9 +742,6 @@ export type CampaignFilterField = (typeof campaignFilterFields)[number];
 export const campaignPlayerFilterFields = ["campaignId", "displayName", "id", "campaign"] as const;
 export type CampaignPlayerFilterField = (typeof campaignPlayerFilterFields)[number];
 
-export const imageFilterFields = ["id"] as const;
-export type ImageFilterField = (typeof imageFilterFields)[number];
-
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
 export type InvitationFilterField = (typeof invitationFilterFields)[number];
 
@@ -753,6 +750,9 @@ export type SessionFilterField = (typeof sessionFilterFields)[number];
 
 export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title", "campaign"] as const;
 export type NoteFilterField = (typeof noteFilterFields)[number];
+
+export const imageFilterFields = ["id"] as const;
+export type ImageFilterField = (typeof imageFilterFields)[number];
 
 
 export const userSortFields = ["avatar", "displayName", "email", "id"] as const;
@@ -764,9 +764,6 @@ export type CampaignSortField = (typeof campaignSortFields)[number];
 export const campaignPlayerSortFields = ["campaignId", "displayName", "id"] as const;
 export type CampaignPlayerSortField = (typeof campaignPlayerSortFields)[number];
 
-export const imageSortFields = ["id"] as const;
-export type ImageSortField = (typeof imageSortFields)[number];
-
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;
 export type InvitationSortField = (typeof invitationSortFields)[number];
 
@@ -775,6 +772,9 @@ export type SessionSortField = (typeof sessionSortFields)[number];
 
 export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title"] as const;
 export type NoteSortField = (typeof noteSortFields)[number];
+
+export const imageSortFields = ["id"] as const;
+export type ImageSortField = (typeof imageSortFields)[number];
 
 
 // Utility Types

@@ -21,6 +21,30 @@
       "references": null,
       "scale": null,
       "size": null,
+      "source": "parent_type",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "parent_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
       "source": "section",
       "type": "text"
     },
@@ -129,40 +153,7 @@
           "global": null,
           "strategy": null
         },
-        "name": "campaign_images_campaign_id_fkey",
-        "on_delete": null,
-        "on_update": null,
-        "primary_key?": true,
-        "schema": "public",
-        "table": "campaigns"
-      },
-      "scale": null,
-      "size": null,
-      "source": "campaign_id",
-      "type": "uuid"
-    },
-    {
-      "allow_nil?": false,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": {
-        "deferrable": false,
-        "destination_attribute": "id",
-        "destination_attribute_default": null,
-        "destination_attribute_generated": null,
-        "index?": false,
-        "index_where": null,
-        "match_tenant?": false,
-        "match_type": null,
-        "match_with": null,
-        "multitenancy": {
-          "attribute": null,
-          "global": null,
-          "strategy": null
-        },
-        "name": "campaign_images_uploader_id_fkey",
+        "name": "images_uploader_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
@@ -183,13 +174,18 @@
       "all_tenants?": false,
       "concurrently": false,
       "error_fields": [
-        "campaign_id",
+        "parent_type",
+        "parent_id",
         "section"
       ],
       "fields": [
         {
           "type": "atom",
-          "value": "campaign_id"
+          "value": "parent_type"
+        },
+        {
+          "type": "atom",
+          "value": "parent_id"
         },
         {
           "type": "atom",
@@ -210,7 +206,7 @@
   ],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "9E060FCAF3BF4C65126577BC679D8A482227E3A729091B055CD0245ABE2B4D33",
+  "hash": "6BFEE9093B9B01A149E72D3CB9803217AA15EB8902243D8155BBB7F4AE457B33",
   "identities": [],
   "multitenancy": {
     "attribute": null,
@@ -219,6 +215,6 @@
   },
   "repo": "Elixir.Atlas.Repo",
   "schema": null,
-  "table": "campaign_images",
+  "table": "images",
   "temporal": null
 }

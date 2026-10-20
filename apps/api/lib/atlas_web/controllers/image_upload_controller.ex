@@ -1,7 +1,7 @@
 defmodule AtlasWeb.ImageUploadController do
   use AtlasWeb, :controller
 
-  alias Atlas.Campaigns.Uploads
+  alias Atlas.Images.Uploads
 
   def create(conn, %{
         "parent" => parent,

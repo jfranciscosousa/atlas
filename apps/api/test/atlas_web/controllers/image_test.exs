@@ -1,4 +1,4 @@
-defmodule AtlasWeb.CampaignImageTest do
+defmodule AtlasWeb.ImageTest do
   use AtlasWeb.ConnCase, async: true
 
   import Atlas.ImageFixtures

@@ -851,75 +851,6 @@ export async function validateListCampaignPlayers(
 }
 
 
-export type GetImageUrlInput = {
-  id: UUID;
-  parentType: "campaign" | "note" | "session";
-  parentId: UUID;
-  section: "body" | "description" | "log" | "prep" | "progress_rewards";
-};
-
-export type InferGetImageUrlResult = string;
-
-export type GetImageUrlResult = | { success: true; data: InferGetImageUrlResult; }
-| { success: false; errors: AshRpcError[]; }
-
-;
-
-/**
- * Execute generic action on Image
- *
- * @ashActionType :action
- */
-export async function getImageUrl(
-  config: {
-  tenant?: string;
-  input: GetImageUrlInput;
-  headers?: Record<string, string>;
-  fetchOptions?: RequestInit;
-  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-}
-): Promise<GetImageUrlResult> {
-  const payload = {
-    action: "get_image_url",
-    ...(config.tenant !== undefined && { tenant: config.tenant }),
-    input: config.input
-  };
-
-  return executeActionRpcRequest<GetImageUrlResult>(
-    payload,
-    config
-  );
-}
-
-
-/**
- * Validate: Execute generic action on Image
- *
- * @ashActionType :action
- * @validation true
- */
-export async function validateGetImageUrl(
-  config: {
-  tenant?: string;
-  input: GetImageUrlInput;
-  headers?: Record<string, string>;
-  fetchOptions?: RequestInit;
-  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-}
-): Promise<ValidationResult> {
-  const payload = {
-    action: "get_image_url",
-    ...(config.tenant !== undefined && { tenant: config.tenant }),
-    input: config.input
-  };
-
-  return executeValidationRpcRequest<ValidationResult>(
-    payload,
-    config
-  );
-}
-
-
 export type GetActiveInvitationInput = {
   campaignId: UUID;
 };
@@ -2281,6 +2212,75 @@ export async function validateSaveNoteBody(
     action: "save_note_body",
     ...(config.tenant !== undefined && { tenant: config.tenant }),
     identity: config.identity,
+    input: config.input
+  };
+
+  return executeValidationRpcRequest<ValidationResult>(
+    payload,
+    config
+  );
+}
+
+
+export type GetImageUrlInput = {
+  id: UUID;
+  parentType: "campaign" | "note" | "session";
+  parentId: UUID;
+  section: "body" | "description" | "log" | "prep" | "progress_rewards";
+};
+
+export type InferGetImageUrlResult = string;
+
+export type GetImageUrlResult = | { success: true; data: InferGetImageUrlResult; }
+| { success: false; errors: AshRpcError[]; }
+
+;
+
+/**
+ * Execute generic action on Image
+ *
+ * @ashActionType :action
+ */
+export async function getImageUrl(
+  config: {
+  tenant?: string;
+  input: GetImageUrlInput;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<GetImageUrlResult> {
+  const payload = {
+    action: "get_image_url",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input
+  };
+
+  return executeActionRpcRequest<GetImageUrlResult>(
+    payload,
+    config
+  );
+}
+
+
+/**
+ * Validate: Execute generic action on Image
+ *
+ * @ashActionType :action
+ * @validation true
+ */
+export async function validateGetImageUrl(
+  config: {
+  tenant?: string;
+  input: GetImageUrlInput;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<ValidationResult> {
+  const payload = {
+    action: "get_image_url",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
     input: config.input
   };
 
