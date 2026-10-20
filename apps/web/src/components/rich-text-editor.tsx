@@ -93,9 +93,15 @@ export default function RichTextEditor({
     [queryClient, campaignId, section]
   );
 
+  const textOnly = Boolean(noteId || sessionId);
+
   const editor = useCreateBlockNote({
-    schema:
-      noteId || sessionId ? (textSchema as unknown as typeof schema) : schema,
+    schema: textOnly ? (textSchema as unknown as typeof schema) : schema,
+    // A pasted image file would insert an image block that this schema lacks, and BlockNote throws.
+    pasteHandler: ({ event, defaultPasteHandler }) =>
+      textOnly && event.clipboardData?.files.length
+        ? true
+        : defaultPasteHandler(),
     // The server owns validation. A document saved earlier is always one this schema accepts.
     initialContent: initial.length
       ? (initial as unknown as NonNullable<
