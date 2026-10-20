@@ -10,8 +10,13 @@ import {
   BreadcrumbSeparator,
 } from "./ui/breadcrumb";
 
-// `campaignId` links the crumb to that campaign's page.
-type Crumb = { label: string; to?: "/campaigns"; campaignId?: string };
+// `campaignId` links the crumb to that campaign's page. `list` links it to that campaign's list.
+type Crumb = {
+  label: string;
+  to?: "/campaigns";
+  campaignId?: string;
+  list?: { campaignId: string; kind: "notes" | "sessions" };
+};
 
 export function PageHeader({
   crumbs,
@@ -37,6 +42,21 @@ export function PageHeader({
                 <BreadcrumbItem>
                   {crumb.to ? (
                     <BreadcrumbLink render={<Link to={crumb.to} />}>
+                      {crumb.label}
+                    </BreadcrumbLink>
+                  ) : crumb.list ? (
+                    <BreadcrumbLink
+                      render={
+                        <Link
+                          to={
+                            crumb.list.kind === "notes"
+                              ? "/campaigns/$campaignId/notes"
+                              : "/campaigns/$campaignId/sessions"
+                          }
+                          params={{ campaignId: crumb.list.campaignId }}
+                        />
+                      }
+                    >
                       {crumb.label}
                     </BreadcrumbLink>
                   ) : crumb.campaignId ? (

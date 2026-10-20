@@ -81,6 +81,7 @@ function SessionPage() {
         crumbs={[
           { label: "Campaigns", to: "/campaigns" },
           { label: campaign.name, campaignId },
+          { label: "Sessions", list: { campaignId, kind: "sessions" } },
           { label: heading },
         ]}
         title={heading}

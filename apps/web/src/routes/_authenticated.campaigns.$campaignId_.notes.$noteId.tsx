@@ -74,6 +74,7 @@ function NotePage() {
         crumbs={[
           { label: "Campaigns", to: "/campaigns" },
           { label: campaign.name, campaignId },
+          { label: "Notes", list: { campaignId, kind: "notes" } },
           { label: note.title },
         ]}
         title={note.title}
