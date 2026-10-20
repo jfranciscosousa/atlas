@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { cn } from "cn";
 import { useBlocker } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -51,6 +52,8 @@ type Props = {
   section: Section | "body" | SessionSection;
   label: string;
   hint: string;
+  // The label stays for screen readers. Use it when a tab already shows the name.
+  hideLabel?: boolean;
   initial: BlockNoteDocument;
   revision: number;
   readOnly?: boolean;
@@ -61,6 +64,7 @@ export default function RichTextEditor({
   section,
   label,
   hint,
+  hideLabel = false,
   initial,
   revision,
   readOnly = false,
@@ -155,7 +159,10 @@ export default function RichTextEditor({
         <div>
           <h2
             id={`${section}-heading`}
-            className="font-heading text-xl font-semibold tracking-tight"
+            className={cn(
+              "font-heading text-xl font-semibold tracking-tight",
+              hideLabel && "sr-only"
+            )}
           >
             {label}
           </h2>

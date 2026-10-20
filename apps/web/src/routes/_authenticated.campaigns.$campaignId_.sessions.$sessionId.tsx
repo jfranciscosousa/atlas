@@ -165,6 +165,7 @@ function SessionPage() {
               parent={{ kind: "session", id: session.id }}
               section="prep"
               label="Prep"
+              hideLabel
               hint="Secrets, encounters, and live notes during play. Only the GM sees this."
               initial={session.prepJson}
               revision={session.prepRevision}
@@ -176,6 +177,7 @@ function SessionPage() {
               parent={{ kind: "session", id: session.id }}
               section="log"
               label="Log"
+              hideLabel
               hint="What the table saw and learned. Every player can read this."
               initial={session.logJson}
               revision={session.logRevision}
