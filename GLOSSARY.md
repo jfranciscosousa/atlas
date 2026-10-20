@@ -1,7 +1,6 @@
 # Glossary
 
-Domain terms for Atlas. Use these words in code, tests, tasks, and proposals.
-Product rules live in the Notion Atlas plan.
+Domain terms for Atlas. Use these words in code and tests.
 
 ## People
 
