@@ -16,6 +16,15 @@ defmodule Atlas.Campaigns do
       rpc_action :get_campaign_image_url, :signed_url
     end
 
+    resource Atlas.Campaigns.Session do
+      rpc_action :list_sessions, :list
+      rpc_action :get_session, :read, get_by: [:id]
+      rpc_action :create_session, :create
+      rpc_action :update_session_details, :update_details
+      rpc_action :save_session_log, :save_log
+      rpc_action :save_session_prep, :save_prep
+    end
+
     resource Atlas.Campaigns.CampaignPlayer do
       rpc_action :list_campaign_players, :list
       rpc_action :join_campaign, :join
@@ -32,6 +41,7 @@ defmodule Atlas.Campaigns do
   resources do
     resource Atlas.Campaigns.Campaign
     resource Atlas.Campaigns.Image
+    resource Atlas.Campaigns.Session
     resource Atlas.Campaigns.CampaignPlayer
     resource Atlas.Campaigns.Invitation
   end

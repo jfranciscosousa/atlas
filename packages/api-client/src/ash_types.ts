@@ -3,6 +3,7 @@
 
 
 
+export type AshDate = string;
 export type UUID = string;
 export type UtcDateTimeUsec = string;
 
@@ -118,6 +119,43 @@ export type InvitationAttributesOnlySchema = {
   id: UUID;
   revokedAt: UtcDateTimeUsec | null;
   token: string;
+};
+
+
+// Session Schema
+export type SessionResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "campaignId" | "id" | "logJson" | "logRevision" | "logSchemaVersion" | "number" | "playedOn" | "prepJson" | "prepRevision" | "prepSchemaVersion" | "title";
+  campaignId: UUID;
+  id: UUID;
+  logJson: Array<Record<string, unknown>>;
+  logRevision: number;
+  logSchemaVersion: number;
+  number: number;
+  playedOn: AshDate | null;
+  prepJson: Array<Record<string, unknown>>;
+  prepRevision: number;
+  prepSchemaVersion: number;
+  title: string | null;
+  campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
+};
+
+
+
+export type SessionAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "campaignId" | "id" | "logJson" | "logRevision" | "logSchemaVersion" | "number" | "playedOn" | "prepJson" | "prepRevision" | "prepSchemaVersion" | "title";
+  campaignId: UUID;
+  id: UUID;
+  logJson: Array<Record<string, unknown>>;
+  logRevision: number;
+  logSchemaVersion: number;
+  number: number;
+  playedOn: AshDate | null;
+  prepJson: Array<Record<string, unknown>>;
+  prepRevision: number;
+  prepSchemaVersion: number;
+  title: string | null;
 };
 
 
@@ -461,6 +499,129 @@ export type InvitationFilterInput = {
   campaign?: CampaignFilterInput;
 
 };
+export type SessionFilterInput = {
+  and?: Array<SessionFilterInput>;
+  or?: Array<SessionFilterInput>;
+  not?: Array<SessionFilterInput>;
+
+  campaignId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  logJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  logRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  logSchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  number?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  playedOn?: {
+    isNil?: boolean;
+    eq?: AshDate;
+    notEq?: AshDate;
+    in?: Array<AshDate>;
+    lessThan?: AshDate;
+    greaterThan?: AshDate;
+    lessThanOrEqual?: AshDate;
+    greaterThanOrEqual?: AshDate;
+  };
+
+  prepJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  prepRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  prepSchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  title?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  campaign?: CampaignFilterInput;
+
+};
 export type NoteFilterInput = {
   and?: Array<NoteFilterInput>;
   or?: Array<NoteFilterInput>;
@@ -587,6 +748,9 @@ export type CampaignImageFilterField = (typeof campaignImageFilterFields)[number
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
 export type InvitationFilterField = (typeof invitationFilterFields)[number];
 
+export const sessionFilterFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "title", "campaign"] as const;
+export type SessionFilterField = (typeof sessionFilterFields)[number];
+
 export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title", "campaign"] as const;
 export type NoteFilterField = (typeof noteFilterFields)[number];
 
@@ -605,6 +769,9 @@ export type CampaignImageSortField = (typeof campaignImageSortFields)[number];
 
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;
 export type InvitationSortField = (typeof invitationSortFields)[number];
+
+export const sessionSortFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "title"] as const;
+export type SessionSortField = (typeof sessionSortFields)[number];
 
 export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title"] as const;
 export type NoteSortField = (typeof noteSortFields)[number];

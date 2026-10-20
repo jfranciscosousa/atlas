@@ -1,4 +1,4 @@
-import { Eye, ScrollText } from "lucide-react";
+import { CalendarDays, Eye, ScrollText } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
@@ -58,15 +58,26 @@ function CampaignPage() {
           { label: campaign.name },
         ]}
         actions={
-          <Link
-            id="campaign-notes"
-            to="/campaigns/$campaignId/notes"
-            params={{ campaignId: campaign.id }}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <ScrollText />
-            Notes
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              id="campaign-sessions"
+              to="/campaigns/$campaignId/sessions"
+              params={{ campaignId: campaign.id }}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <CalendarDays />
+              Sessions
+            </Link>
+            <Link
+              id="campaign-notes"
+              to="/campaigns/$campaignId/notes"
+              params={{ campaignId: campaign.id }}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <ScrollText />
+              Notes
+            </Link>
+          </div>
         }
       />
     );
@@ -93,6 +104,15 @@ function CampaignPage() {
               campaignId={campaign.id}
               gmName={campaign.gmName}
             />
+            <Link
+              id="campaign-sessions"
+              to="/campaigns/$campaignId/sessions"
+              params={{ campaignId: campaign.id }}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <CalendarDays />
+              Sessions
+            </Link>
             <Link
               id="campaign-notes"
               to="/campaigns/$campaignId/notes"

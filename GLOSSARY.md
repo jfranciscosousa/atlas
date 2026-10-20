@@ -22,7 +22,7 @@ Product rules live in the Notion Atlas plan.
 - **Note**: free-form text. Guides, handouts, and plots are notes.
 - **Session**: one play session of a campaign, numbered from 1. Only the GM manages it.
 - **Log**: the final record of a session. Members read it. Only the GM edits it.
-- **Prep**: the GM-only planning text of a session.
+- **Prep**: the GM-only text of a session. The GM plans in it and takes live notes in it during play.
 - **Player log**: one player's recollection of a session. One per player per session.
 - **Progress/rewards**: one campaign text that records what already happened. Members read it. Only the GM edits it.
 
