@@ -5,7 +5,7 @@ defmodule Atlas.Content.Note do
   Any member creates a note and owns it. A note starts hidden: only its owner and the GM can
   read it. The owner or the GM reveals it, and then every member reads and edits the body.
   Other players never see an archived note.
-  Bodies are text only. Images belong to campaign sections, so the body save rejects them.
+  An image in a body follows the access of the note.
   """
   use Ash.Resource,
     otp_app: :atlas,

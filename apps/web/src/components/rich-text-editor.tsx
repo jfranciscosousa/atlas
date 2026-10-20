@@ -15,8 +15,12 @@ import "@blocknote/shadcn/style.css";
 
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
-import { createImageResolver, uploadImage } from "../lib/images";
-import { schema, textSchema } from "../lib/blocknote-schema";
+import {
+  createImageResolver,
+  uploadImage,
+  type ImageParent,
+} from "../lib/images";
+import { schema } from "../lib/blocknote-schema";
 import { createAutosaver, type SaveState } from "../lib/autosave";
 import {
   saveSessionDocument,
@@ -46,10 +50,8 @@ function UploadOnlyFilePanel(props: FilePanelProps) {
 }
 
 type Props = {
-  campaignId: string;
-  // Set for a note body or a session section. Both are text only, so they have no image upload.
-  noteId?: string;
-  sessionId?: string;
+  // The campaign, note, or session that owns this section. Images follow its access rules.
+  parent: ImageParent;
   section: Section | "body" | SessionSection;
   label: string;
   hint: string;
@@ -59,9 +61,7 @@ type Props = {
 };
 
 export default function RichTextEditor({
-  campaignId,
-  noteId,
-  sessionId,
+  parent,
   section,
   label,
   hint,
@@ -85,23 +85,16 @@ export default function RichTextEditor({
         fetchUrl: id =>
           fetchImageUrl(
             queryClient.getDefaultOptions().mutations?.meta,
-            campaignId,
-            section as Section,
+            parent,
+            section,
             id
           ),
       }),
-    [queryClient, campaignId, section]
+    [queryClient, parent.kind, parent.id, section]
   );
 
-  const textOnly = Boolean(noteId || sessionId);
-
   const editor = useCreateBlockNote({
-    schema: textOnly ? (textSchema as unknown as typeof schema) : schema,
-    // A pasted image file would insert an image block that this schema lacks, and BlockNote throws.
-    pasteHandler: ({ event, defaultPasteHandler }) =>
-      textOnly && event.clipboardData?.files.length
-        ? true
-        : defaultPasteHandler(),
+    schema,
     // The server owns validation. A document saved earlier is always one this schema accepts.
     initialContent: initial.length
       ? (initial as unknown as NonNullable<
@@ -110,7 +103,7 @@ export default function RichTextEditor({
       : undefined,
     uploadFile: file =>
       uploadImage({
-        campaignId,
+        parent,
         section,
         file,
         csrfToken: meta()?.csrfToken,
@@ -140,29 +133,26 @@ export default function RichTextEditor({
     const saver = createAutosaver<BlockNoteDocument>({
       revision,
       onState: report,
-      save: (doc, expected) =>
-        sessionId
-          ? saveSessionDocument(
-              queryClient.getDefaultOptions().mutations?.meta,
-              sessionId,
-              section as SessionSection,
-              doc,
-              expected
-            )
-          : noteId
-            ? saveNoteDocument(
-                queryClient.getDefaultOptions().mutations?.meta,
-                noteId,
-                doc,
-                expected
-              )
-            : saveCampaignSection(
-                queryClient.getDefaultOptions().mutations?.meta,
-                campaignId,
-                section as Section,
-                doc,
-                expected
-              ),
+      save: (doc, expected) => {
+        const meta = queryClient.getDefaultOptions().mutations?.meta;
+        if (parent.kind === "session")
+          return saveSessionDocument(
+            meta,
+            parent.id,
+            section as SessionSection,
+            doc,
+            expected
+          );
+        if (parent.kind === "note")
+          return saveNoteDocument(meta, parent.id, doc, expected);
+        return saveCampaignSection(
+          meta,
+          parent.id,
+          section as Section,
+          doc,
+          expected
+        );
+      },
     });
     autosaver.current = saver;
     const flush = () => void saver.flush();
@@ -172,7 +162,7 @@ export default function RichTextEditor({
       void saver.flush();
       saver.dispose();
     };
-  }, [queryClient, campaignId, noteId, sessionId, section, revision, readOnly]);
+  }, [queryClient, parent.kind, parent.id, section, revision, readOnly]);
 
   return (
     <section id={`${section}-section`} aria-labelledby={`${section}-heading`}>

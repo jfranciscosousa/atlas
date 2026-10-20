@@ -2,12 +2,13 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   createCampaign,
   getCampaign,
-  getCampaignImageUrl,
+  getImageUrl,
   listCampaigns,
   saveCampaignDescription,
   saveCampaignProgressRewards,
 } from "@atlas/api-client";
 
+import type { ImageParent } from "../lib/images.ts";
 import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import type { SaveOutcome } from "../lib/autosave.ts";
 
@@ -122,13 +123,18 @@ export async function saveCampaignSection(
 
 export async function fetchImageUrl(
   meta: Meta,
-  campaignId: string,
-  section: Section,
+  parent: ImageParent,
+  section: string,
   imageId: string
 ): Promise<string> {
-  const result = await getCampaignImageUrl({
+  const result = await getImageUrl({
     ...rpcOptions(meta),
-    input: { id: imageId, campaignId, section },
+    input: {
+      id: imageId,
+      parentType: parent.kind,
+      parentId: parent.id,
+      section: section as Section,
+    },
   });
   if (!result.success)
     throw new Error(result.errors[0]?.message ?? "Could not load the image.");

@@ -117,8 +117,7 @@ function NotePage() {
       {/* The key gives each note its own editor; BlockNote reads its content only once. */}
       <RichTextEditor
         key={note.id}
-        campaignId={campaignId}
-        noteId={note.id}
+        parent={{ kind: "note", id: note.id }}
         section="body"
         label="Text"
         hint="Write anything: a plot, a guide, a handout."

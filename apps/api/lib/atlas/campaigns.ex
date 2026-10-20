@@ -13,7 +13,7 @@ defmodule Atlas.Campaigns do
     end
 
     resource Atlas.Campaigns.Image do
-      rpc_action :get_campaign_image_url, :signed_url
+      rpc_action :get_image_url, :signed_url
     end
 
     resource Atlas.Campaigns.Session do

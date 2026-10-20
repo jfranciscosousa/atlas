@@ -122,8 +122,7 @@ function SessionPage() {
       {/* The key gives each session its own editor; BlockNote reads its content only once. */}
       <RichTextEditor
         key={`${session.id}-log`}
-        campaignId={campaignId}
-        sessionId={session.id}
+        parent={{ kind: "session", id: session.id }}
         section="log"
         label="Log"
         hint={
@@ -148,8 +147,7 @@ function SessionPage() {
           <div className="mt-4">
             <RichTextEditor
               key={`${session.id}-prep`}
-              campaignId={campaignId}
-              sessionId={session.id}
+              parent={{ kind: "session", id: session.id }}
               section="prep"
               label="Prep"
               hint="Secrets, encounters, and live notes during play. Players never receive this."

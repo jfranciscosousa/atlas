@@ -137,7 +137,7 @@ function CampaignPage() {
       {/* The key gives each campaign its own editor; BlockNote reads its content only once. */}
       <RichTextEditor
         key={`${campaign.id}-description`}
-        campaignId={campaign.id}
+        parent={{ kind: "campaign", id: campaign.id }}
         section="description"
         label="Description"
         hint="The world, the premise, and what the table should know first."
@@ -146,7 +146,7 @@ function CampaignPage() {
       />
       <RichTextEditor
         key={`${campaign.id}-progress_rewards`}
-        campaignId={campaign.id}
+        parent={{ kind: "campaign", id: campaign.id }}
         section="progress_rewards"
         label="Progress and rewards"
         hint="Milestones reached, loot earned, and what comes next."

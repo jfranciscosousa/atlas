@@ -21,7 +21,7 @@ defmodule AtlasWeb.Router do
     post "/rpc/run", AshTypescriptRpcController, :run
     post "/rpc/validate", AshTypescriptRpcController, :validate
 
-    post "/api/campaigns/:campaign_id/sections/:section/images",
+    post "/api/:parent/:parent_id/sections/:section/images",
          ImageUploadController,
          :create
 

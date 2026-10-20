@@ -28,8 +28,8 @@ defmodule AtlasWeb.CampaignImageTest do
   end
 
   defp url(who, image_id, campaign, section) do
-    rpc(who, "get_campaign_image_url", %{
-      input: %{id: image_id, campaignId: campaign, section: section}
+    rpc(who, "get_image_url", %{
+      input: %{id: image_id, parentType: "campaign", parentId: campaign, section: section}
     })
   end
 
@@ -110,9 +110,14 @@ defmodule AtlasWeb.CampaignImageTest do
     assert %{"error" => "Sign in to continue."} =
              rpc(
                ctx.conn,
-               "get_campaign_image_url",
+               "get_image_url",
                %{
-                 input: %{id: id, campaignId: ctx.campaign, section: "description"}
+                 input: %{
+                   id: id,
+                   parentType: "campaign",
+                   parentId: ctx.campaign,
+                   section: "description"
+                 }
                },
                401
              )

@@ -164,20 +164,6 @@ defmodule AtlasWeb.SessionRpcTest do
     assert %{"success" => false} = save(ctx.other, "save_session_log", id, 0, [paragraph("x")])
   end
 
-  test "session text is text only: an image block is rejected", ctx do
-    assert %{"data" => %{"id" => id}} = create(ctx.gm, ctx.campaign_id)
-
-    image = %{
-      "id" => "i1",
-      "type" => "image",
-      "props" => %{"url" => "atlas-image:6f1b2f0e-6c1f-4f64-9a07-0b3d0a3f2b11"},
-      "children" => []
-    }
-
-    assert %{"success" => false} = save(ctx.gm, "save_session_log", id, 0, [image])
-    assert %{"success" => false} = save(ctx.gm, "save_session_prep", id, 0, [image])
-  end
-
   test "sessions have no archive or delete action" do
     names = Atlas.Campaigns.Session |> Ash.Resource.Info.actions() |> Enum.map(& &1.type)
     refute :destroy in names

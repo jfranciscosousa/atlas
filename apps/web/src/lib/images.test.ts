@@ -13,7 +13,7 @@ test("an upload posts multipart with the CSRF token and returns a stable referen
   const file = new File(["x"], "a.png", { type: "image/png" });
 
   const reference = await uploadImage({
-    campaignId,
+    parent: { kind: "campaign", id: campaignId },
     section: "description",
     file,
     csrfToken: "csrf",
@@ -32,6 +32,29 @@ test("an upload posts multipart with the CSRF token and returns a stable referen
   assert.ok(init?.body instanceof FormData);
 });
 
+test("an upload into a note or a session goes to that parent's route", async t => {
+  const request = t.mock.fn(
+    async (_url: RequestInfo | URL, _init?: RequestInit) =>
+      Response.json({ id: "img-2" }, { status: 201 })
+  );
+  const file = new File(["x"], "a.png", { type: "image/png" });
+
+  for (const [kind, path, section] of [
+    ["note", "notes", "body"],
+    ["session", "sessions", "prep"],
+  ] as const) {
+    await uploadImage({
+      parent: { kind, id: "abc" },
+      section,
+      file,
+      csrfToken: "csrf",
+      fetchImpl: request as unknown as typeof fetch,
+    });
+    const [url] = request.mock.calls.at(-1)!.arguments;
+    assert.equal(url, `/api/${path}/abc/sections/${section}/images`);
+  }
+});
+
 test("an upload shows the server message when it fails", async () => {
   const fetchImpl = (async () =>
     Response.json(
@@ -41,7 +64,7 @@ test("an upload shows the server message when it fails", async () => {
 
   await assert.rejects(
     uploadImage({
-      campaignId,
+      parent: { kind: "campaign", id: campaignId },
       section: "description",
       file: new File(["x"], "a.pdf"),
       csrfToken: "csrf",
@@ -59,7 +82,7 @@ test("an upload over 25 MB is refused before any request", async () => {
 
   await assert.rejects(
     uploadImage({
-      campaignId,
+      parent: { kind: "campaign", id: campaignId },
       section: "description",
       file: big,
       csrfToken: "csrf",

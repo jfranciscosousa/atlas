@@ -47,7 +47,6 @@ defmodule Atlas.RichText.Save do
     end
   end
 
-  # shortcut: images belong to campaigns only. Generalise when a second parent type embeds images.
   # An invalid document already carries its own argument error.
   defp verify_images(changeset, _section, nil), do: changeset
 
@@ -58,13 +57,18 @@ defmodule Atlas.RichText.Save do
 
       ids ->
         Ash.Changeset.before_action(changeset, fn changeset ->
-          if Atlas.Campaigns.Image.all_in_section?(changeset.data.id, section, ids),
-            do: changeset,
-            else:
-              Ash.Changeset.add_error(changeset,
-                field: :json,
-                message: "references an image that does not belong to this section"
-              )
+          if Atlas.Campaigns.Image.all_in_section?(
+               Atlas.Images.Parent.kind(changeset.resource),
+               changeset.data.id,
+               section,
+               ids
+             ),
+             do: changeset,
+             else:
+               Ash.Changeset.add_error(changeset,
+                 field: :json,
+                 message: "references an image that does not belong to this section"
+               )
         end)
     end
   end

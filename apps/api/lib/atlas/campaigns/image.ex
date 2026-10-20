@@ -1,6 +1,6 @@
 defmodule Atlas.Campaigns.Image do
   @moduledoc """
-  A converted image uploaded into one section of one campaign.
+  A converted image uploaded into one section of a campaign, a note, or a session.
 
   Access always follows the section that owns the image. Documents store only the image ID,
   and signed URLs are issued per request after the section check.
@@ -16,7 +16,8 @@ defmodule Atlas.Campaigns.Image do
 
   alias Atlas.Campaigns.Checks.CanEditSection
 
-  @sections [:description, :progress_rewards]
+  @sections [:description, :progress_rewards, :body, :log, :prep]
+  @kinds Atlas.Images.Parent.kinds()
 
   postgres do
     table "campaign_images"
@@ -24,11 +25,12 @@ defmodule Atlas.Campaigns.Image do
 
     custom_indexes do
       index [:campaign_id, :section]
+      index [:parent_type, :parent_id, :section]
     end
   end
 
   typescript do
-    type_name "CampaignImage"
+    type_name "Image"
   end
 
   actions do
@@ -36,13 +38,26 @@ defmodule Atlas.Campaigns.Image do
 
     create :create do
       primary? true
-      accept [:campaign_id, :section, :storage_key, :byte_size, :width, :height, :animated]
+
+      accept [
+        :campaign_id,
+        :parent_type,
+        :parent_id,
+        :section,
+        :storage_key,
+        :byte_size,
+        :width,
+        :height,
+        :animated
+      ]
+
       change relate_actor(:uploader)
     end
 
     action :signed_url, :string do
       argument :id, :uuid, allow_nil?: false
-      argument :campaign_id, :uuid, allow_nil?: false
+      argument :parent_type, :atom, allow_nil?: false, constraints: [one_of: @kinds]
+      argument :parent_id, :uuid, allow_nil?: false
       argument :section, :atom, allow_nil?: false, constraints: [one_of: @sections]
 
       run Atlas.Campaigns.Image.SignedUrl
@@ -55,7 +70,7 @@ defmodule Atlas.Campaigns.Image do
       authorize_if always()
     end
 
-    # Both sections are readable by every member, so an image follows the same rule.
+    # Reading the row is open to every member. The signed-URL action checks the section.
     policy action_type(:read) do
       authorize_if expr(
                      exists(
@@ -76,6 +91,13 @@ defmodule Atlas.Campaigns.Image do
 
   attributes do
     uuid_primary_key :id
+
+    attribute :parent_type, :atom do
+      allow_nil? false
+      constraints one_of: @kinds
+    end
+
+    attribute :parent_id, :uuid, allow_nil?: false
 
     attribute :section, :atom do
       allow_nil? false
@@ -104,12 +126,15 @@ defmodule Atlas.Campaigns.Image do
     end
   end
 
-  @doc "True when every ID names an image uploaded into this section of this campaign."
-  def all_in_section?(campaign_id, section, ids) do
+  @doc "True when every ID names an image uploaded into this section of this parent."
+  def all_in_section?(parent_type, parent_id, section, ids) do
     # Internal integrity check on server-derived values. It reveals nothing to the caller.
     count =
       __MODULE__
-      |> Ash.Query.filter(campaign_id == ^campaign_id and section == ^section and id in ^ids)
+      |> Ash.Query.filter(
+        parent_type == ^parent_type and parent_id == ^parent_id and section == ^section and
+          id in ^ids
+      )
       |> Ash.count!(authorize?: false)
 
     count == length(ids)

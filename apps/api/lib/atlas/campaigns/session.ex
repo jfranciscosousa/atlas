@@ -5,7 +5,8 @@ defmodule Atlas.Campaigns.Session do
   Every member reads the number, title, played date and log. Only the GM creates a session,
   edits it, and reads or writes its prep. The GM writes live notes in the prep and the final
   record in the log; nothing moves from one to the other by itself.
-  Sessions are never archived or deleted. Text only: images belong to campaign sections.
+  Sessions are never archived or deleted. Images follow the access of the section that holds them:
+  the log is open to every member and the prep to the GM.
   """
   use Ash.Resource,
     otp_app: :atlas,

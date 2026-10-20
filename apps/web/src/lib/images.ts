@@ -1,15 +1,24 @@
 export const IMAGE_REF_PREFIX = "atlas-image:";
 export const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 
+/** What owns the section that holds an image: a campaign, a note, or a session. */
+export type ImageParent = { kind: "campaign" | "note" | "session"; id: string };
+
+const PARENT_PATH = {
+  campaign: "campaigns",
+  note: "notes",
+  session: "sessions",
+};
+
 /** Uploads one image and returns the reference the document stores. Never a URL. */
 export async function uploadImage(options: {
-  campaignId: string;
+  parent: ImageParent;
   section: string;
   file: File;
   csrfToken: string | undefined;
   fetchImpl?: typeof fetch;
 }): Promise<string> {
-  const { campaignId, section, file, csrfToken, fetchImpl = fetch } = options;
+  const { parent, section, file, csrfToken, fetchImpl = fetch } = options;
   if (!csrfToken)
     throw new Error("Your session expired. Reload the page and try again.");
   if (file.size > MAX_IMAGE_BYTES)
@@ -18,7 +27,7 @@ export async function uploadImage(options: {
   const body = new FormData();
   body.append("file", file);
   const response = await fetchImpl(
-    `/api/campaigns/${encodeURIComponent(campaignId)}/sections/${encodeURIComponent(section)}/images`,
+    `/api/${PARENT_PATH[parent.kind]}/${encodeURIComponent(parent.id)}/sections/${encodeURIComponent(section)}/images`,
     {
       method: "POST",
       credentials: "same-origin",

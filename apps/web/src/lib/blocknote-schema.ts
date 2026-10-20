@@ -9,13 +9,5 @@ void file;
 
 export const schema = BlockNoteSchema.create({ blockSpecs });
 
-// Notes have no image storage, so their editor has no image block.
-const { image, ...textBlockSpecs } = blockSpecs;
-void image;
-
-export const textSchema = BlockNoteSchema.create({
-  blockSpecs: textBlockSpecs,
-});
-
 /** The native BlockNote block array, as the API sends and stores it. */
 export type BlockNoteDocument = Array<Record<string, unknown>>;

@@ -172,19 +172,6 @@ defmodule AtlasWeb.NoteRpcTest do
              })
   end
 
-  test "a body cannot reference an image", ctx do
-    assert %{"success" => true, "data" => %{"id" => id}} = create(ctx.gm, ctx.campaign_id)
-
-    image = %{
-      "id" => "i1",
-      "type" => "image",
-      "props" => %{"url" => "atlas-image:#{Ecto.UUID.generate()}"},
-      "children" => []
-    }
-
-    assert %{"success" => false} = save(ctx.gm, id, 0, [image])
-  end
-
   test "an empty title is rejected and anonymous requests are refused", ctx do
     assert %{"success" => false} = create(ctx.gm, ctx.campaign_id, "   ")
 

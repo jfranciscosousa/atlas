@@ -81,8 +81,8 @@ export type CampaignPlayerAttributesOnlySchema = {
 };
 
 
-// CampaignImage Schema
-export type CampaignImageResourceSchema = {
+// Image Schema
+export type ImageResourceSchema = {
   __type: "Resource";
   __primitiveFields: "id";
   id: UUID;
@@ -90,7 +90,7 @@ export type CampaignImageResourceSchema = {
 
 
 
-export type CampaignImageAttributesOnlySchema = {
+export type ImageAttributesOnlySchema = {
   __type: "Resource";
   __primitiveFields: "id";
   id: UUID;
@@ -402,10 +402,10 @@ export type CampaignPlayerFilterInput = {
   campaign?: CampaignFilterInput;
 
 };
-export type CampaignImageFilterInput = {
-  and?: Array<CampaignImageFilterInput>;
-  or?: Array<CampaignImageFilterInput>;
-  not?: Array<CampaignImageFilterInput>;
+export type ImageFilterInput = {
+  and?: Array<ImageFilterInput>;
+  or?: Array<ImageFilterInput>;
+  not?: Array<ImageFilterInput>;
 
   id?: {
     eq?: UUID;
@@ -742,8 +742,8 @@ export type CampaignFilterField = (typeof campaignFilterFields)[number];
 export const campaignPlayerFilterFields = ["campaignId", "displayName", "id", "campaign"] as const;
 export type CampaignPlayerFilterField = (typeof campaignPlayerFilterFields)[number];
 
-export const campaignImageFilterFields = ["id"] as const;
-export type CampaignImageFilterField = (typeof campaignImageFilterFields)[number];
+export const imageFilterFields = ["id"] as const;
+export type ImageFilterField = (typeof imageFilterFields)[number];
 
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
 export type InvitationFilterField = (typeof invitationFilterFields)[number];
@@ -764,8 +764,8 @@ export type CampaignSortField = (typeof campaignSortFields)[number];
 export const campaignPlayerSortFields = ["campaignId", "displayName", "id"] as const;
 export type CampaignPlayerSortField = (typeof campaignPlayerSortFields)[number];
 
-export const campaignImageSortFields = ["id"] as const;
-export type CampaignImageSortField = (typeof campaignImageSortFields)[number];
+export const imageSortFields = ["id"] as const;
+export type ImageSortField = (typeof imageSortFields)[number];
 
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;
 export type InvitationSortField = (typeof invitationSortFields)[number];

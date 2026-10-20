@@ -851,15 +851,16 @@ export async function validateListCampaignPlayers(
 }
 
 
-export type GetCampaignImageUrlInput = {
+export type GetImageUrlInput = {
   id: UUID;
-  campaignId: UUID;
-  section: "description" | "progress_rewards";
+  parentType: "campaign" | "note" | "session";
+  parentId: UUID;
+  section: "body" | "description" | "log" | "prep" | "progress_rewards";
 };
 
-export type InferGetCampaignImageUrlResult = string;
+export type InferGetImageUrlResult = string;
 
-export type GetCampaignImageUrlResult = | { success: true; data: InferGetCampaignImageUrlResult; }
+export type GetImageUrlResult = | { success: true; data: InferGetImageUrlResult; }
 | { success: false; errors: AshRpcError[]; }
 
 ;
@@ -869,22 +870,22 @@ export type GetCampaignImageUrlResult = | { success: true; data: InferGetCampaig
  *
  * @ashActionType :action
  */
-export async function getCampaignImageUrl(
+export async function getImageUrl(
   config: {
   tenant?: string;
-  input: GetCampaignImageUrlInput;
+  input: GetImageUrlInput;
   headers?: Record<string, string>;
   fetchOptions?: RequestInit;
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
-): Promise<GetCampaignImageUrlResult> {
+): Promise<GetImageUrlResult> {
   const payload = {
-    action: "get_campaign_image_url",
+    action: "get_image_url",
     ...(config.tenant !== undefined && { tenant: config.tenant }),
     input: config.input
   };
 
-  return executeActionRpcRequest<GetCampaignImageUrlResult>(
+  return executeActionRpcRequest<GetImageUrlResult>(
     payload,
     config
   );
@@ -897,17 +898,17 @@ export async function getCampaignImageUrl(
  * @ashActionType :action
  * @validation true
  */
-export async function validateGetCampaignImageUrl(
+export async function validateGetImageUrl(
   config: {
   tenant?: string;
-  input: GetCampaignImageUrlInput;
+  input: GetImageUrlInput;
   headers?: Record<string, string>;
   fetchOptions?: RequestInit;
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<ValidationResult> {
   const payload = {
-    action: "get_campaign_image_url",
+    action: "get_image_url",
     ...(config.tenant !== undefined && { tenant: config.tenant }),
     input: config.input
   };
