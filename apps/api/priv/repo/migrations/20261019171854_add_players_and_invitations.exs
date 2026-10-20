@@ -23,7 +23,8 @@ defmodule Atlas.Repo.Migrations.AddPlayersAndInvitations do
             name: "campaign_invitations_campaign_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
     end
 
     create unique_index(:campaign_invitations, [:token],
@@ -48,7 +49,8 @@ defmodule Atlas.Repo.Migrations.AddPlayersAndInvitations do
             name: "campaign_players_campaign_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
 
       add :user_id,
           references(:users,
@@ -56,7 +58,8 @@ defmodule Atlas.Repo.Migrations.AddPlayersAndInvitations do
             name: "campaign_players_user_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
     end
 
     create unique_index(:campaign_players, [:campaign_id, :user_id],

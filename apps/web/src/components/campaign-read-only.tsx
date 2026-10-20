@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { BlockNoteDocument } from "../lib/blocknote-schema";
 
 import { getEditor } from "./rich-text-editor-loader";
@@ -19,9 +21,11 @@ type Campaign = {
 export function CampaignReadOnly({
   campaign,
   crumbs,
+  actions,
 }: {
   campaign: Campaign;
   crumbs: { label: string; to?: "/campaigns" }[];
+  actions?: ReactNode;
 }) {
   const RichTextEditor = getEditor();
 
@@ -30,6 +34,7 @@ export function CampaignReadOnly({
       <PageHeader
         crumbs={crumbs}
         title={campaign.name}
+        actions={actions}
         leading={
           <CampaignAvatar
             id={campaign.id}

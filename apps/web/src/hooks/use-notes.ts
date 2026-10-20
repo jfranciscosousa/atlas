@@ -1,11 +1,13 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, type QueryClient } from "@tanstack/react-query";
 import {
   archiveNote,
   createNote,
   getNote,
+  hideNote,
   listNotes,
   renameNote,
   restoreNote,
+  revealNote,
   saveNoteBody,
 } from "@atlas/api-client";
 
@@ -24,7 +26,11 @@ const notesKey = (campaignId: string) =>
 export function notesQueryOptions(campaignId: string, archived = false) {
   return rpcQuery(
     listNotes,
-    run => run({ input: { campaignId, archived }, fields: ["id", "title"] }),
+    run =>
+      run({
+        input: { campaignId, archived },
+        fields: ["id", "title", "revealed", "isOwner", "ownerName"],
+      }),
     { fallback: "Could not load the notes." }
   );
 }
@@ -56,6 +62,37 @@ export function useNoteRestore(campaignId: string) {
   );
 }
 
+// Set the open note directly: a refetch would hand its editor an older body revision.
+const revealOptions = (campaignId: string) => ({
+  fallback: "Could not update the note.",
+  onSuccess: (
+    { id, revealed }: { id: string; revealed: boolean },
+    queryClient: QueryClient
+  ) =>
+    queryClient.setQueryData(
+      noteQueryOptions(id).queryKey,
+      note => note && { ...note, revealed }
+    ),
+  invalidate: [notesKey(campaignId)],
+});
+
+/** Reveals a note to the players. The list and the open note follow. */
+export function useNoteReveal(campaignId: string) {
+  return useRpcMutation(
+    revealNote,
+    (run, id: string) => run({ identity: id, fields: ["id", "revealed"] }),
+    revealOptions(campaignId)
+  );
+}
+
+export function useNoteHide(campaignId: string) {
+  return useRpcMutation(
+    hideNote,
+    (run, id: string) => run({ identity: id, fields: ["id", "revealed"] }),
+    revealOptions(campaignId)
+  );
+}
+
 // No list refetch here: the list route reloads on every visit, and a refetch would flash the
 // new note in the list before the note page opens.
 export function useNoteCreate(campaignId: string) {
@@ -73,7 +110,16 @@ export function noteQueryOptions(noteId: string) {
     run =>
       run({
         getBy: { id: noteId },
-        fields: ["id", "campaignId", "title", "bodyJson", "bodyRevision"],
+        fields: [
+          "id",
+          "campaignId",
+          "title",
+          "bodyJson",
+          "bodyRevision",
+          "revealed",
+          "isOwner",
+          "ownerName",
+        ],
       }),
     {
       fallback: "Note not found.",

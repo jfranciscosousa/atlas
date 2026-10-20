@@ -124,13 +124,16 @@ export type InvitationAttributesOnlySchema = {
 // Note Schema
 export type NoteResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "id" | "title";
+  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "id" | "isOwner" | "ownerName" | "revealed" | "title";
   archivedAt: UtcDateTimeUsec | null;
   bodyJson: Array<Record<string, unknown>>;
   bodyRevision: number;
   bodySchemaVersion: number;
   campaignId: UUID;
   id: UUID;
+  isOwner: boolean | null;
+  ownerName: string | null;
+  revealed: boolean;
   title: string;
   campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
 };
@@ -139,13 +142,14 @@ export type NoteResourceSchema = {
 
 export type NoteAttributesOnlySchema = {
   __type: "Resource";
-  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "id" | "title";
+  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "id" | "revealed" | "title";
   archivedAt: UtcDateTimeUsec | null;
   bodyJson: Array<Record<string, unknown>>;
   bodyRevision: number;
   bodySchemaVersion: number;
   campaignId: UUID;
   id: UUID;
+  revealed: boolean;
   title: string;
 };
 
@@ -523,6 +527,33 @@ export type NoteFilterInput = {
     greaterThanOrEqual?: UUID;
   };
 
+  isOwner?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  ownerName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  revealed?: {
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
   title?: {
     eq?: string;
     notEq?: string;
@@ -556,7 +587,7 @@ export type CampaignImageFilterField = (typeof campaignImageFilterFields)[number
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
 export type InvitationFilterField = (typeof invitationFilterFields)[number];
 
-export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "title", "campaign"] as const;
+export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title", "campaign"] as const;
 export type NoteFilterField = (typeof noteFilterFields)[number];
 
 
@@ -575,7 +606,7 @@ export type CampaignImageSortField = (typeof campaignImageSortFields)[number];
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;
 export type InvitationSortField = (typeof invitationSortFields)[number];
 
-export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "title"] as const;
+export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title"] as const;
 export type NoteSortField = (typeof noteSortFields)[number];
 
 

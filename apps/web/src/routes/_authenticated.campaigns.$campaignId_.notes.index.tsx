@@ -24,6 +24,10 @@ import {
 import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { PageHeader } from "../components/page-header";
+import {
+  NoteRevealButton,
+  NoteVisibilityBadge,
+} from "../components/note-reveal-button";
 import { NewNoteButton } from "../components/new-note-button";
 
 export const Route = createFileRoute(
@@ -40,7 +44,7 @@ export const Route = createFileRoute(
   staleTime: 0,
   loader: async ({ context, params, deps }) => {
     try {
-      const [campaign] = await Promise.all([
+      await Promise.all([
         context.queryClient.ensureQueryData(
           campaignQueryOptions(params.campaignId)
         ),
@@ -49,8 +53,6 @@ export const Route = createFileRoute(
           staleTime: 0,
         }),
       ]);
-      // Players cannot read notes yet: every note starts hidden from them.
-      if (!campaign.isGm) throw new Error("not the GM");
     } catch {
       throw notFound();
     }
@@ -76,7 +78,11 @@ function NotesPage() {
           { label: archived ? "Archived notes" : "Notes" },
         ]}
         title={archived ? "Archived notes" : "Notes"}
-        description="Plots, guides, handouts, and anything else that fits nowhere."
+        description={
+          campaign.isGm
+            ? "Plots, guides, handouts, and anything else that fits nowhere. A new note is hidden until you reveal it."
+            : "Notes the GM revealed, and your own. A new note is hidden until you reveal it."
+        }
         actions={
           <div className="flex items-center gap-3">
             <Link
@@ -111,7 +117,9 @@ function NotesPage() {
             <EmptyDescription>
               {archived
                 ? "Notes you archive appear here, and you can restore them."
-                : "Write down a plot, a campaign guide, or a handout."}
+                : campaign.isGm
+                  ? "Write down a plot, a campaign guide, or a handout."
+                  : "Write a note of your own, or wait for the GM to reveal one."}
             </EmptyDescription>
           </EmptyHeader>
           {!archived && (
@@ -124,41 +132,64 @@ function NotesPage() {
         </Empty>
       ) : (
         <ul id="note-list" className="grid gap-3">
-          {notes.map(note => (
-            <li
-              key={note.id}
-              className="group flex items-center gap-2 rounded-2xl border bg-card shadow-xs transition-all focus-within:ring-3 focus-within:ring-ring/30 hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <Link
-                id={`note-${note.id}`}
-                to="/campaigns/$campaignId/notes/$noteId"
-                params={{ campaignId, noteId: note.id }}
-                className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl p-4 outline-none"
+          {notes.map(note => {
+            // Other members read a revealed note but cannot change what it is.
+            const canManage = campaign.isGm || note.isOwner;
+            return (
+              <li
+                key={note.id}
+                className="group flex items-center gap-2 rounded-2xl border bg-card shadow-xs transition-all focus-within:ring-3 focus-within:ring-ring/30 hover:-translate-y-0.5 hover:shadow-md"
               >
-                <span className="min-w-0 flex-1 truncate font-heading text-lg font-semibold">
-                  {note.title}
-                </span>
-                <ChevronRightIcon
-                  aria-hidden="true"
-                  className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-                />
-              </Link>
-              <Button
-                id={`note-${archived ? "restore" : "archive"}-${note.id}`}
-                variant="ghost"
-                size="icon"
-                className="mr-3"
-                aria-label={
-                  archived ? `Restore ${note.title}` : `Archive ${note.title}`
-                }
-                title={archived ? "Restore" : "Archive"}
-                disabled={archive.isPending}
-                onClick={() => archive.mutate(note.id)}
-              >
-                {archived ? <ArchiveRestoreIcon /> : <ArchiveIcon />}
-              </Button>
-            </li>
-          ))}
+                <Link
+                  id={`note-${note.id}`}
+                  to="/campaigns/$campaignId/notes/$noteId"
+                  params={{ campaignId, noteId: note.id }}
+                  className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl p-4 outline-none"
+                >
+                  <span className="min-w-0 flex-1 truncate font-heading text-lg font-semibold">
+                    {note.title}
+                  </span>
+                  {!note.isOwner && note.ownerName && (
+                    <span className="hidden text-sm text-muted-foreground sm:inline">
+                      {note.ownerName}
+                    </span>
+                  )}
+                  <NoteVisibilityBadge revealed={note.revealed} />
+                  <ChevronRightIcon
+                    aria-hidden="true"
+                    className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                  />
+                </Link>
+                {canManage && !archived && (
+                  <NoteRevealButton
+                    campaignId={campaignId}
+                    id={note.id}
+                    revealed={note.revealed}
+                    title={note.title}
+                    icon
+                  />
+                )}
+                {canManage && (
+                  <Button
+                    id={`note-${archived ? "restore" : "archive"}-${note.id}`}
+                    variant="ghost"
+                    size="icon"
+                    className="mr-3"
+                    aria-label={
+                      archived
+                        ? `Restore ${note.title}`
+                        : `Archive ${note.title}`
+                    }
+                    title={archived ? "Restore" : "Archive"}
+                    disabled={archive.isPending}
+                    onClick={() => archive.mutate(note.id)}
+                  >
+                    {archived ? <ArchiveRestoreIcon /> : <ArchiveIcon />}
+                  </Button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

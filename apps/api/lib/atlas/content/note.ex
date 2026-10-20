@@ -2,8 +2,9 @@ defmodule Atlas.Content.Note do
   @moduledoc """
   A free-form campaign document: a plot, a guide, a handout, anything that fits no other kind.
 
-  shortcut: only the campaign GM can access notes, because campaigns have no members yet.
-  Add player-private notes, owners, and sharing when membership exists.
+  Any member creates a note and owns it. A note starts hidden: only its owner and the GM can
+  read it. The owner or the GM reveals it, and then every member reads and edits the body.
+  Other players never see an archived note.
   Bodies are text only. Images belong to campaign sections, so the body save rejects them.
   """
   use Ash.Resource,
@@ -13,7 +14,7 @@ defmodule Atlas.Content.Note do
     authorizers: [Ash.Policy.Authorizer],
     extensions: [AshTypescript.Resource, Atlas.RichText]
 
-  alias Atlas.Content.Checks.ActorIsCampaignGm
+  alias Atlas.Content.Checks.ActorIsCampaignMember
 
   postgres do
     table "notes"
@@ -49,6 +50,7 @@ defmodule Atlas.Content.Note do
     create :create do
       primary? true
       accept [:campaign_id, :title]
+      change relate_actor(:owner)
     end
 
     update :rename do
@@ -64,9 +66,18 @@ defmodule Atlas.Content.Note do
     update :restore do
       change set_attribute(:archived_at, nil)
     end
+
+    update :reveal do
+      change set_attribute(:revealed, true)
+    end
+
+    update :hide do
+      change set_attribute(:revealed, false)
+    end
   end
 
-  # Only the campaign's GM can see or change a note. Everyone else gets not found.
+  # The GM and the owner see and manage a note. Other members read a revealed, active note and
+  # edit its body. Everyone else gets not found.
   policies do
     policy always() do
       forbid_unless actor_present()
@@ -74,11 +85,32 @@ defmodule Atlas.Content.Note do
     end
 
     policy action_type(:create) do
-      authorize_if ActorIsCampaignGm
+      authorize_if ActorIsCampaignMember
     end
 
-    policy action_type([:read, :update]) do
+    policy action_type(:read) do
       authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
+      authorize_if expr(owner_id == ^actor(:id))
+
+      authorize_if expr(
+                     revealed and is_nil(archived_at) and
+                       exists(campaign.players, user_id == ^actor(:id))
+                   )
+    end
+
+    policy action([:rename, :archive, :restore, :reveal, :hide]) do
+      authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
+      authorize_if expr(owner_id == ^actor(:id))
+    end
+
+    policy action(:save_body) do
+      authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
+      authorize_if expr(owner_id == ^actor(:id))
+
+      authorize_if expr(
+                     revealed and is_nil(archived_at) and
+                       exists(campaign.players, user_id == ^actor(:id))
+                   )
     end
   end
 
@@ -93,6 +125,12 @@ defmodule Atlas.Content.Note do
 
     attribute :archived_at, :utc_datetime_usec, public?: true
 
+    attribute :revealed, :boolean do
+      allow_nil? false
+      default false
+      public? true
+    end
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
@@ -103,5 +141,15 @@ defmodule Atlas.Content.Note do
       attribute_writable? true
       public? true
     end
+
+    belongs_to :owner, Atlas.Accounts.User do
+      allow_nil? false
+      attribute_writable? false
+    end
+  end
+
+  calculations do
+    calculate :is_owner, :boolean, expr(owner_id == ^actor(:id)), public?: true
+    calculate :owner_name, :string, expr(owner.display_name), public?: true
   end
 end

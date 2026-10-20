@@ -41,6 +41,8 @@ Product rules live in the Notion Atlas plan.
 - **GM-only**: readable and editable only by the GM.
 - **Player-private**: readable and editable by one player and the GM.
 - **Hidden**: an entry not yet revealed to other players. Every entry starts hidden.
+- **Revealed**: an entry its owner or the GM made readable by all members. The owner or the GM can hide it again.
+- **Owner**: the member who created an entry. The owner and the GM read a hidden entry and manage it.
 - **Archived**: removed from active lists, never deleted. The owner or the GM can restore it.
 - **Restricted entry**: the label a reader sees for a link to an entry they cannot access.
 - **Deleted entry**: the label an authorized reader sees for a link to an archived entry.

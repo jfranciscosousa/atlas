@@ -57,6 +57,17 @@ function CampaignPage() {
           { label: "Campaigns", to: "/campaigns" },
           { label: campaign.name },
         ]}
+        actions={
+          <Link
+            id="campaign-notes"
+            to="/campaigns/$campaignId/notes"
+            params={{ campaignId: campaign.id }}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <ScrollText />
+            Notes
+          </Link>
+        }
       />
     );
 

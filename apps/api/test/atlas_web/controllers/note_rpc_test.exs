@@ -4,7 +4,17 @@ defmodule AtlasWeb.NoteRpcTest do
   import AtlasWeb.RpcHelpers
   import Atlas.Fixtures, only: [paragraph: 1]
 
-  @fields ["id", "title", "campaignId", "bodyJson", "bodyRevision", "archivedAt"]
+  @fields [
+    "id",
+    "title",
+    "campaignId",
+    "bodyJson",
+    "bodyRevision",
+    "archivedAt",
+    "revealed",
+    "isOwner",
+    "ownerName"
+  ]
 
   setup %{conn: conn} do
     conn = put_req_header(conn, "accept", "application/json")
@@ -14,8 +24,39 @@ defmodule AtlasWeb.NoteRpcTest do
     assert %{"success" => true, "data" => %{"id" => campaign_id}} =
              rpc(gm, "create_campaign", %{input: %{name: "The Sunken Keep"}, fields: ["id"]})
 
-    {:ok, conn: conn, gm: gm, other: other, campaign_id: campaign_id}
+    assert %{"success" => true, "data" => %{"token" => token}} =
+             rpc(gm, "create_invitation", %{
+               input: %{campaignId: campaign_id},
+               fields: ["token"]
+             })
+
+    players =
+      for email <- ["ann@example.com", "bob@example.com"] do
+        player = register(conn, email)
+
+        assert %{"success" => true} =
+                 rpc(player, "join_campaign", %{input: %{token: token}, fields: ["id"]})
+
+        player
+      end
+
+    [ann, bob] = players
+
+    {:ok, conn: conn, gm: gm, other: other, ann: ann, bob: bob, campaign_id: campaign_id}
   end
+
+  defp note_action(who, action, id, input \\ %{}),
+    do: rpc(who, action, %{identity: id, input: input, fields: @fields})
+
+  defp list(who, campaign_id, archived \\ false) do
+    rpc(who, "list_notes", %{
+      input: %{campaignId: campaign_id, archived: archived},
+      fields: @fields
+    })["data"]
+  end
+
+  defp readable?(who, id),
+    do: rpc(who, "get_note", %{getBy: %{id: id}, fields: @fields})["success"]
 
   defp create(who, campaign_id, title \\ "The Cult of the Drowned") do
     rpc(who, "create_note", %{input: %{campaignId: campaign_id, title: title}, fields: @fields})
@@ -154,5 +195,116 @@ defmodule AtlasWeb.NoteRpcTest do
                %{input: %{campaignId: ctx.campaign_id}, fields: @fields},
                401
              )
+  end
+
+  test "a new note is hidden and owned by its creator", ctx do
+    assert %{"success" => true, "data" => %{"revealed" => false, "isOwner" => true} = gm_note} =
+             create(ctx.gm, ctx.campaign_id)
+
+    assert gm_note["ownerName"]
+
+    assert %{"success" => true, "data" => %{"id" => id, "revealed" => false, "isOwner" => true}} =
+             create(ctx.ann, ctx.campaign_id)
+
+    assert %{"data" => %{"isOwner" => false}} =
+             rpc(ctx.gm, "get_note", %{getBy: %{id: id}, fields: @fields})
+  end
+
+  test "a player's hidden note is read by its owner and the GM, not by other players", ctx do
+    assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.campaign_id)
+
+    assert readable?(ctx.ann, id)
+    assert readable?(ctx.gm, id)
+    refute readable?(ctx.bob, id)
+    refute readable?(ctx.other, id)
+    assert [%{"id" => ^id}] = list(ctx.ann, ctx.campaign_id)
+    assert [%{"id" => ^id}] = list(ctx.gm, ctx.campaign_id)
+    assert [] = list(ctx.bob, ctx.campaign_id)
+
+    assert %{"success" => false} = save(ctx.bob, id, 0)
+    assert %{"success" => false} = note_action(ctx.bob, "reveal_note", id)
+  end
+
+  test "the GM's notes stay hidden from players until revealed", ctx do
+    assert %{"data" => %{"id" => id}} = create(ctx.gm, ctx.campaign_id)
+    assert [] = list(ctx.ann, ctx.campaign_id)
+    refute readable?(ctx.ann, id)
+
+    assert %{"success" => true, "data" => %{"revealed" => true}} =
+             note_action(ctx.gm, "reveal_note", id)
+
+    assert [%{"id" => ^id}] = list(ctx.ann, ctx.campaign_id)
+    assert readable?(ctx.bob, id)
+    refute readable?(ctx.other, id)
+    assert [] = list(ctx.other, ctx.campaign_id)
+
+    assert %{"success" => true, "data" => %{"revealed" => false}} =
+             note_action(ctx.gm, "hide_note", id)
+
+    refute readable?(ctx.ann, id)
+  end
+
+  test "an owner reveals their note; the GM can hide it again", ctx do
+    assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.campaign_id)
+    assert %{"success" => true} = note_action(ctx.ann, "reveal_note", id)
+    assert readable?(ctx.bob, id)
+
+    assert %{"success" => true, "data" => %{"revealed" => false}} =
+             note_action(ctx.gm, "hide_note", id)
+
+    refute readable?(ctx.bob, id)
+    assert readable?(ctx.ann, id)
+  end
+
+  test "members edit the body of a revealed note but cannot rename, hide, or archive it", ctx do
+    assert %{"data" => %{"id" => id}} = create(ctx.gm, ctx.campaign_id)
+    assert %{"success" => true} = note_action(ctx.gm, "reveal_note", id)
+
+    assert %{"success" => true, "data" => %{"bodyRevision" => 1}} = save(ctx.ann, id, 0)
+    assert %{"success" => true, "data" => %{"bodyRevision" => 2}} = save(ctx.bob, id, 1)
+
+    assert %{"success" => false, "errors" => [%{"type" => "stale_revision"} | _]} =
+             save(ctx.ann, id, 1)
+
+    for action <- ["hide_note", "archive_note", "restore_note"] do
+      assert %{"success" => false} = note_action(ctx.ann, action, id)
+    end
+
+    assert %{"success" => false} = note_action(ctx.ann, "rename_note", id, %{title: "x"})
+
+    assert %{"data" => %{"title" => "The Cult of the Drowned", "revealed" => true}} =
+             rpc(ctx.gm, "get_note", %{getBy: %{id: id}, fields: @fields})
+  end
+
+  test "other players never see an archived note; the owner and the GM do", ctx do
+    assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.campaign_id)
+    assert %{"success" => true} = note_action(ctx.ann, "reveal_note", id)
+    assert readable?(ctx.bob, id)
+
+    assert %{"success" => true} = note_action(ctx.ann, "archive_note", id)
+
+    refute readable?(ctx.bob, id)
+    assert [] = list(ctx.bob, ctx.campaign_id, true)
+    assert [%{"id" => ^id}] = list(ctx.ann, ctx.campaign_id, true)
+    assert [%{"id" => ^id}] = list(ctx.gm, ctx.campaign_id, true)
+    assert %{"success" => false} = save(ctx.bob, id, 0)
+
+    assert %{"success" => true, "data" => %{"archivedAt" => nil}} =
+             note_action(ctx.ann, "restore_note", id)
+
+    assert readable?(ctx.bob, id)
+  end
+
+  test "an owner cannot hand a note to another campaign or owner", ctx do
+    assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.campaign_id)
+
+    assert %{"success" => false} =
+             note_action(ctx.ann, "reveal_note", id, %{
+               revealed: false,
+               ownerId: Ecto.UUID.generate()
+             })
+
+    assert %{"success" => false} =
+             note_action(ctx.ann, "rename_note", id, %{title: "x", ownerId: Ecto.UUID.generate()})
   end
 end

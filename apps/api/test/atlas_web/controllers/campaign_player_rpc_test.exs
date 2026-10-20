@@ -168,7 +168,7 @@ defmodule AtlasWeb.CampaignPlayerRpcTest do
              })
   end
 
-  test "a player cannot read or create notes, and non-members cannot list players", ctx do
+  test "a player cannot read a hidden GM note, and non-members cannot list players", ctx do
     assert %{"data" => %{"token" => token}} = invite(ctx)
     assert %{"success" => true} = join(ctx.player, token)
 
@@ -186,7 +186,7 @@ defmodule AtlasWeb.CampaignPlayerRpcTest do
 
     assert not_found?(rpc(ctx.player, "get_note", %{getBy: %{id: note_id}, fields: ["id"]}))
 
-    refute rpc(ctx.player, "create_note", %{
+    refute rpc(ctx.stranger, "create_note", %{
              input: %{campaignId: ctx.campaign_id, title: "Mine"},
              fields: ["id"]
            })["success"]

@@ -8,6 +8,10 @@ import { buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
 import { PageHeader } from "../components/page-header";
+import {
+  NoteRevealButton,
+  NoteVisibilityBadge,
+} from "../components/note-reveal-button";
 
 export const Route = createFileRoute(
   "/_authenticated/campaigns/$campaignId_/notes/$noteId"
@@ -55,6 +59,8 @@ function NotePage() {
   const rename = useNoteRename(campaignId, noteId);
   const [title, setTitle] = useState(note.title);
   const RichTextEditor = getEditor();
+  // Other members edit a revealed body but cannot rename, hide, or archive the note.
+  const canManage = campaign.isGm || note.isOwner;
 
   const commitTitle = () => {
     const next = title.trim();
@@ -71,25 +77,43 @@ function NotePage() {
           { label: note.title },
         ]}
         title={note.title}
+        description={
+          !note.isOwner && note.ownerName ? `By ${note.ownerName}` : undefined
+        }
+        actions={
+          <div className="flex items-center gap-3">
+            <NoteVisibilityBadge revealed={note.revealed} />
+            {canManage && (
+              <NoteRevealButton
+                campaignId={campaignId}
+                id={note.id}
+                revealed={note.revealed}
+                title={note.title}
+              />
+            )}
+          </div>
+        }
       />
-      <div className="space-y-2">
-        <Input
-          id="note-title-input"
-          aria-label="Title"
-          maxLength={200}
-          value={title}
-          onChange={event => setTitle(event.target.value)}
-          onBlur={commitTitle}
-          onKeyDown={event =>
-            event.key === "Enter" && event.currentTarget.blur()
-          }
-        />
-        {rename.error && (
-          <Alert id="note-rename-error" variant="destructive">
-            <AlertDescription>{rename.error.message}</AlertDescription>
-          </Alert>
-        )}
-      </div>
+      {canManage && (
+        <div className="space-y-2">
+          <Input
+            id="note-title-input"
+            aria-label="Title"
+            maxLength={200}
+            value={title}
+            onChange={event => setTitle(event.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={event =>
+              event.key === "Enter" && event.currentTarget.blur()
+            }
+          />
+          {rename.error && (
+            <Alert id="note-rename-error" variant="destructive">
+              <AlertDescription>{rename.error.message}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
       {/* The key gives each note its own editor; BlockNote reads its content only once. */}
       <RichTextEditor
         key={note.id}
