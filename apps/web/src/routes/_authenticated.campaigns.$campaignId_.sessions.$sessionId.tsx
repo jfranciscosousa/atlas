@@ -151,7 +151,7 @@ function SessionPage() {
       {/* The key gives each session its own editor; BlockNote reads its content only once. */}
       {campaign.isGm ? (
         // keepMounted: a hidden editor keeps its text and its pending autosave.
-        <Tabs defaultValue="prep">
+        <Tabs defaultValue={session.status === "done" ? "log" : "prep"}>
           <TabsList>
             <TabsTrigger value="prep">
               <LockIcon aria-hidden="true" className="size-3.5" />
