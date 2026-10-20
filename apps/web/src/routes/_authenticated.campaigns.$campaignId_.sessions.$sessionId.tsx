@@ -9,6 +9,12 @@ import {
   useSessionDetails,
 } from "../hooks/use-sessions";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
 import { Input } from "../components/ui/input";
 import { buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -120,42 +126,50 @@ function SessionPage() {
         </div>
       )}
       {/* The key gives each session its own editor; BlockNote reads its content only once. */}
-      <RichTextEditor
-        key={`${session.id}-log`}
-        parent={{ kind: "session", id: session.id }}
-        section="log"
-        label="Log"
-        hint={
-          campaign.isGm
-            ? "What the table saw and learned. Every player can read this."
-            : "What happened, as the GM recorded it."
-        }
-        initial={session.logJson}
-        revision={session.logRevision}
-        readOnly={!campaign.isGm}
-      />
-      {campaign.isGm && (
-        <details
-          id="session-prep"
-          open
-          className="rounded-2xl border border-dashed bg-muted/50 p-5"
-        >
-          <summary className="flex cursor-pointer items-center gap-2 font-heading text-lg font-semibold">
-            <LockIcon aria-hidden="true" className="size-4" />
-            Prep · only the GM sees this
-          </summary>
-          <div className="mt-4">
+      {campaign.isGm ? (
+        // keepMounted: a hidden editor keeps its text and its pending autosave.
+        <Tabs defaultValue="prep">
+          <TabsList>
+            <TabsTrigger value="prep">
+              <LockIcon aria-hidden="true" className="size-3.5" />
+              Prep
+            </TabsTrigger>
+            <TabsTrigger value="log">Log</TabsTrigger>
+          </TabsList>
+          <TabsContent value="prep" keepMounted>
             <RichTextEditor
               key={`${session.id}-prep`}
               parent={{ kind: "session", id: session.id }}
               section="prep"
               label="Prep"
-              hint="Secrets, encounters, and live notes during play. Players never receive this."
+              hint="Secrets, encounters, and live notes during play. Only the GM sees this."
               initial={session.prepJson}
               revision={session.prepRevision}
             />
-          </div>
-        </details>
+          </TabsContent>
+          <TabsContent value="log" keepMounted>
+            <RichTextEditor
+              key={`${session.id}-log`}
+              parent={{ kind: "session", id: session.id }}
+              section="log"
+              label="Log"
+              hint="What the table saw and learned. Every player can read this."
+              initial={session.logJson}
+              revision={session.logRevision}
+            />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <RichTextEditor
+          key={`${session.id}-log`}
+          parent={{ kind: "session", id: session.id }}
+          section="log"
+          label="Log"
+          hint="What happened, as the GM recorded it."
+          initial={session.logJson}
+          revision={session.logRevision}
+          readOnly
+        />
       )}
     </div>
   );
