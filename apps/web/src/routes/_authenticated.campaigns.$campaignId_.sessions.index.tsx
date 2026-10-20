@@ -12,6 +12,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "../components/ui/empty";
+import { SessionStatusBadge } from "../components/session-status-badge";
 import { PageHeader } from "../components/page-header";
 import { NewSessionButton } from "../components/new-session-button";
 
@@ -97,6 +98,7 @@ function SessionsPage() {
                 <span className="min-w-0 flex-1 truncate font-heading text-lg font-semibold">
                   {sessionLabel(session)}
                 </span>
+                <SessionStatusBadge status={session.status} />
                 {session.playedOn && (
                   <span className="hidden text-sm text-muted-foreground sm:inline">
                     {formatPlayedOn(session.playedOn)}

@@ -20,6 +20,7 @@ Domain terms for Atlas. Use these words in code and tests.
 - **Faction**: an organization. It has a GM-only reputation toward the whole party.
 - **Note**: free-form text. Guides, handouts, and plots are notes.
 - **Session**: one play session of a campaign, numbered from 1. Only the GM manages it.
+- **Session status**: *In prep* or *Done*. A session starts in prep. The GM marks it done after play and may move it back. Every member sees the status.
 - **Log**: the final record of a session. Members read it. Only the GM edits it.
 - **Prep**: the GM-only text of a session. The GM plans in it and takes live notes in it during play.
 - **Player log**: one player's recollection of a session. One per player per session.

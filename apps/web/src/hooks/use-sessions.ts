@@ -26,7 +26,7 @@ export function sessionsQueryOptions(campaignId: string) {
     run =>
       run({
         input: { campaignId },
-        fields: ["id", "number", "title", "playedOn"],
+        fields: ["id", "number", "title", "playedOn", "status"],
       }),
     { fallback: "Could not load the sessions." }
   );
@@ -59,6 +59,7 @@ export function sessionQueryOptions(sessionId: string) {
           "number",
           "title",
           "playedOn",
+          "status",
           "logJson",
           "logRevision",
           "prepJson",
@@ -80,8 +81,19 @@ export function useSession(sessionId: string) {
 export function useSessionDetails(campaignId: string, sessionId: string) {
   return useRpcMutation(
     updateSessionDetails,
-    (run, input: { title?: string | null; playedOn?: string | null }) =>
-      run({ identity: sessionId, input, fields: ["title", "playedOn"] }),
+    (
+      run,
+      input: {
+        title?: string | null;
+        playedOn?: string | null;
+        status?: "in_prep" | "done";
+      }
+    ) =>
+      run({
+        identity: sessionId,
+        input,
+        fields: ["title", "playedOn", "status"],
+      }),
     {
       fallback: "Could not update the session.",
       // Refetching the session would hand the open editors an older revision.

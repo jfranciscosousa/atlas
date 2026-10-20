@@ -1506,6 +1506,7 @@ export async function validateSaveSessionPrep(
 export type UpdateSessionDetailsInput = {
   title?: string | null;
   playedOn?: AshDate | null;
+  status?: "done" | "in_prep";
 };
 
 export type UpdateSessionDetailsFields = UnifiedFieldSelection<SessionResourceSchema>[];

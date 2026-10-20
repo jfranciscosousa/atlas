@@ -10,6 +10,7 @@ defmodule AtlasWeb.SessionRpcTest do
     "number",
     "title",
     "playedOn",
+    "status",
     "logJson",
     "logRevision",
     "prepJson",
@@ -77,6 +78,27 @@ defmodule AtlasWeb.SessionRpcTest do
 
     assert %{"success" => false, "errors" => [%{"type" => "stale_revision"} | _]} =
              save(ctx.gm, "save_session_log", first, 0, [paragraph("again")])
+  end
+
+  test "a session starts in prep; only the GM moves it to done and back", ctx do
+    assert %{"data" => %{"id" => id, "status" => "in_prep"}} = create(ctx.gm, ctx.campaign_id)
+
+    set = fn who, status ->
+      rpc(who, "update_session_details", %{
+        identity: id,
+        input: %{status: status},
+        fields: @fields
+      })
+    end
+
+    assert %{"success" => true, "data" => %{"status" => "done"}} = set.(ctx.gm, "done")
+
+    assert %{"success" => true, "data" => %{"status" => "done"}} =
+             rpc(ctx.player, "get_session", %{getBy: %{id: id}, fields: @fields})
+
+    assert %{"success" => false} = set.(ctx.player, "in_prep")
+    assert %{"success" => false} = set.(ctx.gm, "played")
+    assert %{"success" => true, "data" => %{"status" => "in_prep"}} = set.(ctx.gm, "in_prep")
   end
 
   test "numbering starts at 1 in each campaign", ctx do

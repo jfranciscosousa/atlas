@@ -2,7 +2,8 @@ defmodule Atlas.Campaigns.Session do
   @moduledoc """
   One played or planned session of a campaign.
 
-  Every member reads the number, title, played date and log. Only the GM creates a session,
+  A session starts in prep. The GM marks it done after play, and may move it back.
+  Every member reads the number, title, played date, status and log. Only the GM creates a session,
   edits it, and reads or writes its prep. The GM writes live notes in the prep and the final
   record in the log; nothing moves from one to the other by itself.
   Sessions are never archived or deleted. Images follow the access of the section that holds them:
@@ -59,7 +60,7 @@ defmodule Atlas.Campaigns.Session do
     end
 
     update :update_details do
-      accept [:title, :played_on]
+      accept [:title, :played_on, :status]
     end
   end
 
@@ -103,6 +104,13 @@ defmodule Atlas.Campaigns.Session do
     end
 
     attribute :played_on, :date, public?: true
+
+    attribute :status, :atom do
+      allow_nil? false
+      default :in_prep
+      public? true
+      constraints one_of: [:in_prep, :done]
+    end
 
     create_timestamp :inserted_at
     update_timestamp :updated_at

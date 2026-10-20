@@ -109,7 +109,7 @@ export type InvitationAttributesOnlySchema = {
 // Session Schema
 export type SessionResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "campaignId" | "id" | "logJson" | "logRevision" | "logSchemaVersion" | "number" | "playedOn" | "prepJson" | "prepRevision" | "prepSchemaVersion" | "title";
+  __primitiveFields: "campaignId" | "id" | "logJson" | "logRevision" | "logSchemaVersion" | "number" | "playedOn" | "prepJson" | "prepRevision" | "prepSchemaVersion" | "status" | "title";
   campaignId: UUID;
   id: UUID;
   logJson: Array<Record<string, unknown>>;
@@ -120,6 +120,7 @@ export type SessionResourceSchema = {
   prepJson: Array<Record<string, unknown>>;
   prepRevision: number;
   prepSchemaVersion: number;
+  status: "done" | "in_prep";
   title: string | null;
   campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
 };
@@ -128,7 +129,7 @@ export type SessionResourceSchema = {
 
 export type SessionAttributesOnlySchema = {
   __type: "Resource";
-  __primitiveFields: "campaignId" | "id" | "logJson" | "logRevision" | "logSchemaVersion" | "number" | "playedOn" | "prepJson" | "prepRevision" | "prepSchemaVersion" | "title";
+  __primitiveFields: "campaignId" | "id" | "logJson" | "logRevision" | "logSchemaVersion" | "number" | "playedOn" | "prepJson" | "prepRevision" | "prepSchemaVersion" | "status" | "title";
   campaignId: UUID;
   id: UUID;
   logJson: Array<Record<string, unknown>>;
@@ -139,6 +140,7 @@ export type SessionAttributesOnlySchema = {
   prepJson: Array<Record<string, unknown>>;
   prepRevision: number;
   prepSchemaVersion: number;
+  status: "done" | "in_prep";
   title: string | null;
 };
 
@@ -588,6 +590,16 @@ export type SessionFilterInput = {
     greaterThanOrEqual?: number;
   };
 
+  status?: {
+    eq?: "done" | "in_prep";
+    notEq?: "done" | "in_prep";
+    in?: Array<"done" | "in_prep">;
+    lessThan?: "done" | "in_prep";
+    greaterThan?: "done" | "in_prep";
+    lessThanOrEqual?: "done" | "in_prep";
+    greaterThanOrEqual?: "done" | "in_prep";
+  };
+
   title?: {
     isNil?: boolean;
     eq?: string;
@@ -745,7 +757,7 @@ export type CampaignPlayerFilterField = (typeof campaignPlayerFilterFields)[numb
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
 export type InvitationFilterField = (typeof invitationFilterFields)[number];
 
-export const sessionFilterFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "title", "campaign"] as const;
+export const sessionFilterFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title", "campaign"] as const;
 export type SessionFilterField = (typeof sessionFilterFields)[number];
 
 export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title", "campaign"] as const;
@@ -767,7 +779,7 @@ export type CampaignPlayerSortField = (typeof campaignPlayerSortFields)[number];
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;
 export type InvitationSortField = (typeof invitationSortFields)[number];
 
-export const sessionSortFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "title"] as const;
+export const sessionSortFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title"] as const;
 export type SessionSortField = (typeof sessionSortFields)[number];
 
 export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title"] as const;

@@ -16,8 +16,9 @@ import {
   TabsTrigger,
 } from "../components/ui/tabs";
 import { Input } from "../components/ui/input";
-import { buttonVariants } from "../components/ui/button";
+import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
+import { SessionStatusBadge } from "../components/session-status-badge";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
 import { PageHeader } from "../components/page-header";
 
@@ -89,6 +90,27 @@ function SessionPage() {
             : [session.title, formatPlayedOn(session.playedOn)]
                 .filter(Boolean)
                 .join(" · ")
+        }
+        actions={
+          <div className="flex items-center gap-3">
+            <SessionStatusBadge status={session.status} />
+            {campaign.isGm && (
+              <Button
+                id="session-status-button"
+                variant={session.status === "done" ? "outline" : "default"}
+                disabled={details.isPending}
+                onClick={() =>
+                  details.mutate({
+                    status: session.status === "done" ? "in_prep" : "done",
+                  })
+                }
+              >
+                {session.status === "done"
+                  ? "Move back to prep"
+                  : "Mark as done"}
+              </Button>
+            )}
+          </div>
         }
       />
       {campaign.isGm && (
