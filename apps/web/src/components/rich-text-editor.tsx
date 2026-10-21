@@ -74,6 +74,7 @@ const KINDS = {
 
 const NOTICES: Record<CollabNotice["kind"], string> = {
   revoked: "You no longer have access to this text.",
+  unavailable: "This text could not be opened. Reload to try again.",
   reset: "This text was replaced by another change. Reload to see it.",
   rejected: "The server did not accept your last change.",
 };
@@ -174,7 +175,10 @@ export default function RichTextEditor({
   );
 
   // After access ended or the text was replaced, the old text must not stay on screen.
-  const closed = notice?.kind === "revoked" || notice?.kind === "reset";
+  const closed =
+    notice?.kind === "revoked" ||
+    notice?.kind === "reset" ||
+    notice?.kind === "unavailable";
 
   const writing = canWrite && !readOnly;
   const statusText = notice

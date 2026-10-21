@@ -2,7 +2,7 @@ defmodule AtlasWeb.RichTextChannelTest do
   use AtlasWeb.ConnCase, async: false
 
   import AtlasWeb.RpcHelpers
-  import Atlas.Fixtures, only: [paragraph: 1, save_section!: 5]
+  import Atlas.Fixtures, only: [paragraph: 1, paragraph: 2, save_section!: 5]
 
   import Phoenix.ChannelTest,
     only: [
@@ -318,6 +318,18 @@ defmodule AtlasWeb.RichTextChannelTest do
       assert {:ok, %{canWrite: false}, _} = join(ctx.bob, ref)
       assert {:ok, %{canWrite: false}, _} = join(ctx.gm, ref)
       assert {:error, %{reason: "forbidden"}} = join(ctx.outsider, ref)
+    end
+
+    test "a section the server cannot build a document from is unavailable, not forbidden", ctx do
+      save_section!(
+        Atlas.Content.Note,
+        ctx.note_id,
+        :body,
+        [paragraph("x", "an id with spaces")],
+        "ann@example.com"
+      )
+
+      assert {:error, %{reason: "unavailable"}} = join(ctx.ann, note_ref(ctx))
     end
 
     test "a topic that does not name a real section is refused", ctx do

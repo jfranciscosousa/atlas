@@ -67,4 +67,25 @@ defmodule Atlas.RichText.Collab.BlocksTest do
       assert blocks == @fixture["output"]
     end
   end
+
+  test "seeding leaves out props a block does not have" do
+    blocks = [
+      %{
+        "id" => "d1",
+        "type" => "divider",
+        "props" => %{"textAlignment" => "left"},
+        "children" => []
+      },
+      %{
+        "id" => "p1",
+        "type" => "paragraph",
+        "props" => %{"bogus" => 1},
+        "content" => [],
+        "children" => []
+      }
+    ]
+
+    assert {:ok, [%{"props" => %{}}, %{"props" => %{}}]} =
+             blocks |> Blocks.seed() |> Blocks.project()
+  end
 end

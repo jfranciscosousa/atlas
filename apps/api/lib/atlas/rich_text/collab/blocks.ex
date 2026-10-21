@@ -380,7 +380,7 @@ defmodule Atlas.RichText.Collab.Blocks do
         Yex.XmlElementPrelim.new("tableRow", cells)
       end)
 
-    Yex.XmlElementPrelim.new("table", rows, block["props"] || %{})
+    Yex.XmlElementPrelim.new("table", rows, known_props(block))
   end
 
   defp content_prelim(%{"type" => type} = block) do
@@ -390,13 +390,18 @@ defmodule Atlas.RichText.Collab.Blocks do
         _ -> []
       end
 
-    Yex.XmlElementPrelim.new(type, children, block["props"] || %{})
+    Yex.XmlElementPrelim.new(type, children, known_props(block))
   end
+
+  # Stored JSON may carry props the block does not have (older saves, imports). BlockNote ignores
+  # them, and the projection rejects them, so seeding leaves them out.
+  defp known_props(%{"type" => type} = block),
+    do: Map.take(block["props"] || %{}, Map.fetch!(@props, type))
 
   defp cell_prelim(tag, cell, widths, col) do
     {props, content} =
       case cell do
-        %{"content" => content} -> {cell["props"] || %{}, content}
+        %{"content" => content} -> {Map.take(cell["props"] || %{}, @cell_props), content}
         content when is_list(content) -> {%{}, content}
       end
 

@@ -14,6 +14,7 @@ export const FRAGMENT = "document-store";
 
 export type CollabNotice =
   | { kind: "revoked" } // access ended
+  | { kind: "unavailable" } // the server could not open the text
   | { kind: "reset" } // the text was replaced by a save outside live editing
   | { kind: "rejected"; reason: string }; // the server refused a change
 
@@ -93,7 +94,9 @@ export function openDocument(
         handlers.onPermissions(reply.canWrite);
       }
     )
-    .receive("error", () => end({ kind: "revoked" }));
+    .receive("error", (reply: { reason?: string }) =>
+      end({ kind: reply.reason === "unavailable" ? "unavailable" : "revoked" })
+    );
   channel.on("permissions", (reply: { canWrite: boolean }) =>
     handlers.onPermissions(reply.canWrite)
   );

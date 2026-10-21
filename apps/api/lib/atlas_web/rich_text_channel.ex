@@ -58,6 +58,8 @@ defmodule AtlasWeb.RichTextChannel do
 
       {:ok, reply, socket}
     else
+      # The section exists and the user may open it, but the server cannot build its document.
+      {:error, {:rejected, _}} -> {:error, %{reason: "unavailable"}}
       _ -> {:error, %{reason: "forbidden"}}
     end
   end
