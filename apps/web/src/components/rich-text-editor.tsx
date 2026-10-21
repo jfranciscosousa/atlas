@@ -13,13 +13,14 @@ import {
 import { withCollaboration } from "@blocknote/core/yjs";
 
 import type { SaveState } from "../lib/save-tracker";
+import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import "@blocknote/shadcn/style.css";
 
-import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import type { SessionSection } from "../hooks/use-sessions";
 
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
+import { summarize, type Person } from "../lib/presence";
 import { createImageResolver, uploadImage } from "../lib/images";
 import {
   FRAGMENT,
@@ -102,6 +103,7 @@ export default function RichTextEditor({
   const [canWrite, setCanWrite] = useState(false);
   const [notice, setNotice] = useState<CollabNotice>();
   const [save, setSave] = useState<SaveState>("idle");
+  const [people, setPeople] = useState<Person[]>([]);
   // Once the first sync is done the live document replaces the saved text for good.
   const [live, setLive] = useState(false);
   // The blocker reads the latest value outside React's render cycle.
@@ -116,6 +118,7 @@ export default function RichTextEditor({
       onPermissions: setCanWrite,
       onNotice: setNotice,
       onSaveState: setSave,
+      onPresence: setPeople,
     });
     collabRef.current = opened;
     setCollab(opened);
@@ -127,6 +130,7 @@ export default function RichTextEditor({
       setLive(false);
       setNotice(undefined);
       setSave("idle");
+      setPeople([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the CSRF token does not change the document
   }, [ref]);
@@ -153,6 +157,7 @@ export default function RichTextEditor({
           collaboration: {
             provider: collab.provider,
             fragment: collab.doc.getXmlFragment(FRAGMENT),
+            // The server ignores this and sets the name and colour itself.
             user: { name: "You", color: "#6b7280" },
           },
         })
@@ -184,6 +189,8 @@ export default function RichTextEditor({
           ? SAVE_TEXT[save]
           : undefined;
 
+  const { shown, more } = summarize(people);
+
   // Leaving with edits that never reached the server asks first.
   useBlocker({
     shouldBlockFn: () =>
@@ -209,14 +216,28 @@ export default function RichTextEditor({
             <p className="mt-0.5 text-sm text-muted-foreground">{hint}</p>
           )}
         </div>
-        <span
-          id={`${id}-status`}
-          role="status"
-          aria-live="polite"
-          className="text-xs text-muted-foreground"
-        >
-          {statusText}
-        </span>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {!notice && people.length > 0 && (
+            <span id={`${id}-presence`}>
+              Also here:{" "}
+              {shown.map((person, index) => (
+                <span key={person.key} className="whitespace-nowrap">
+                  <span
+                    aria-hidden
+                    className="mr-1 inline-block size-2 rounded-full"
+                    style={{ backgroundColor: person.color }}
+                  />
+                  {person.name}
+                  {index < shown.length - 1 && ", "}
+                </span>
+              ))}
+              {more > 0 && ` and ${more} more`}
+            </span>
+          )}
+          <span id={`${id}-status`} role="status" aria-live="polite">
+            {statusText}
+          </span>
+        </div>
       </div>
       {!closed && (
         <div

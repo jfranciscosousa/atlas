@@ -6,6 +6,7 @@ import {
   createSaveTracker,
   type SaveState,
 } from "./save-tracker";
+import { whoIsHere, type Person } from "./presence";
 import { connectSocket } from "./collab-socket";
 
 /** The Yjs root BlockNote edits. The server projects the same root to JSON. */
@@ -31,6 +32,8 @@ type Handlers = {
   onPermissions: (canWrite: boolean) => void;
   onNotice: (notice: CollabNotice) => void;
   onSaveState: (state: SaveState) => void;
+  /** The other people who have the section open. */
+  onPresence: (people: Person[]) => void;
 };
 
 /**
@@ -48,6 +51,8 @@ export function openDocument(
   let everSynced = false;
   let unsynced = false;
   let ended = false;
+  // The server names this person in the join reply. Their other tabs must not show as "also here".
+  let selfKey: string | undefined;
   const saves = createSaveTracker(handlers.onSaveState);
 
   // The provider ignores the reply to a push. Follow the replies of the pushes that store edits.
@@ -76,13 +81,18 @@ export function openDocument(
   // Join before the provider attaches: it reads `channel.joinPush` and never joins itself.
   channel
     .join()
-    .receive("ok", (reply: { canWrite: boolean; epoch: number }) => {
-      // A rejoin that finds a new epoch means our document belongs to a lost history.
-      if (epoch !== undefined && epoch !== reply.epoch)
-        return end({ kind: "reset" });
-      epoch = reply.epoch;
-      handlers.onPermissions(reply.canWrite);
-    })
+    .receive(
+      "ok",
+      (reply: { canWrite: boolean; epoch: number; key: string }) => {
+        // A rejoin that finds a new epoch means our document belongs to a lost history.
+        if (epoch !== undefined && epoch !== reply.epoch)
+          return end({ kind: "reset" });
+        epoch = reply.epoch;
+        selfKey = reply.key;
+        publishPresence();
+        handlers.onPermissions(reply.canWrite);
+      }
+    )
     .receive("error", () => end({ kind: "revoked" }));
   channel.on("permissions", (reply: { canWrite: boolean }) =>
     handlers.onPermissions(reply.canWrite)
@@ -99,13 +109,21 @@ export function openDocument(
     doc,
     {
       channel,
-      // Awareness (cursors) is not relayed, and no other tab may see this document.
+      // The server relays awareness: it sets the names, and a client sends only its cursor.
+      // No other tab may see this document.
       disableBc: true,
       updateThrottle: 100,
+      awarenessThrottle: 100,
       // A periodic sync heals any update a delivery missed.
       resyncInterval: 30_000,
     }
   );
+
+  const publishPresence = () =>
+    handlers.onPresence(
+      whoIsHere(provider.awareness.getStates(), doc.clientID, selfKey)
+    );
+  provider.awareness.on("change", publishPresence);
 
   provider.on("sync", (synced: boolean) => {
     if (synced) {

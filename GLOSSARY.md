@@ -30,6 +30,7 @@ Domain terms for Atlas. Use these words in code and tests.
 
 - **Section**: one rich-text field of a resource, for example a campaign description. A section has its own access rule and its own revision number.
 - **Live editing**: everyone who may edit a section edits it together and sees changes at once. The same editor does this for every section. The server keeps the shared document and checks the user's rights again on every message. Anyone who may read a section but not edit it sees the changes live and cannot type.
+- **Presence**: who has a section open. Everyone who may read the section sees it, readers included. The server sets each person's name and colour. A client can send only its cursor.
 - **Saved**: the server committed the change to the database. The editor shows "Saved" only after the server confirms it.
 - **Revision**: the counter of a section's JSON. The server raises it each time live editing stores a change. No API action saves a section's JSON.
 - **Epoch**: the number of times the shared document was rebuilt from the section's JSON, because something other than live editing changed the JSON. An editor that holds an older epoch must start over.
