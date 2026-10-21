@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import type { BlockNoteDocument } from "../lib/blocknote-schema";
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { getEditor } from "./rich-text-editor-loader";
 import { PageHeader } from "./page-header";
 import { PlayersList } from "./campaign-players";
@@ -44,26 +45,39 @@ export function CampaignReadOnly({
         }
       />
       {/* The key gives each campaign its own editor; BlockNote reads its content only once. */}
-      <RichTextEditor
-        key={`${campaign.id}-description`}
-        parent={{ kind: "campaign", id: campaign.id }}
-        section="description"
-        label="Description"
-        hint="The world, the premise, and what the table should know first."
-        initial={campaign.descriptionJson}
-        revision={campaign.descriptionRevision}
-        readOnly
-      />
-      <RichTextEditor
-        key={`${campaign.id}-progress_rewards`}
-        parent={{ kind: "campaign", id: campaign.id }}
-        section="progress_rewards"
-        label="Progress and rewards"
-        hint="Milestones reached, loot earned, and what comes next."
-        initial={campaign.progressRewardsJson}
-        revision={campaign.progressRewardsRevision}
-        readOnly
-      />
+      {/* keepMounted keeps both editors alive, as on the GM's page. */}
+      <Tabs defaultValue="description">
+        <TabsList>
+          <TabsTrigger value="description">Description</TabsTrigger>
+          <TabsTrigger value="progress">Progress and rewards</TabsTrigger>
+        </TabsList>
+        <TabsContent value="description" keepMounted>
+          <RichTextEditor
+            key={`${campaign.id}-description`}
+            parent={{ kind: "campaign", id: campaign.id }}
+            section="description"
+            label="Description"
+            hideLabel
+            hint="The world, the premise, and what the table should know first."
+            initial={campaign.descriptionJson}
+            revision={campaign.descriptionRevision}
+            readOnly
+          />
+        </TabsContent>
+        <TabsContent value="progress" keepMounted>
+          <RichTextEditor
+            key={`${campaign.id}-progress_rewards`}
+            parent={{ kind: "campaign", id: campaign.id }}
+            section="progress_rewards"
+            label="Progress and rewards"
+            hideLabel
+            hint="Milestones reached, loot earned, and what comes next."
+            initial={campaign.progressRewardsJson}
+            revision={campaign.progressRewardsRevision}
+            readOnly
+          />
+        </TabsContent>
+      </Tabs>
       <section className="space-y-3">
         <h2 className="font-heading text-xl font-semibold">Players</h2>
         <PlayersList campaignId={campaign.id} gmName={campaign.gmName} />

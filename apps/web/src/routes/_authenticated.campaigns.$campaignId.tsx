@@ -2,6 +2,12 @@ import { CalendarDays, Eye, ScrollText } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
 import { buttonVariants } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
@@ -135,24 +141,37 @@ function CampaignPage() {
         }
       />
       {/* The key gives each campaign its own editor; BlockNote reads its content only once. */}
-      <RichTextEditor
-        key={`${campaign.id}-description`}
-        parent={{ kind: "campaign", id: campaign.id }}
-        section="description"
-        label="Description"
-        hint="The world, the premise, and what the table should know first."
-        initial={campaign.descriptionJson}
-        revision={campaign.descriptionRevision}
-      />
-      <RichTextEditor
-        key={`${campaign.id}-progress_rewards`}
-        parent={{ kind: "campaign", id: campaign.id }}
-        section="progress_rewards"
-        label="Progress and rewards"
-        hint="Milestones reached, loot earned, and what comes next."
-        initial={campaign.progressRewardsJson}
-        revision={campaign.progressRewardsRevision}
-      />
+      {/* keepMounted: a hidden editor keeps its text and its pending autosave. */}
+      <Tabs defaultValue="description">
+        <TabsList>
+          <TabsTrigger value="description">Description</TabsTrigger>
+          <TabsTrigger value="progress">Progress and rewards</TabsTrigger>
+        </TabsList>
+        <TabsContent value="description" keepMounted>
+          <RichTextEditor
+            key={`${campaign.id}-description`}
+            parent={{ kind: "campaign", id: campaign.id }}
+            section="description"
+            label="Description"
+            hideLabel
+            hint="The world, the premise, and what the table should know first."
+            initial={campaign.descriptionJson}
+            revision={campaign.descriptionRevision}
+          />
+        </TabsContent>
+        <TabsContent value="progress" keepMounted>
+          <RichTextEditor
+            key={`${campaign.id}-progress_rewards`}
+            parent={{ kind: "campaign", id: campaign.id }}
+            section="progress_rewards"
+            label="Progress and rewards"
+            hideLabel
+            hint="Milestones reached, loot earned, and what comes next."
+            initial={campaign.progressRewardsJson}
+            revision={campaign.progressRewardsRevision}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
