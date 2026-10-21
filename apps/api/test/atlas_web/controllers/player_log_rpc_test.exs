@@ -29,18 +29,8 @@ defmodule AtlasWeb.PlayerLogRpcTest do
     assert %{"data" => %{"id" => session_id}} =
              rpc(gm, "create_session", %{input: %{campaignId: campaign_id}, fields: ["id"]})
 
-    set_status(gm, session_id, "done")
-
     {:ok, gm: gm, ann: ann, bob: bob, outsider: outsider, session_id: session_id}
   end
-
-  defp set_status(gm, session_id, status),
-    do:
-      rpc(gm, "update_session_details", %{
-        identity: session_id,
-        input: %{status: status},
-        fields: ["status"]
-      })
 
   defp create(who, session_id),
     do: rpc(who, "create_player_log", %{input: %{sessionId: session_id}, fields: @fields})
@@ -105,18 +95,5 @@ defmodule AtlasWeb.PlayerLogRpcTest do
 
     assert %{"success" => true, "data" => []} = list(ctx.outsider, ctx.session_id)
     assert %{"data" => [_]} = list(ctx.gm, ctx.session_id)
-  end
-
-  test "players write only while the session is done", ctx do
-    set_status(ctx.gm, ctx.session_id, "in_prep")
-    assert %{"success" => false} = create(ctx.ann, ctx.session_id)
-
-    set_status(ctx.gm, ctx.session_id, "done")
-    assert %{"success" => true, "data" => %{"id" => id}} = create(ctx.ann, ctx.session_id)
-    assert %{"success" => true} = save(ctx.ann, id, 0, [paragraph("one")])
-
-    set_status(ctx.gm, ctx.session_id, "in_prep")
-    assert %{"success" => false} = save(ctx.ann, id, 1, [paragraph("two")])
-    assert %{"data" => [%{"bodyRevision" => 1}]} = list(ctx.ann, ctx.session_id)
   end
 end

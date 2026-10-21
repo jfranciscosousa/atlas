@@ -203,11 +203,7 @@ function SessionPage() {
           />
         </TabsContent>
         <TabsContent value="player-logs" keepMounted>
-          <PlayerLogs
-            sessionId={session.id}
-            isGm={!!campaign.isGm}
-            isDone={session.status === "done"}
-          />
+          <PlayerLogs sessionId={session.id} isGm={!!campaign.isGm} />
         </TabsContent>
       </Tabs>
     </div>
