@@ -1,6 +1,11 @@
 import * as Y from "yjs";
 import { PhoenixChannelProvider } from "y-phoenix-channel";
 
+import {
+  classifyFrame,
+  createSaveTracker,
+  type SaveState,
+} from "./save-tracker";
 import { connectSocket } from "./collab-socket";
 
 /** The Yjs root BlockNote edits. The server projects the same root to JSON. */
@@ -25,6 +30,7 @@ type Handlers = {
   onStatus: (status: CollabStatus) => void;
   onPermissions: (canWrite: boolean) => void;
   onNotice: (notice: CollabNotice) => void;
+  onSaveState: (state: SaveState) => void;
 };
 
 /**
@@ -42,6 +48,23 @@ export function openDocument(
   let everSynced = false;
   let unsynced = false;
   let ended = false;
+  const saves = createSaveTracker(handlers.onSaveState);
+
+  // The provider ignores the reply to a push. Follow the replies of the pushes that store edits.
+  const push = channel.push.bind(channel);
+  channel.push = (event, payload, timeout) => {
+    const sent = push(event, payload, timeout);
+    const kind =
+      payload instanceof ArrayBuffer
+        ? classifyFrame(new Uint8Array(payload))
+        : undefined;
+    if (!kind) return sent;
+    const save = saves.send(kind);
+    return sent
+      .receive("ok", save.ok)
+      .receive("error", save.fail)
+      .receive("timeout", save.fail);
+  };
 
   const end = (notice: CollabNotice) => {
     if (ended) return;
@@ -89,12 +112,15 @@ export function openDocument(
       everSynced = true;
       unsynced = false;
     }
+    saves.setOnline(synced);
     handlers.onStatus(
       synced ? "synced" : everSynced ? "offline" : "connecting"
     );
   });
   doc.on("update", (_update: Uint8Array, origin: unknown) => {
-    if (origin !== provider && channel.state !== "joined") unsynced = true;
+    if (origin === provider) return;
+    saves.edit();
+    if (channel.state !== "joined") unsynced = true;
   });
 
   const collab: Collab = {

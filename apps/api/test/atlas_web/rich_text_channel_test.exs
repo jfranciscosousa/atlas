@@ -5,7 +5,14 @@ defmodule AtlasWeb.RichTextChannelTest do
   import Atlas.Fixtures, only: [paragraph: 1, save_section!: 5]
 
   import Phoenix.ChannelTest,
-    only: [assert_push: 2, refute_push: 3, subscribe_and_join: 3, leave: 1]
+    only: [
+      assert_push: 2,
+      assert_reply: 2,
+      assert_reply: 3,
+      refute_push: 3,
+      subscribe_and_join: 3,
+      leave: 1
+    ]
 
   alias Atlas.RichText.Collab.Blocks
   alias AtlasWeb.RichTextSocket
@@ -150,6 +157,21 @@ defmodule AtlasWeb.RichTextChannelTest do
                note(ctx.ann, ctx.note_id)
 
       assert text == "The keep is flooded."
+    end
+
+    test "the server answers ok after it stored the update, and for an update that adds nothing",
+         ctx do
+      reveal(ctx)
+      {_, ann, ann_doc} = open(ctx.ann, note_ref(ctx))
+
+      update = type(ann_doc, "Stored.")
+      ref = send_update(ann, update)
+      assert_reply ref, :ok
+      assert %{"bodyRevision" => 1} = note(ctx.ann, ctx.note_id)
+
+      ref = send_update(ann, update)
+      assert_reply ref, :ok
+      assert %{"bodyRevision" => 1} = note(ctx.ann, ctx.note_id)
     end
 
     test "concurrent edits from the same base both survive", ctx do
@@ -318,8 +340,9 @@ defmodule AtlasWeb.RichTextChannelTest do
       ref = "campaign:#{ctx.campaign_id}:description"
       {%{canWrite: false}, ann, ann_doc} = open(ctx.ann, ref)
 
-      send_update(ann, type(ann_doc, "Forged by a player."))
+      ref = send_update(ann, type(ann_doc, "Forged by a player."))
       assert_push "rejected", %{reason: "forbidden"}
+      assert_reply ref, :error, %{reason: "forbidden"}
 
       assert %{
                "success" => true,
@@ -449,9 +472,10 @@ defmodule AtlasWeb.RichTextChannelTest do
 
     defp assert_refused(ctx, socket, update, expected) do
       before = note(ctx.ann, ctx.note_id)
-      send_update(socket, update)
+      ref = send_update(socket, update)
       assert_push "rejected", %{reason: reason}
       assert reason =~ expected
+      assert_reply ref, :error, %{reason: ^reason}
       assert note(ctx.ann, ctx.note_id) == before
     end
 

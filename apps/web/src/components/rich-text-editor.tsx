@@ -12,9 +12,10 @@ import {
 } from "@blocknote/react";
 import { withCollaboration } from "@blocknote/core/yjs";
 
-import type { BlockNoteDocument } from "../lib/blocknote-schema";
+import type { SaveState } from "../lib/save-tracker";
 import "@blocknote/shadcn/style.css";
 
+import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import type { SessionSection } from "../hooks/use-sessions";
 
 import { Button } from "./ui/button";
@@ -76,6 +77,12 @@ const NOTICES: Record<CollabNotice["kind"], string> = {
   rejected: "The server did not accept your last change.",
 };
 
+const SAVE_TEXT: Partial<Record<SaveState, string>> = {
+  saving: "Saving…",
+  saved: "Saved",
+  failed: "Not saved. Reload and try again.",
+};
+
 export default function RichTextEditor({
   parent,
   section,
@@ -94,6 +101,7 @@ export default function RichTextEditor({
   const [status, setStatus] = useState<CollabStatus>("connecting");
   const [canWrite, setCanWrite] = useState(false);
   const [notice, setNotice] = useState<CollabNotice>();
+  const [save, setSave] = useState<SaveState>("idle");
   // Once the first sync is done the live document replaces the saved text for good.
   const [live, setLive] = useState(false);
   // The blocker reads the latest value outside React's render cycle.
@@ -107,6 +115,7 @@ export default function RichTextEditor({
       },
       onPermissions: setCanWrite,
       onNotice: setNotice,
+      onSaveState: setSave,
     });
     collabRef.current = opened;
     setCollab(opened);
@@ -117,6 +126,7 @@ export default function RichTextEditor({
       setStatus("connecting");
       setLive(false);
       setNotice(undefined);
+      setSave("idle");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the CSRF token does not change the document
   }, [ref]);
@@ -161,6 +171,19 @@ export default function RichTextEditor({
   // After access ended or the text was replaced, the old text must not stay on screen.
   const closed = notice?.kind === "revoked" || notice?.kind === "reset";
 
+  const writing = canWrite && !readOnly;
+  const statusText = notice
+    ? undefined
+    : !live
+      ? "Connecting…"
+      : status === "offline"
+        ? writing && save === "unsaved-offline"
+          ? "Reconnecting… your edits are not saved yet"
+          : "Reconnecting…"
+        : writing
+          ? SAVE_TEXT[save]
+          : undefined;
+
   // Leaving with edits that never reached the server asks first.
   useBlocker({
     shouldBlockFn: () =>
@@ -192,8 +215,7 @@ export default function RichTextEditor({
           aria-live="polite"
           className="text-xs text-muted-foreground"
         >
-          {!notice && !live && "Connecting…"}
-          {!notice && live && status === "offline" && "Reconnecting…"}
+          {statusText}
         </span>
       </div>
       {!closed && (

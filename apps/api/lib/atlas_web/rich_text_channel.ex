@@ -8,6 +8,10 @@ defmodule AtlasWeb.RichTextChannel do
   lost access gets one `revoked` message and the channel closes. A user who lost only the right
   to write gets a `permissions` message and the channel turns read-only.
 
+  A frame that carries an update gets a reply after the server handled it: `ok` when the server
+  stored the update or it added nothing, `error` when the server refused it. The browser shows
+  "Saved" only after an `ok` reply.
+
   Awareness frames (cursors, names) are dropped: a client could claim any name.
   """
   use Phoenix.Channel
@@ -86,19 +90,19 @@ defmodule AtlasWeb.RichTextChannel do
             {:collab_update, update}
           )
 
-          {:noreply, socket}
+          {:reply, :ok, socket}
 
         {:ok, :unchanged} ->
-          {:noreply, socket}
+          {:reply, :ok, socket}
 
         {:error, :forbidden} ->
           revoke(socket)
 
         {:error, reason} ->
-          reject(socket, reason)
+          reject_update(socket, reason)
       end
     else
-      reject(socket, :forbidden)
+      reject_update(socket, :forbidden)
     end
   end
 
@@ -150,6 +154,11 @@ defmodule AtlasWeb.RichTextChannel do
   defp reject(socket, reason) do
     push(socket, "rejected", %{reason: reason_text(reason)})
     {:noreply, socket}
+  end
+
+  defp reject_update(socket, reason) do
+    {:noreply, socket} = reject(socket, reason)
+    {:reply, {:error, %{reason: reason_text(reason)}}, socket}
   end
 
   defp reason_text({:rejected, detail}) when is_binary(detail), do: detail
