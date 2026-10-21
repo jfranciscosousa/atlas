@@ -7,9 +7,11 @@ import { usePlayerLogCreate, usePlayerLogs } from "../hooks/use-player-logs";
 export function PlayerLogs({
   sessionId,
   isGm,
+  isDone,
 }: {
   sessionId: string;
   isGm: boolean;
+  isDone: boolean;
 }) {
   const RichTextEditor = getEditor();
   const logs = usePlayerLogs(sessionId).data;
@@ -20,7 +22,12 @@ export function PlayerLogs({
 
   return (
     <div className="space-y-8">
-      {!isGm && !hasMine && (
+      {!isGm && !hasMine && !isDone && (
+        <p id="player-logs-closed" className="text-sm text-muted-foreground">
+          You can write your log after the GM marks this session as done.
+        </p>
+      )}
+      {!isGm && !hasMine && isDone && (
         <div className="flex flex-col items-start gap-3 rounded-2xl border bg-card p-6">
           <p className="text-sm text-muted-foreground">
             Write what your character saw and did. Every player and the GM can
@@ -55,7 +62,7 @@ export function PlayerLogs({
           label={log.isMine ? "Your log" : (log.authorName ?? "A player")}
           initial={log.bodyJson}
           revision={log.bodyRevision}
-          readOnly={!log.isMine}
+          readOnly={!log.isMine || !isDone}
         />
       ))}
     </div>
