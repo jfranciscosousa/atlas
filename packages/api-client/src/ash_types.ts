@@ -106,6 +106,33 @@ export type InvitationAttributesOnlySchema = {
 };
 
 
+// PlayerLog Schema
+export type PlayerLogResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "authorName" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "id" | "isMine" | "sessionId";
+  authorName: string | null;
+  bodyJson: Array<Record<string, unknown>>;
+  bodyRevision: number;
+  bodySchemaVersion: number;
+  id: UUID;
+  isMine: boolean | null;
+  sessionId: UUID;
+  session: { __type: "Relationship"; __resource: SessionResourceSchema; };
+};
+
+
+
+export type PlayerLogAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "id" | "sessionId";
+  bodyJson: Array<Record<string, unknown>>;
+  bodyRevision: number;
+  bodySchemaVersion: number;
+  id: UUID;
+  sessionId: UUID;
+};
+
+
 // Session Schema
 export type SessionResourceSchema = {
   __type: "Resource";
@@ -484,6 +511,85 @@ export type InvitationFilterInput = {
   campaign?: CampaignFilterInput;
 
 };
+export type PlayerLogFilterInput = {
+  and?: Array<PlayerLogFilterInput>;
+  or?: Array<PlayerLogFilterInput>;
+  not?: Array<PlayerLogFilterInput>;
+
+  authorName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  bodyJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  bodyRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  bodySchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  isMine?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  sessionId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  session?: SessionFilterInput;
+
+};
 export type SessionFilterInput = {
   and?: Array<SessionFilterInput>;
   or?: Array<SessionFilterInput>;
@@ -757,6 +863,9 @@ export type CampaignPlayerFilterField = (typeof campaignPlayerFilterFields)[numb
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
 export type InvitationFilterField = (typeof invitationFilterFields)[number];
 
+export const playerLogFilterFields = ["authorName", "bodyJson", "bodyRevision", "bodySchemaVersion", "id", "isMine", "sessionId", "session"] as const;
+export type PlayerLogFilterField = (typeof playerLogFilterFields)[number];
+
 export const sessionFilterFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title", "campaign"] as const;
 export type SessionFilterField = (typeof sessionFilterFields)[number];
 
@@ -778,6 +887,9 @@ export type CampaignPlayerSortField = (typeof campaignPlayerSortFields)[number];
 
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;
 export type InvitationSortField = (typeof invitationSortFields)[number];
+
+export const playerLogSortFields = ["authorName", "bodyJson", "bodyRevision", "bodySchemaVersion", "id", "isMine", "sessionId"] as const;
+export type PlayerLogSortField = (typeof playerLogSortFields)[number];
 
 export const sessionSortFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title"] as const;
 export type SessionSortField = (typeof sessionSortFields)[number];

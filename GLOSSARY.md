@@ -23,7 +23,7 @@ Domain terms for Atlas. Use these words in code and tests.
 - **Session status**: *In prep* or *Done*. A session starts in prep. The GM marks it done after play and may move it back. Every member sees the status.
 - **Log**: the final record of a session. Members read it. Only the GM edits it.
 - **Prep**: the GM-only text of a session. The GM plans in it and takes live notes in it during play.
-- **Player log**: one player's recollection of a session. One per player per session.
+- **Player log**: one player's recollection of a session. One per player per session. Every member reads every player log. Only its author writes it. The GM is not a player and has none.
 - **Progress/rewards**: one campaign text that records what already happened. Members read it. Only the GM edits it.
 
 ## Text
@@ -33,7 +33,7 @@ Domain terms for Atlas. Use these words in code and tests.
 - **History**: the saved versions of a section. A restore creates a new revision.
 - **Checkpoint**: a user-visible history version, made after 30 s without edits or every 5 min of editing.
 - **Mention**: an inline @ link to another entry. It stores an ID and shows the current name.
-- **Image**: an uploaded picture, converted to WebP. It belongs to one campaign and one section. The document stores its ID, never a URL.
+- **Image**: an uploaded picture, converted to WebP. It stands alone, with no parent. The document stores its ID, never a URL.
 
 ## Access
 

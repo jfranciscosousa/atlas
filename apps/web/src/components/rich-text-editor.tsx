@@ -23,6 +23,7 @@ import {
   saveSessionDocument,
   type SessionSection,
 } from "../hooks/use-sessions";
+import { savePlayerLogDocument } from "../hooks/use-player-logs";
 import { saveNoteDocument } from "../hooks/use-notes";
 import {
   fetchImageUrl,
@@ -48,10 +49,12 @@ function UploadOnlyFilePanel(props: FilePanelProps) {
 
 type Props = {
   // The campaign, note, or session that owns this section. It decides where a save goes.
-  parent: { kind: "campaign" | "note" | "session"; id: string };
+  parent: { kind: "campaign" | "note" | "session" | "playerLog"; id: string };
   section: Section | "body" | SessionSection;
+  // Page elements get this ID prefix. Set it when one page holds several editors of a section.
+  id?: string;
   label: string;
-  hint: string;
+  hint?: string;
   // The label stays for screen readers. Use it when a tab already shows the name.
   hideLabel?: boolean;
   initial: BlockNoteDocument;
@@ -62,6 +65,7 @@ type Props = {
 export default function RichTextEditor({
   parent,
   section,
+  id = section,
   label,
   hint,
   hideLabel = false,
@@ -132,6 +136,8 @@ export default function RichTextEditor({
             doc,
             expected
           );
+        if (parent.kind === "playerLog")
+          return savePlayerLogDocument(meta, parent.id, doc, expected);
         if (parent.kind === "note")
           return saveNoteDocument(meta, parent.id, doc, expected);
         return saveCampaignSection(
@@ -154,11 +160,11 @@ export default function RichTextEditor({
   }, [queryClient, parent.kind, parent.id, section, revision, readOnly]);
 
   return (
-    <section id={`${section}-section`} aria-labelledby={`${section}-heading`}>
+    <section id={`${id}-section`} aria-labelledby={`${id}-heading`}>
       <div className="flex items-end justify-between gap-3">
         <div>
           <h2
-            id={`${section}-heading`}
+            id={`${id}-heading`}
             className={cn(
               "font-heading text-xl font-semibold tracking-tight",
               hideLabel && "sr-only"
@@ -166,10 +172,12 @@ export default function RichTextEditor({
           >
             {label}
           </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">{hint}</p>
+          {hint && (
+            <p className="mt-0.5 text-sm text-muted-foreground">{hint}</p>
+          )}
         </div>
         <span
-          id={`${section}-status`}
+          id={`${id}-status`}
           role="status"
           aria-live="polite"
           className="text-xs text-muted-foreground"
@@ -179,7 +187,7 @@ export default function RichTextEditor({
         </span>
       </div>
       <div
-        id={`${section}-editor`}
+        id={`${id}-editor`}
         className="mt-4 min-h-48 rounded-2xl border bg-card py-4 shadow-xs transition-shadow focus-within:shadow-md [&_.bn-editor]:min-h-36"
       >
         <BlockNoteView
@@ -197,7 +205,7 @@ export default function RichTextEditor({
         </BlockNoteView>
       </div>
       {state.status === "error" && (
-        <Alert id={`${section}-error`} variant="destructive" className="mt-3">
+        <Alert id={`${id}-error`} variant="destructive" className="mt-3">
           <AlertDescription>{state.message}</AlertDescription>
           {state.kind === "stale" ? (
             <Button variant="outline" onClick={() => window.location.reload()}>
@@ -205,7 +213,7 @@ export default function RichTextEditor({
             </Button>
           ) : (
             <Button
-              id={`${section}-retry`}
+              id={`${id}-retry`}
               variant="outline"
               onClick={() => void autosaver.current?.retry()}
             >

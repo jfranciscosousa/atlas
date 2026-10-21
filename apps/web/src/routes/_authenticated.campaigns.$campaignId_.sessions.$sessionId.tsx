@@ -8,6 +8,7 @@ import {
   useSession,
   useSessionDetails,
 } from "../hooks/use-sessions";
+import { playerLogsQueryOptions } from "../hooks/use-player-logs";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import {
   Tabs,
@@ -20,6 +21,7 @@ import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { SessionStatusBadge } from "../components/session-status-badge";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
+import { PlayerLogs } from "../components/player-logs";
 import { PageHeader } from "../components/page-header";
 
 export const Route = createFileRoute(
@@ -37,6 +39,10 @@ export const Route = createFileRoute(
         ),
         context.queryClient.fetchQuery({
           ...sessionQueryOptions(params.sessionId),
+          staleTime: 0,
+        }),
+        context.queryClient.fetchQuery({
+          ...playerLogsQueryOptions(params.sessionId),
           staleTime: 0,
         }),
       ]);
@@ -149,16 +155,23 @@ function SessionPage() {
         </div>
       )}
       {/* The key gives each session its own editor; BlockNote reads its content only once. */}
-      {campaign.isGm ? (
-        // keepMounted: a hidden editor keeps its text and its pending autosave.
-        <Tabs defaultValue={session.status === "done" ? "log" : "prep"}>
-          <TabsList>
+      {/* keepMounted: a hidden editor keeps its text and its pending autosave. */}
+      <Tabs
+        defaultValue={
+          campaign.isGm && session.status === "in_prep" ? "prep" : "log"
+        }
+      >
+        <TabsList>
+          {campaign.isGm && (
             <TabsTrigger value="prep">
               <LockIcon aria-hidden="true" className="size-3.5" />
               Prep
             </TabsTrigger>
-            <TabsTrigger value="log">Log</TabsTrigger>
-          </TabsList>
+          )}
+          <TabsTrigger value="log">Log</TabsTrigger>
+          <TabsTrigger value="player-logs">Player logs</TabsTrigger>
+        </TabsList>
+        {campaign.isGm && (
           <TabsContent value="prep" keepMounted>
             <RichTextEditor
               key={`${session.id}-prep`}
@@ -171,31 +184,28 @@ function SessionPage() {
               revision={session.prepRevision}
             />
           </TabsContent>
-          <TabsContent value="log" keepMounted>
-            <RichTextEditor
-              key={`${session.id}-log`}
-              parent={{ kind: "session", id: session.id }}
-              section="log"
-              label="Log"
-              hideLabel
-              hint="What the table saw and learned. Every player can read this."
-              initial={session.logJson}
-              revision={session.logRevision}
-            />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <RichTextEditor
-          key={`${session.id}-log`}
-          parent={{ kind: "session", id: session.id }}
-          section="log"
-          label="Log"
-          hint="What happened, as the GM recorded it."
-          initial={session.logJson}
-          revision={session.logRevision}
-          readOnly
-        />
-      )}
+        )}
+        <TabsContent value="log" keepMounted>
+          <RichTextEditor
+            key={`${session.id}-log`}
+            parent={{ kind: "session", id: session.id }}
+            section="log"
+            label="Log"
+            hideLabel
+            hint={
+              campaign.isGm
+                ? "What the table saw and learned. Every player can read this."
+                : "What happened, as the GM recorded it."
+            }
+            initial={session.logJson}
+            revision={session.logRevision}
+            readOnly={!campaign.isGm}
+          />
+        </TabsContent>
+        <TabsContent value="player-logs" keepMounted>
+          <PlayerLogs sessionId={session.id} isGm={!!campaign.isGm} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -21,6 +21,12 @@ defmodule Atlas.Campaigns do
       rpc_action :save_session_prep, :save_prep
     end
 
+    resource Atlas.Campaigns.PlayerLog do
+      rpc_action :list_player_logs, :list
+      rpc_action :create_player_log, :create
+      rpc_action :save_player_log_body, :save_body
+    end
+
     resource Atlas.Campaigns.CampaignPlayer do
       rpc_action :list_campaign_players, :list
       rpc_action :join_campaign, :join
@@ -37,6 +43,7 @@ defmodule Atlas.Campaigns do
   resources do
     resource Atlas.Campaigns.Campaign
     resource Atlas.Campaigns.Session
+    resource Atlas.Campaigns.PlayerLog
     resource Atlas.Campaigns.CampaignPlayer
     resource Atlas.Campaigns.Invitation
   end
