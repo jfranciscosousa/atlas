@@ -123,7 +123,6 @@ function NotePage() {
         label="Text"
         hint="Write anything: a plot, a guide, a handout."
         initial={note.bodyJson}
-        revision={note.bodyRevision}
       />
     </div>
   );

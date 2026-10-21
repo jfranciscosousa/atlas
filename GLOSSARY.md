@@ -29,7 +29,9 @@ Domain terms for Atlas. Use these words in code and tests.
 ## Text
 
 - **Section**: one rich-text field of a resource, for example a campaign description. A section has its own access rule and its own revision number.
-- **Revision**: the counter of a section. A save must send the revision it read (`expected_revision`). A stale revision is rejected.
+- **Live editing**: everyone who may edit a section edits it together and sees changes at once. The same editor does this for every section. The server keeps the shared document and checks the user's rights again on every message. Anyone who may read a section but not edit it sees the changes live and cannot type.
+- **Revision**: the counter of a section's JSON. The server raises it each time live editing stores a change. No API action saves a section's JSON.
+- **Epoch**: the number of times the shared document was rebuilt from the section's JSON, because something other than live editing changed the JSON. An editor that holds an older epoch must start over.
 - **History**: the saved versions of a section. A restore creates a new revision.
 - **Checkpoint**: a user-visible history version, made after 30 s without edits or every 5 min of editing.
 - **Mention**: an inline @ link to another entry. It stores an ID and shows the current name.

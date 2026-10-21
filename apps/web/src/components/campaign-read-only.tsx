@@ -13,9 +13,7 @@ type Campaign = {
   name: string;
   gmName: string | null;
   descriptionJson: BlockNoteDocument;
-  descriptionRevision: number;
   progressRewardsJson: BlockNoteDocument;
-  progressRewardsRevision: number;
 };
 
 /** The campaign as a member reads it: both sections read-only, then who plays. */
@@ -60,7 +58,6 @@ export function CampaignReadOnly({
             hideLabel
             hint="The world, the premise, and what the table should know first."
             initial={campaign.descriptionJson}
-            revision={campaign.descriptionRevision}
             readOnly
           />
         </TabsContent>
@@ -73,7 +70,6 @@ export function CampaignReadOnly({
             hideLabel
             hint="Milestones reached, loot earned, and what comes next."
             initial={campaign.progressRewardsJson}
-            revision={campaign.progressRewardsRevision}
             readOnly
           />
         </TabsContent>

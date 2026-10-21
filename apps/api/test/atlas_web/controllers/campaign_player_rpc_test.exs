@@ -65,16 +65,18 @@ defmodule AtlasWeb.CampaignPlayerRpcTest do
     assert %{"success" => true, "data" => %{"isGm" => true}} =
              get_campaign(ctx.gm, ctx.campaign_id)
 
-    save = fn who ->
-      rpc(who, "save_campaign_description", %{
-        identity: ctx.campaign_id,
-        input: %{json: [paragraph("hi")], schemaVersion: 1, expectedRevision: 0},
-        fields: ["descriptionRevision"]
-      })
+    save = fn email ->
+      Atlas.Fixtures.save_section(
+        Atlas.Campaigns.Campaign,
+        ctx.campaign_id,
+        :description,
+        [paragraph("hi")],
+        email
+      )
     end
 
-    refute save.(ctx.player)["success"]
-    assert save.(ctx.gm)["success"]
+    assert {:error, %Ash.Error.Forbidden{}} = save.("player@example.com")
+    assert {:ok, _} = save.("gm@example.com")
 
     assert %{"success" => true, "data" => [_]} =
              rpc(ctx.player, "list_campaign_players", %{

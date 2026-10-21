@@ -9,6 +9,11 @@ defmodule AtlasWeb.Endpoint do
     secure: Application.compile_env(:atlas, :secure_cookies, false)
   ]
 
+  # The cookie session authenticates the socket. check_origin stays on (the default).
+  socket "/socket", AtlasWeb.RichTextSocket,
+    websocket: [connect_info: [session: @session_options], max_frame_size: 1_000_000],
+    longpoll: false
+
   if Mix.env() == :dev do
     plug Tidewave
   end

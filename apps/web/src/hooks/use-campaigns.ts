@@ -4,12 +4,7 @@ import {
   getCampaign,
   getImageUrl,
   listCampaigns,
-  saveCampaignDescription,
-  saveCampaignProgressRewards,
 } from "@atlas/api-client";
-
-import type { BlockNoteDocument } from "../lib/blocknote-schema";
-import type { SaveOutcome } from "../lib/autosave.ts";
 
 import { rpcOptions } from "../lib/rpc.ts";
 import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
@@ -59,9 +54,8 @@ export function campaignQueryOptions(campaignId: string) {
           "isGm",
           "gmName",
           "descriptionJson",
-          "descriptionRevision",
+
           "progressRewardsJson",
-          "progressRewardsRevision",
         ],
       }),
     {
@@ -74,50 +68,6 @@ export function campaignQueryOptions(campaignId: string) {
 
 export function useCampaign(campaignId: string) {
   return useSuspenseQuery(campaignQueryOptions(campaignId));
-}
-
-export async function saveCampaignSection(
-  meta: Meta,
-  campaignId: string,
-  section: Section,
-  json: BlockNoteDocument,
-  expectedRevision: number
-): Promise<SaveOutcome> {
-  const input = { json, schemaVersion: 1, expectedRevision };
-  const config = { ...rpcOptions(meta), identity: campaignId, input };
-  let result;
-  try {
-    result =
-      section === "description"
-        ? await saveCampaignDescription({
-            ...config,
-            fields: ["descriptionRevision"],
-          })
-        : await saveCampaignProgressRewards({
-            ...config,
-            fields: ["progressRewardsRevision"],
-          });
-  } catch {
-    return {
-      ok: false,
-      kind: "failed",
-      message: "Could not reach the server. Your edits are kept. Try again.",
-    };
-  }
-
-  if (result.success) {
-    const data = result.data as Record<string, number>;
-    return {
-      ok: true,
-      revision: data.descriptionRevision ?? data.progressRewardsRevision!,
-    };
-  }
-  const error = result.errors[0];
-  return {
-    ok: false,
-    kind: error?.type === "stale_revision" ? "stale" : "failed",
-    message: error?.message ?? "Could not save.",
-  };
 }
 
 export async function fetchImageUrl(

@@ -47,14 +47,12 @@ export function PlayerLogs({
       )}
       {sorted.map(log => (
         <RichTextEditor
-          // BlockNote reads its content once. A log of someone else reloads when its revision changes.
-          key={log.isMine ? log.id : `${log.id}-${log.bodyRevision}`}
+          key={log.id}
           id={`player-log-${log.id}`}
           parent={{ kind: "playerLog", id: log.id }}
           section="body"
           label={log.isMine ? "Your log" : (log.authorName ?? "A player")}
           initial={log.bodyJson}
-          revision={log.bodyRevision}
           readOnly={!log.isMine}
         />
       ))}

@@ -8,8 +8,6 @@ defmodule Atlas.Campaigns do
       rpc_action :list_campaigns, :list
       rpc_action :get_campaign, :read, get_by: [:id]
       rpc_action :create_campaign, :create
-      rpc_action :save_campaign_description, :save_description
-      rpc_action :save_campaign_progress_rewards, :save_progress_rewards
     end
 
     resource Atlas.Campaigns.Session do
@@ -17,14 +15,11 @@ defmodule Atlas.Campaigns do
       rpc_action :get_session, :read, get_by: [:id]
       rpc_action :create_session, :create
       rpc_action :update_session_details, :update_details
-      rpc_action :save_session_log, :save_log
-      rpc_action :save_session_prep, :save_prep
     end
 
     resource Atlas.Campaigns.PlayerLog do
       rpc_action :list_player_logs, :list
       rpc_action :create_player_log, :create
-      rpc_action :save_player_log_body, :save_body
     end
 
     resource Atlas.Campaigns.CampaignPlayer do

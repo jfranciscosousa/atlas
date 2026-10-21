@@ -8,16 +8,9 @@ import {
   renameNote,
   restoreNote,
   revealNote,
-  saveNoteBody,
 } from "@atlas/api-client";
 
-import type { BlockNoteDocument } from "../lib/blocknote-schema";
-import type { SaveOutcome } from "../lib/autosave.ts";
-
-import { rpcOptions } from "../lib/rpc.ts";
 import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
-
-type Meta = Parameters<typeof rpcOptions>[0];
 
 // Matches the active and the archived list of one campaign.
 const notesKey = (campaignId: string) =>
@@ -115,7 +108,7 @@ export function noteQueryOptions(noteId: string) {
           "campaignId",
           "title",
           "bodyJson",
-          "bodyRevision",
+
           "revealed",
           "isOwner",
           "ownerName",
@@ -149,35 +142,4 @@ export function useNoteRename(campaignId: string, noteId: string) {
       invalidate: [notesKey(campaignId)],
     }
   );
-}
-
-export async function saveNoteDocument(
-  meta: Meta,
-  noteId: string,
-  json: BlockNoteDocument,
-  expectedRevision: number
-): Promise<SaveOutcome> {
-  let result;
-  try {
-    result = await saveNoteBody({
-      ...rpcOptions(meta),
-      identity: noteId,
-      input: { json, schemaVersion: 1, expectedRevision },
-      fields: ["bodyRevision"],
-    });
-  } catch {
-    return {
-      ok: false,
-      kind: "failed",
-      message: "Could not reach the server. Your edits are kept. Try again.",
-    };
-  }
-
-  if (result.success) return { ok: true, revision: result.data.bodyRevision };
-  const error = result.errors[0];
-  return {
-    ok: false,
-    kind: error?.type === "stale_revision" ? "stale" : "failed",
-    message: error?.message ?? "Could not save.",
-  };
 }

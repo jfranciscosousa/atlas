@@ -13,7 +13,6 @@ defmodule Atlas.Content do
       rpc_action :restore_note, :restore
       rpc_action :reveal_note, :reveal
       rpc_action :hide_note, :hide
-      rpc_action :save_note_body, :save_body
     end
   end
 

@@ -96,7 +96,7 @@ config :spark,
 config :atlas,
   ecto_repos: [Atlas.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Atlas.Accounts, Atlas.Campaigns, Atlas.Content, Atlas.Images]
+  ash_domains: [Atlas.Accounts, Atlas.Campaigns, Atlas.Content, Atlas.Images, Atlas.Documents]
 
 # Configure the endpoint
 config :atlas, AtlasWeb.Endpoint,

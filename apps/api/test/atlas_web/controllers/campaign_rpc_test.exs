@@ -2,7 +2,9 @@ defmodule AtlasWeb.CampaignRpcTest do
   use AtlasWeb.ConnCase, async: true
 
   import AtlasWeb.RpcHelpers
-  import Atlas.Fixtures, only: [paragraph: 1]
+  import Atlas.Fixtures, only: [paragraph: 1, save_section: 5, save_section: 6]
+
+  alias Atlas.Campaigns.Campaign
 
   @fields ["id", "name", "descriptionJson", "descriptionRevision", "progressRewardsRevision"]
 
@@ -21,13 +23,8 @@ defmodule AtlasWeb.CampaignRpcTest do
     {:ok, conn: conn, gm: gm, other: other, other_gm: other_gm, id: id}
   end
 
-  defp save(who, id, expected, text \\ "hi", action \\ "save_campaign_description") do
-    rpc(who, action, %{
-      identity: id,
-      input: %{json: [paragraph(text)], schemaVersion: 1, expectedRevision: expected},
-      fields: @fields
-    })
-  end
+  defp save(email, id, text \\ "hi", section \\ :description, opts \\ []),
+    do: save_section(Campaign, id, section, [paragraph(text)], email, opts)
 
   test "a signed-in user creates a campaign, becomes its GM, and sees two empty sections", ctx do
     assert %{
@@ -46,22 +43,21 @@ defmodule AtlasWeb.CampaignRpcTest do
   end
 
   test "the GM saves both sections independently", ctx do
-    assert %{"success" => true, "data" => %{"descriptionRevision" => 1}} = save(ctx.gm, ctx.id, 0)
+    assert {:ok, %{description_revision: 1}} = save("gm@example.com", ctx.id)
 
-    assert %{"success" => true, "data" => %{"progressRewardsRevision" => 1}} =
-             save(ctx.gm, ctx.id, 0, "loot", "save_campaign_progress_rewards")
+    assert {:ok, %{progress_rewards_revision: 1}} =
+             save("gm@example.com", ctx.id, "loot", :progress_rewards)
 
-    assert %{"success" => false, "errors" => [%{"type" => "stale_revision"} | _]} =
-             save(ctx.gm, ctx.id, 0)
+    assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Changes.StaleRecord{} | _]}} =
+             save("gm@example.com", ctx.id, "hi", :description, revision: 0)
   end
 
-  test "non-members and GMs of other campaigns cannot read or save: they get not found", ctx do
-    for who <- [ctx.other, ctx.other_gm] do
+  test "non-members and GMs of other campaigns cannot read or save", ctx do
+    for {who, email} <- [{ctx.other, "other@example.com"}, {ctx.other_gm, "other-gm@example.com"}] do
       assert %{"success" => false, "errors" => [%{"type" => "not_found"} | _]} =
                rpc(who, "get_campaign", %{getBy: %{id: ctx.id}, fields: @fields})
 
-      assert %{"success" => false, "errors" => [%{"type" => type} | _]} = save(who, ctx.id, 0)
-      assert type == "not_found"
+      assert {:error, %Ash.Error.Forbidden{}} = save(email, ctx.id)
 
       assert %{"success" => true, "data" => data} = rpc(who, "list_campaigns", %{fields: @fields})
       refute ctx.id in Enum.map(data, & &1["id"])
@@ -100,19 +96,13 @@ defmodule AtlasWeb.CampaignRpcTest do
   test "the server rejects invalid documents and unsupported schema versions", ctx do
     bad_doc = [%{paragraph("x") | "type" => "video"}]
 
-    assert %{"success" => false} =
-             rpc(ctx.gm, "save_campaign_description", %{
-               identity: ctx.id,
-               input: %{json: bad_doc, schemaVersion: 1, expectedRevision: 0},
-               fields: @fields
-             })
+    assert {:error, %Ash.Error.Invalid{}} =
+             save_section(Campaign, ctx.id, :description, bad_doc, "gm@example.com")
 
-    assert %{"success" => false} =
-             rpc(ctx.gm, "save_campaign_description", %{
-               identity: ctx.id,
-               input: %{json: [paragraph("x")], schemaVersion: 2, expectedRevision: 0},
-               fields: @fields
-             })
+    assert {:error, %Ash.Error.Invalid{}} =
+             save_section(Campaign, ctx.id, :description, [paragraph("x")], "gm@example.com",
+               schema_version: 2
+             )
 
     assert %{"data" => %{"descriptionRevision" => 0, "descriptionJson" => []}} =
              rpc(ctx.gm, "get_campaign", %{getBy: %{id: ctx.id}, fields: @fields})

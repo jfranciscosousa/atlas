@@ -101,24 +101,18 @@ defmodule AtlasWeb.ImageTest do
       rpc(ctx.gm, "create_session", %{input: %{campaignId: ctx.campaign}, fields: ["id"]})
 
     saves = [
-      {"save_campaign_description", ctx.campaign},
-      {"save_campaign_progress_rewards", ctx.campaign},
-      {"save_note_body", note},
-      {"save_session_log", session},
-      {"save_session_prep", session}
+      {Atlas.Campaigns.Campaign, ctx.campaign, :description},
+      {Atlas.Campaigns.Campaign, ctx.campaign, :progress_rewards},
+      {Atlas.Content.Note, note, :body},
+      {Atlas.Campaigns.Session, session, :log},
+      {Atlas.Campaigns.Session, session, :prep}
     ]
 
-    for {action, id} <- saves do
-      save = fn blocks, expected ->
-        rpc(ctx.gm, action, %{
-          identity: id,
-          input: %{json: blocks, schemaVersion: 1, expectedRevision: expected},
-          fields: ["id"]
-        })
-      end
+    for {resource, id, section} <- saves do
+      save = &Atlas.Fixtures.save_section(resource, id, section, &1, "gm@example.com")
 
-      assert %{"success" => false} = save.([image_block(missing)], 0)
-      assert %{"success" => true} = save.([paragraph("x"), image_block(image)], 0)
+      assert {:error, %Ash.Error.Invalid{}} = save.([image_block(missing)])
+      assert {:ok, _} = save.([paragraph("x"), image_block(image)])
     end
   end
 

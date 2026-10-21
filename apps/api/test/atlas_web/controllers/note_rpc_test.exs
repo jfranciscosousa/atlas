@@ -62,13 +62,8 @@ defmodule AtlasWeb.NoteRpcTest do
     rpc(who, "create_note", %{input: %{campaignId: campaign_id, title: title}, fields: @fields})
   end
 
-  defp save(who, id, expected, doc \\ [paragraph("hi")]) do
-    rpc(who, "save_note_body", %{
-      identity: id,
-      input: %{json: doc, schemaVersion: 1, expectedRevision: expected},
-      fields: @fields
-    })
-  end
+  defp save(email, id, doc \\ [paragraph("hi")], opts \\ []),
+    do: Atlas.Fixtures.save_section(Atlas.Content.Note, id, :body, doc, email, opts)
 
   test "the GM creates, lists, reads, renames, and saves a note", ctx do
     assert %{"success" => true, "data" => %{"id" => id, "bodyJson" => [], "bodyRevision" => 0}} =
@@ -89,13 +84,13 @@ defmodule AtlasWeb.NoteRpcTest do
                fields: @fields
              })
 
-    assert %{"success" => true, "data" => %{"bodyRevision" => 1}} = save(ctx.gm, id, 0)
+    assert {:ok, %{body_revision: 1}} = save("gm@example.com", id)
 
-    assert %{"success" => false, "errors" => [%{"type" => "stale_revision"} | _]} =
-             save(ctx.gm, id, 0)
+    assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Changes.StaleRecord{} | _]}} =
+             save("gm@example.com", id, [paragraph("hi")], revision: 0)
   end
 
-  test "someone who is not the GM cannot create, list, read, rename, or save: not found", ctx do
+  test "someone who is not the GM cannot create, list, read, rename, or save", ctx do
     assert %{"success" => true, "data" => %{"id" => id}} = create(ctx.gm, ctx.campaign_id)
 
     assert %{"success" => false, "errors" => [%{"type" => type} | _]} =
@@ -115,7 +110,7 @@ defmodule AtlasWeb.NoteRpcTest do
     assert %{"success" => false} =
              rpc(ctx.other, "rename_note", %{identity: id, input: %{title: "x"}, fields: @fields})
 
-    assert %{"success" => false} = save(ctx.other, id, 0)
+    assert {:error, %Ash.Error.Forbidden{}} = save("other@example.com", id)
 
     assert %{"data" => %{"title" => "The Cult of the Drowned", "bodyRevision" => 0}} =
              rpc(ctx.gm, "get_note", %{getBy: %{id: id}, fields: @fields})
@@ -208,7 +203,7 @@ defmodule AtlasWeb.NoteRpcTest do
     assert [%{"id" => ^id}] = list(ctx.gm, ctx.campaign_id)
     assert [] = list(ctx.bob, ctx.campaign_id)
 
-    assert %{"success" => false} = save(ctx.bob, id, 0)
+    assert {:error, %Ash.Error.Forbidden{}} = save("bob@example.com", id)
     assert %{"success" => false} = note_action(ctx.bob, "reveal_note", id)
   end
 
@@ -247,11 +242,11 @@ defmodule AtlasWeb.NoteRpcTest do
     assert %{"data" => %{"id" => id}} = create(ctx.gm, ctx.campaign_id)
     assert %{"success" => true} = note_action(ctx.gm, "reveal_note", id)
 
-    assert %{"success" => true, "data" => %{"bodyRevision" => 1}} = save(ctx.ann, id, 0)
-    assert %{"success" => true, "data" => %{"bodyRevision" => 2}} = save(ctx.bob, id, 1)
+    assert {:ok, %{body_revision: 1}} = save("ann@example.com", id)
+    assert {:ok, %{body_revision: 2}} = save("bob@example.com", id)
 
-    assert %{"success" => false, "errors" => [%{"type" => "stale_revision"} | _]} =
-             save(ctx.ann, id, 1)
+    assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Changes.StaleRecord{} | _]}} =
+             save("ann@example.com", id, [paragraph("hi")], revision: 1)
 
     for action <- ["hide_note", "archive_note", "restore_note"] do
       assert %{"success" => false} = note_action(ctx.ann, action, id)
@@ -274,7 +269,7 @@ defmodule AtlasWeb.NoteRpcTest do
     assert [] = list(ctx.bob, ctx.campaign_id, true)
     assert [%{"id" => ^id}] = list(ctx.ann, ctx.campaign_id, true)
     assert [%{"id" => ^id}] = list(ctx.gm, ctx.campaign_id, true)
-    assert %{"success" => false} = save(ctx.bob, id, 0)
+    assert {:error, %Ash.Error.Forbidden{}} = save("bob@example.com", id)
 
     assert %{"success" => true, "data" => %{"archivedAt" => nil}} =
              note_action(ctx.ann, "restore_note", id)

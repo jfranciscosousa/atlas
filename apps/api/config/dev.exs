@@ -17,6 +17,11 @@ config :atlas, AtlasWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}],
   code_reloader: true,
   debug_errors: true,
+  # The live-editing socket accepts only these origins. Add a host (for example a Tailscale name)
+  # with ALLOWED_ORIGINS="//host.example,//other.example".
+  check_origin:
+    ["//localhost", "//127.0.0.1"] ++
+      String.split(System.get_env("ALLOWED_ORIGINS", ""), ",", trim: true),
   secret_key_base: "MlCuZ6YlCxC2KY/xPksM+ZxGjWIxluwrsBCUdlO8GJfXTjECFmN20M151QoOTcLm"
 
 config :atlas, dev_routes: true, token_signing_secret: "eF8H1KDP4nbpf/302Vcy/W6hSJBh9LmE"

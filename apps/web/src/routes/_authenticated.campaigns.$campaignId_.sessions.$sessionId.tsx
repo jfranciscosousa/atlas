@@ -181,7 +181,6 @@ function SessionPage() {
               hideLabel
               hint="Secrets, encounters, and live notes during play. Only the GM sees this."
               initial={session.prepJson}
-              revision={session.prepRevision}
             />
           </TabsContent>
         )}
@@ -198,7 +197,6 @@ function SessionPage() {
                 : "What happened, as the GM recorded it."
             }
             initial={session.logJson}
-            revision={session.logRevision}
             readOnly={!campaign.isGm}
           />
         </TabsContent>

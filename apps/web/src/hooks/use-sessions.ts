@@ -3,19 +3,12 @@ import {
   createSession,
   getSession,
   listSessions,
-  saveSessionLog,
-  saveSessionPrep,
   updateSessionDetails,
 } from "@atlas/api-client";
 
-import type { BlockNoteDocument } from "../lib/blocknote-schema";
-import type { SaveOutcome } from "../lib/autosave.ts";
-
-import { rpcOptions } from "../lib/rpc.ts";
 import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
 
 export type SessionSection = "log" | "prep";
-type Meta = Parameters<typeof rpcOptions>[0];
 
 const sessionsKey = (campaignId: string) =>
   rpcKey(listSessions, { input: { campaignId } });
@@ -61,9 +54,7 @@ export function sessionQueryOptions(sessionId: string) {
           "playedOn",
           "status",
           "logJson",
-          "logRevision",
           "prepJson",
-          "prepRevision",
         ],
       }),
     {
@@ -105,39 +96,4 @@ export function useSessionDetails(campaignId: string, sessionId: string) {
       invalidate: [sessionsKey(campaignId)],
     }
   );
-}
-
-export async function saveSessionDocument(
-  meta: Meta,
-  sessionId: string,
-  section: SessionSection,
-  json: BlockNoteDocument,
-  expectedRevision: number
-): Promise<SaveOutcome> {
-  const input = { json, schemaVersion: 1, expectedRevision };
-  const config = { ...rpcOptions(meta), identity: sessionId, input };
-  let result;
-  try {
-    result =
-      section === "log"
-        ? await saveSessionLog({ ...config, fields: ["logRevision"] })
-        : await saveSessionPrep({ ...config, fields: ["prepRevision"] });
-  } catch {
-    return {
-      ok: false,
-      kind: "failed",
-      message: "Could not reach the server. Your edits are kept. Try again.",
-    };
-  }
-
-  if (result.success) {
-    const data = result.data as Record<string, number>;
-    return { ok: true, revision: data.logRevision ?? data.prepRevision! };
-  }
-  const error = result.errors[0];
-  return {
-    ok: false,
-    kind: error?.type === "stale_revision" ? "stale" : "failed",
-    message: error?.message ?? "Could not save.",
-  };
 }

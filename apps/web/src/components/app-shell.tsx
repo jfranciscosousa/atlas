@@ -72,6 +72,8 @@ function UserMenu({ user }: { user: ShellUser }) {
         method: "DELETE",
         queryClient,
       });
+      // The live-editing socket loads on demand: most sessions never open one.
+      void import("../lib/collab-socket").then(m => m.closeCollabSocket());
       await queryClient.cancelQueries();
       queryClient.clear();
       await router.invalidate();

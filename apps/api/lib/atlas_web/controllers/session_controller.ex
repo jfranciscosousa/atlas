@@ -6,6 +6,10 @@ defmodule AtlasWeb.SessionController do
   end
 
   def delete(conn, _params) do
+    # Live editing sockets of the user close with the session.
+    with %{id: id} <- conn.assigns[:current_user],
+         do: AtlasWeb.Endpoint.broadcast("rich_text_socket:#{id}", "disconnect", %{})
+
     conn = AshAuthentication.Phoenix.Controller.clear_session(conn, :atlas)
     Plug.CSRFProtection.delete_csrf_token()
     respond(conn, nil)

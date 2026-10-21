@@ -10,26 +10,25 @@ import {
   useCreateBlockNote,
   type FilePanelProps,
 } from "@blocknote/react";
+import { withCollaboration } from "@blocknote/core/yjs";
 
 import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import "@blocknote/shadcn/style.css";
 
+import type { SessionSection } from "../hooks/use-sessions";
+
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
 import { createImageResolver, uploadImage } from "../lib/images";
+import {
+  FRAGMENT,
+  openDocument,
+  type Collab,
+  type CollabNotice,
+  type CollabStatus,
+} from "../lib/collab";
 import { schema } from "../lib/blocknote-schema";
-import { createAutosaver, type SaveState } from "../lib/autosave";
-import {
-  saveSessionDocument,
-  type SessionSection,
-} from "../hooks/use-sessions";
-import { savePlayerLogDocument } from "../hooks/use-player-logs";
-import { saveNoteDocument } from "../hooks/use-notes";
-import {
-  fetchImageUrl,
-  saveCampaignSection,
-  type Section,
-} from "../hooks/use-campaigns";
+import { fetchImageUrl, type Section } from "../hooks/use-campaigns";
 
 // Documents hold only uploaded images, so the panel offers no "Embed" tab for external URLs.
 function UploadOnlyFilePanel(props: FilePanelProps) {
@@ -57,9 +56,24 @@ type Props = {
   hint?: string;
   // The label stays for screen readers. Use it when a tab already shows the name.
   hideLabel?: boolean;
+  // The text as last saved. It shows while the live connection starts.
   initial: BlockNoteDocument;
-  revision: number;
+  // The editor stays read-only, whatever the server allows.
   readOnly?: boolean;
+};
+
+// The server names a section `kind:id:section`.
+const KINDS = {
+  campaign: "campaign",
+  note: "note",
+  session: "session",
+  playerLog: "player_log",
+} as const;
+
+const NOTICES: Record<CollabNotice["kind"], string> = {
+  revoked: "You no longer have access to this text.",
+  reset: "This text was replaced by another change. Reload to see it.",
+  rejected: "The server did not accept your last change.",
 };
 
 export default function RichTextEditor({
@@ -70,18 +84,42 @@ export default function RichTextEditor({
   hint,
   hideLabel = false,
   initial,
-  revision,
   readOnly = false,
 }: Props) {
   const queryClient = useQueryClient();
-  const [state, setState] = useState<SaveState>({ status: "idle" });
-  // The blocker reads the latest state outside React's render cycle.
-  const stateRef = useRef(state);
-  const report = (next: SaveState) => {
-    stateRef.current = next;
-    setState(next);
-  };
   const meta = () => queryClient.getDefaultOptions().mutations?.meta;
+  const ref = `${KINDS[parent.kind]}:${parent.id}:${section}`;
+
+  const [collab, setCollab] = useState<Collab>();
+  const [status, setStatus] = useState<CollabStatus>("connecting");
+  const [canWrite, setCanWrite] = useState(false);
+  const [notice, setNotice] = useState<CollabNotice>();
+  // Once the first sync is done the live document replaces the saved text for good.
+  const [live, setLive] = useState(false);
+  // The blocker reads the latest value outside React's render cycle.
+  const collabRef = useRef<Collab>(undefined);
+
+  useEffect(() => {
+    const opened = openDocument(ref, meta()?.csrfToken ?? "", {
+      onStatus: next => {
+        setStatus(next);
+        if (next === "synced") setLive(true);
+      },
+      onPermissions: setCanWrite,
+      onNotice: setNotice,
+    });
+    collabRef.current = opened;
+    setCollab(opened);
+    return () => {
+      opened.destroy();
+      collabRef.current = undefined;
+      setCollab(undefined);
+      setStatus("connecting");
+      setLive(false);
+      setNotice(undefined);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the CSRF token does not change the document
+  }, [ref]);
 
   const resolveFileUrl = useMemo(
     () =>
@@ -92,72 +130,44 @@ export default function RichTextEditor({
     [queryClient]
   );
 
-  const editor = useCreateBlockNote({
+  const common = {
     schema,
-    // The server owns validation. A document saved earlier is always one this schema accepts.
-    initialContent: initial.length
-      ? (initial as unknown as NonNullable<
-          Parameters<typeof useCreateBlockNote>[0]
-        >["initialContent"])
-      : undefined,
-    uploadFile: file => uploadImage({ file, csrfToken: meta()?.csrfToken }),
+    uploadFile: (file: File) =>
+      uploadImage({ file, csrfToken: meta()?.csrfToken }),
     resolveFileUrl,
-  });
+  };
+  const editor = useCreateBlockNote(
+    live && collab
+      ? withCollaboration({
+          ...common,
+          collaboration: {
+            provider: collab.provider,
+            fragment: collab.doc.getXmlFragment(FRAGMENT),
+            user: { name: "You", color: "#6b7280" },
+          },
+        })
+      : {
+          ...common,
+          // The server owns validation. A saved document is always one this schema accepts.
+          initialContent: initial.length
+            ? (initial as unknown as NonNullable<
+                Parameters<typeof useCreateBlockNote>[0]
+              >["initialContent"])
+            : undefined,
+        },
+    [live, collab]
+  );
 
-  const autosaver =
-    useRef<ReturnType<typeof createAutosaver<BlockNoteDocument>>>(null);
+  // After access ended or the text was replaced, the old text must not stay on screen.
+  const closed = notice?.kind === "revoked" || notice?.kind === "reset";
 
-  // Leaving waits for a pending save. A failed save asks before the edits are dropped.
+  // Leaving with edits that never reached the server asks first.
   useBlocker({
-    shouldBlockFn: async () => {
-      if (stateRef.current.status === "saving")
-        await autosaver.current?.flush();
-      return (
-        stateRef.current.status === "error" &&
-        !window.confirm("Your latest edits are not saved. Leave anyway?")
-      );
-    },
-    enableBeforeUnload: () =>
-      stateRef.current.status === "saving" ||
-      stateRef.current.status === "error",
+    shouldBlockFn: () =>
+      !!collabRef.current?.hasUnsyncedEdits() &&
+      !window.confirm("Your latest edits are not saved. Leave anyway?"),
+    enableBeforeUnload: () => !!collabRef.current?.hasUnsyncedEdits(),
   });
-  useEffect(() => {
-    if (readOnly) return;
-    const saver = createAutosaver<BlockNoteDocument>({
-      revision,
-      onState: report,
-      save: (doc, expected) => {
-        const meta = queryClient.getDefaultOptions().mutations?.meta;
-        if (parent.kind === "session")
-          return saveSessionDocument(
-            meta,
-            parent.id,
-            section as SessionSection,
-            doc,
-            expected
-          );
-        if (parent.kind === "playerLog")
-          return savePlayerLogDocument(meta, parent.id, doc, expected);
-        if (parent.kind === "note")
-          return saveNoteDocument(meta, parent.id, doc, expected);
-        return saveCampaignSection(
-          meta,
-          parent.id,
-          section as Section,
-          doc,
-          expected
-        );
-      },
-    });
-    autosaver.current = saver;
-    const flush = () => void saver.flush();
-    document.addEventListener("visibilitychange", flush);
-    return () => {
-      document.removeEventListener("visibilitychange", flush);
-      void saver.flush();
-      saver.dispose();
-    };
-  }, [queryClient, parent.kind, parent.id, section, revision, readOnly]);
 
   return (
     <section id={`${id}-section`} aria-labelledby={`${id}-heading`}>
@@ -182,42 +192,34 @@ export default function RichTextEditor({
           aria-live="polite"
           className="text-xs text-muted-foreground"
         >
-          {state.status === "saving" && "Saving…"}
-          {state.status === "saved" && "Saved"}
+          {!notice && !live && "Connecting…"}
+          {!notice && live && status === "offline" && "Reconnecting…"}
         </span>
       </div>
-      <div
-        id={`${id}-editor`}
-        className="mt-4 min-h-48 rounded-2xl border bg-card py-4 shadow-xs transition-shadow focus-within:shadow-md [&_.bn-editor]:min-h-36"
-      >
-        <BlockNoteView
-          editor={editor}
-          theme="light"
-          editable={!readOnly}
-          filePanel={false}
-          onChange={() =>
-            autosaver.current?.change(
-              editor.document as unknown as BlockNoteDocument
-            )
-          }
+      {!closed && (
+        <div
+          id={`${id}-editor`}
+          className="mt-4 min-h-48 rounded-2xl border bg-card py-4 shadow-xs transition-shadow focus-within:shadow-md [&_.bn-editor]:min-h-36"
         >
-          <FilePanelController filePanel={UploadOnlyFilePanel} />
-        </BlockNoteView>
-      </div>
-      {state.status === "error" && (
+          <BlockNoteView
+            editor={editor}
+            theme="light"
+            editable={live && canWrite && !readOnly && !notice}
+            filePanel={false}
+          >
+            <FilePanelController filePanel={UploadOnlyFilePanel} />
+          </BlockNoteView>
+        </div>
+      )}
+      {notice && (
         <Alert id={`${id}-error`} variant="destructive" className="mt-3">
-          <AlertDescription>{state.message}</AlertDescription>
-          {state.kind === "stale" ? (
+          <AlertDescription>
+            {NOTICES[notice.kind]}
+            {notice.kind === "rejected" && ` ${notice.reason}`}
+          </AlertDescription>
+          {notice.kind !== "revoked" && (
             <Button variant="outline" onClick={() => window.location.reload()}>
               Reload
-            </Button>
-          ) : (
-            <Button
-              id={`${id}-retry`}
-              variant="outline"
-              onClick={() => void autosaver.current?.retry()}
-            >
-              Retry
             </Button>
           )}
         </Alert>

@@ -26,6 +26,7 @@ export default defineConfig({
       "/api": api,
       "/auth": api,
       "/rpc": api,
+      "/socket": { ...api, ws: true },
     },
   },
 });

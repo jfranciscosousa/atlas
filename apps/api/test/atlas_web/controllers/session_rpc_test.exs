@@ -39,13 +39,8 @@ defmodule AtlasWeb.SessionRpcTest do
   defp create(who, campaign_id),
     do: rpc(who, "create_session", %{input: %{campaignId: campaign_id}, fields: @fields})
 
-  defp save(who, action, id, expected, doc),
-    do:
-      rpc(who, action, %{
-        identity: id,
-        input: %{json: doc, schemaVersion: 1, expectedRevision: expected},
-        fields: ["id", "logRevision"]
-      })
+  defp save(email, section, id, doc, opts \\ []),
+    do: Atlas.Fixtures.save_section(Atlas.Campaigns.Session, id, section, doc, email, opts)
 
   test "the GM creates numbered sessions, sets details, and writes prep and log", ctx do
     assert %{"success" => true, "data" => %{"id" => first, "number" => 1, "title" => nil}} =
@@ -64,11 +59,11 @@ defmodule AtlasWeb.SessionRpcTest do
                fields: @fields
              })
 
-    assert %{"success" => true, "data" => %{"logRevision" => 1}} =
-             save(ctx.gm, "save_session_log", first, 0, [paragraph("They arrived.")])
+    assert {:ok, %{log_revision: 1}} =
+             save("gm@example.com", :log, first, [paragraph("They arrived.")])
 
-    assert %{"success" => true} =
-             save(ctx.gm, "save_session_prep", first, 0, [paragraph("The abbot lies.")])
+    assert {:ok, %{prep_revision: 1}} =
+             save("gm@example.com", :prep, first, [paragraph("The abbot lies.")])
 
     assert %{"success" => true, "data" => [%{"id" => ^second}, %{"id" => ^first}]} =
              rpc(ctx.gm, "list_sessions", %{
@@ -76,8 +71,8 @@ defmodule AtlasWeb.SessionRpcTest do
                fields: ["id"]
              })
 
-    assert %{"success" => false, "errors" => [%{"type" => "stale_revision"} | _]} =
-             save(ctx.gm, "save_session_log", first, 0, [paragraph("again")])
+    assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Changes.StaleRecord{} | _]}} =
+             save("gm@example.com", :log, first, [paragraph("again")], revision: 0)
   end
 
   test "a session starts in prep; only the GM moves it to done and back", ctx do
@@ -111,8 +106,8 @@ defmodule AtlasWeb.SessionRpcTest do
 
   test "a player reads the session and its log but never receives the prep", ctx do
     assert %{"data" => %{"id" => id}} = create(ctx.gm, ctx.campaign_id)
-    assert %{"success" => true} = save(ctx.gm, "save_session_log", id, 0, [paragraph("Public.")])
-    assert %{"success" => true} = save(ctx.gm, "save_session_prep", id, 0, [paragraph("Secret.")])
+    assert {:ok, _} = save("gm@example.com", :log, id, [paragraph("Public.")])
+    assert {:ok, _} = save("gm@example.com", :prep, id, [paragraph("Secret.")])
 
     assert %{"success" => true, "data" => session} =
              rpc(ctx.player, "get_session", %{getBy: %{id: id}, fields: @fields})
@@ -156,8 +151,8 @@ defmodule AtlasWeb.SessionRpcTest do
                fields: @fields
              })
 
-    assert %{"success" => false} = save(ctx.player, "save_session_log", id, 0, [paragraph("x")])
-    assert %{"success" => false} = save(ctx.player, "save_session_prep", id, 0, [paragraph("x")])
+    assert {:error, %Ash.Error.Forbidden{}} = save("ann@example.com", :log, id, [paragraph("x")])
+    assert {:error, %Ash.Error.Forbidden{}} = save("ann@example.com", :prep, id, [paragraph("x")])
 
     assert %{"data" => %{"title" => nil, "logRevision" => 0, "prepRevision" => 0}} =
              rpc(ctx.gm, "get_session", %{getBy: %{id: id}, fields: @fields})
@@ -183,7 +178,8 @@ defmodule AtlasWeb.SessionRpcTest do
     assert %{"success" => false, "errors" => [%{"type" => "not_found"} | _]} =
              rpc(ctx.other, "get_session", %{getBy: %{id: id}, fields: @fields})
 
-    assert %{"success" => false} = save(ctx.other, "save_session_log", id, 0, [paragraph("x")])
+    assert {:error, %Ash.Error.Forbidden{}} =
+             save("other@example.com", :log, id, [paragraph("x")])
   end
 
   test "sessions have no archive or delete action" do

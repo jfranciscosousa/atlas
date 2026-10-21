@@ -156,7 +156,6 @@ function CampaignPage() {
             hideLabel
             hint="The world, the premise, and what the table should know first."
             initial={campaign.descriptionJson}
-            revision={campaign.descriptionRevision}
           />
         </TabsContent>
         <TabsContent value="progress" keepMounted>
@@ -168,7 +167,6 @@ function CampaignPage() {
             hideLabel
             hint="Milestones reached, loot earned, and what comes next."
             initial={campaign.progressRewardsJson}
-            revision={campaign.progressRewardsRevision}
           />
         </TabsContent>
       </Tabs>
