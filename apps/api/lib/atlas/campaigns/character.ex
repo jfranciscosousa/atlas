@@ -10,7 +10,7 @@ defmodule Atlas.Campaigns.Character do
   keeps it. A player adds more characters with `create`. Leaving and removal do not exist yet.
 
   Every member reads a character and its description. The player and the GM write the
-  description. Only the player writes the name. The secret notes belong to the GM alone: no
+  description and the name. The secret notes belong to the GM alone: no
   other member reads or writes them.
   """
   use Ash.Resource,
@@ -98,6 +98,7 @@ defmodule Atlas.Campaigns.Character do
 
     policy action(:rename) do
       authorize_if expr(user_id == ^actor(:id))
+      authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
     end
 
     policy action(:save_description) do

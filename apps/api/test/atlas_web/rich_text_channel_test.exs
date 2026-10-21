@@ -317,7 +317,7 @@ defmodule AtlasWeb.RichTextChannelTest do
       assert {:error, %{reason: "forbidden"}} = join(ctx.outsider, log)
     end
 
-    test "a player log is written by its author and read by the other members", ctx do
+    test "a player log is written by its author and the GM, read by the other members", ctx do
       assert %{"data" => %{"id" => log_id}} =
                rpc(ctx.ann, "create_player_log", %{
                  input: %{sessionId: ctx.session_id},
@@ -327,7 +327,7 @@ defmodule AtlasWeb.RichTextChannelTest do
       ref = "player_log:#{log_id}:body"
       assert {:ok, %{canWrite: true}, _} = join(ctx.ann, ref)
       assert {:ok, %{canWrite: false}, _} = join(ctx.bob, ref)
-      assert {:ok, %{canWrite: false}, _} = join(ctx.gm, ref)
+      assert {:ok, %{canWrite: true}, _} = join(ctx.gm, ref)
       assert {:error, %{reason: "forbidden"}} = join(ctx.outsider, ref)
     end
 
@@ -414,7 +414,7 @@ defmodule AtlasWeb.RichTextChannelTest do
   end
 
   describe "nobody writes a section the policies keep from them" do
-    test "the GM cannot write a player's log, and another player cannot either", ctx do
+    test "another player cannot write a player's log", ctx do
       assert %{"data" => %{"id" => log_id}} =
                rpc(ctx.ann, "create_player_log", %{
                  input: %{sessionId: ctx.session_id},
@@ -423,11 +423,9 @@ defmodule AtlasWeb.RichTextChannelTest do
 
       ref = "player_log:#{log_id}:body"
 
-      for reader <- [ctx.gm, ctx.bob] do
-        {%{canWrite: false}, socket, doc} = open(reader, ref)
-        send_update(socket, type(doc, "Not mine to write."))
-        assert_push "rejected", %{reason: "forbidden"}
-      end
+      {%{canWrite: false}, socket, doc} = open(ctx.bob, ref)
+      send_update(socket, type(doc, "Not mine to write."))
+      assert_push "rejected", %{reason: "forbidden"}
 
       assert %{"data" => [%{"bodyJson" => [], "bodyRevision" => 0}]} =
                rpc(ctx.ann, "list_player_logs", %{

@@ -2,7 +2,7 @@ defmodule Atlas.Campaigns.PlayerLog do
   @moduledoc """
   One player's recollection of a session. A player has at most one per session.
 
-  Every member of the campaign reads every player log, the GM included. Only its author writes it.
+  Every member of the campaign reads every player log, the GM included. The author and the GM write it.
   """
   use Ash.Resource,
     otp_app: :atlas,
@@ -67,6 +67,7 @@ defmodule Atlas.Campaigns.PlayerLog do
 
     policy action(:save_body) do
       authorize_if expr(author_id == ^actor(:id))
+      authorize_if expr(exists(session.campaign, gm_id == ^actor(:id)))
     end
   end
 

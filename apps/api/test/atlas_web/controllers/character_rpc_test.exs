@@ -270,7 +270,7 @@ defmodule AtlasWeb.CharacterRpcTest do
     refute inspect(player_view) =~ "Veiled"
   end
 
-  test "a player adds characters, names them, and only that player renames them", ctx do
+  test "a player adds characters, names them, and only that player or the GM renames them", ctx do
     assert %{"data" => %{"token" => token}} = invite(ctx)
     assert %{"success" => true, "data" => %{"id" => first}} = join(ctx.player, token)
 
@@ -289,7 +289,9 @@ defmodule AtlasWeb.CharacterRpcTest do
     assert %{"success" => true, "data" => %{"name" => "Gale Voss"}} =
              rename.(ctx.player, second, "  Gale Voss ")
 
-    for who <- [ctx.gm, ctx.stranger], do: refute(rename.(who, second, "Mine")["success"])
+    refute rename.(ctx.stranger, second, "Mine")["success"]
+    assert %{"success" => true, "data" => %{"name" => "Gale"}} = rename.(ctx.gm, second, "Gale")
+    assert %{"success" => true} = rename.(ctx.player, second, "Gale Voss")
 
     assert %{"success" => true, "data" => characters} =
              rpc(ctx.gm, "list_characters", %{

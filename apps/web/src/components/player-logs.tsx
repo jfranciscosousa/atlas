@@ -53,7 +53,7 @@ export function PlayerLogs({
           section="body"
           label={log.isMine ? "Your log" : (log.authorName ?? "A player")}
           initial={log.bodyJson}
-          readOnly={!log.isMine}
+          readOnly={!log.isMine && !isGm}
         />
       ))}
     </div>

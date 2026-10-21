@@ -86,7 +86,7 @@ function CharacterPage() {
         title={title}
         description={`Played by ${character.playerName ?? "a player"}`}
       />
-      {character.isMine && (
+      {(character.isMine || campaign.isGm) && (
         <div className="grid gap-3">
           <Input
             id="character-name-input"

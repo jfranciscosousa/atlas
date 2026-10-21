@@ -7,7 +7,7 @@ Domain terms for Atlas. Use these words in code and tests.
 - **Campaign**: one closed game with one GM and many players. Only members can access it.
 - **GM**: the one person who runs a campaign. Use "GM", not "DM". Roles belong to a campaign, not to an account.
 - **Player**: the person at the table: an account that plays one or more characters in a campaign. The GM is not a player.
-- **Character**: someone a player plays in a campaign. It has a name, which starts empty and shows as "Unnamed character", and a description. Its player is the account that created or joined with it. A player may have several characters in one campaign. Every member reads a character. Its player and the GM write its description. Only its player writes its name.
+- **Character**: someone a player plays in a campaign. It has a name, which starts empty and shows as "Unnamed character", and a description. Its player is the account that created or joined with it. A player may have several characters in one campaign. Every member reads a character. Its player and the GM write its description. Its player and the GM write its name.
 - **Player name**: the name of the player of a character. It is the account's display name.
 - **Character description**: the rich text of a character. Every member reads it. Its player and the GM write it.
 - **Secret notes**: the GM-only rich text of a character. Only the GM reads and writes it.
@@ -26,7 +26,7 @@ Domain terms for Atlas. Use these words in code and tests.
 - **Session status**: *In prep* or *Done*. A session starts in prep. The GM marks it done after play and may move it back. Every member sees the status.
 - **Log**: the final record of a session. Members read it. Only the GM edits it.
 - **Prep**: the GM-only text of a session. The GM plans in it and takes live notes in it during play.
-- **Player log**: one player's recollection of a session. One per player per session. Every member reads every player log. Only its author writes it. The GM is not a player and has none.
+- **Player log**: one player's recollection of a session. One per player per session. Every member reads every player log. Its author and the GM write it. The GM is not a player and writes none of their own.
 - **Progress/rewards**: one campaign text that records what already happened. Members read it. Only the GM edits it.
 
 ## Text

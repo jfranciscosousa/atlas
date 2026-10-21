@@ -71,13 +71,14 @@ defmodule AtlasWeb.PlayerLogRpcTest do
     assert %{"data" => [_only_one]} = list(ctx.ann, ctx.session_id)
   end
 
-  test "only the author writes a log, and a stale revision is rejected", ctx do
+  test "only the author and the GM write a log, and a stale revision is rejected", ctx do
     assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.session_id)
 
-    for other <- ["bob@example.com", "gm@example.com", "out@example.com"],
+    for other <- ["bob@example.com", "out@example.com"],
         do: assert({:error, %Ash.Error.Forbidden{}} = save(other, id, [paragraph("Mine now.")]))
 
     assert {:ok, _} = save("ann@example.com", id, [paragraph("one")])
+    assert {:ok, _} = save("gm@example.com", id, [paragraph("GM fixes a name.")])
 
     assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Changes.StaleRecord{} | _]}} =
              save("ann@example.com", id, [paragraph("two")], revision: 0)
