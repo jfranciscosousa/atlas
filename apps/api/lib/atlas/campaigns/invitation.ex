@@ -1,7 +1,7 @@
 defmodule Atlas.Campaigns.Invitation do
   @moduledoc """
   A reusable invite link to a campaign. It has no expiry and works until the GM revokes it.
-  Revoking keeps the row and stops future joins; existing players stay.
+  Revoking keeps the row and stops future joins; existing characters stay.
 
   shortcut: one active invitation per campaign (a partial unique index), the token is stored
   in plain text so the GM can copy the link again. Hash it if tokens ever protect more.

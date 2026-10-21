@@ -1,9 +1,9 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   createInvitation,
   getActiveInvitation,
   getInvitationByToken,
   joinCampaign,
-  listCampaignPlayers,
   revokeInvitation,
 } from "@atlas/api-client";
 
@@ -63,13 +63,5 @@ export function useInvitationRevoke(campaignId: string) {
       fallback: "Could not revoke the invite link.",
       invalidate: [invitationKey(campaignId)],
     }
-  );
-}
-
-export function playersQueryOptions(campaignId: string) {
-  return rpcQuery(
-    listCampaignPlayers,
-    run => run({ input: { campaignId }, fields: ["id", "displayName"] }),
-    { fallback: "Could not load the players." }
   );
 }

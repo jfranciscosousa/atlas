@@ -56,7 +56,7 @@ defmodule Atlas.Campaigns.PlayerLog do
       authorize_if expr(
                      exists(
                        session.campaign,
-                       gm_id == ^actor(:id) or exists(players, user_id == ^actor(:id))
+                       gm_id == ^actor(:id) or exists(characters, user_id == ^actor(:id))
                      )
                    )
     end

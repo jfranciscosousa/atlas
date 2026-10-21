@@ -94,7 +94,7 @@ defmodule Atlas.Content.Note do
 
       authorize_if expr(
                      revealed and is_nil(archived_at) and
-                       exists(campaign.players, user_id == ^actor(:id))
+                       exists(campaign.characters, user_id == ^actor(:id))
                    )
     end
 
@@ -109,7 +109,7 @@ defmodule Atlas.Content.Note do
 
       authorize_if expr(
                      revealed and is_nil(archived_at) and
-                       exists(campaign.players, user_id == ^actor(:id))
+                       exists(campaign.characters, user_id == ^actor(:id))
                    )
     end
   end

@@ -61,23 +61,38 @@ export type CampaignAttributesOnlySchema = {
 };
 
 
-// CampaignPlayer Schema
-export type CampaignPlayerResourceSchema = {
+// Character Schema
+export type CharacterResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "campaignId" | "displayName" | "id";
+  __primitiveFields: "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "isMine" | "name" | "playerName" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
   campaignId: UUID;
-  displayName: string | null;
+  descriptionJson: Array<Record<string, unknown>>;
+  descriptionRevision: number;
+  descriptionSchemaVersion: number;
   id: UUID;
+  isMine: boolean | null;
+  name: string | null;
+  playerName: string | null;
+  secretNotesJson: Array<Record<string, unknown>>;
+  secretNotesRevision: number;
+  secretNotesSchemaVersion: number;
   campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
 };
 
 
 
-export type CampaignPlayerAttributesOnlySchema = {
+export type CharacterAttributesOnlySchema = {
   __type: "Resource";
-  __primitiveFields: "campaignId" | "id";
+  __primitiveFields: "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "name" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
   campaignId: UUID;
+  descriptionJson: Array<Record<string, unknown>>;
+  descriptionRevision: number;
+  descriptionSchemaVersion: number;
   id: UUID;
+  name: string | null;
+  secretNotesJson: Array<Record<string, unknown>>;
+  secretNotesRevision: number;
+  secretNotesSchemaVersion: number;
 };
 
 
@@ -389,10 +404,10 @@ export type CampaignFilterInput = {
 
 
 };
-export type CampaignPlayerFilterInput = {
-  and?: Array<CampaignPlayerFilterInput>;
-  or?: Array<CampaignPlayerFilterInput>;
-  not?: Array<CampaignPlayerFilterInput>;
+export type CharacterFilterInput = {
+  and?: Array<CharacterFilterInput>;
+  or?: Array<CharacterFilterInput>;
+  not?: Array<CharacterFilterInput>;
 
   campaignId?: {
     eq?: UUID;
@@ -404,7 +419,54 @@ export type CampaignPlayerFilterInput = {
     greaterThanOrEqual?: UUID;
   };
 
-  displayName?: {
+  descriptionJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  descriptionRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  descriptionSchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  isMine?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  name?: {
     isNil?: boolean;
     eq?: string;
     notEq?: string;
@@ -418,14 +480,48 @@ export type CampaignPlayerFilterInput = {
     stringStartsWith?: string;
   };
 
-  id?: {
-    eq?: UUID;
-    notEq?: UUID;
-    in?: Array<UUID>;
-    lessThan?: UUID;
-    greaterThan?: UUID;
-    lessThanOrEqual?: UUID;
-    greaterThanOrEqual?: UUID;
+  playerName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  secretNotesJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  secretNotesRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  secretNotesSchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
   };
 
   campaign?: CampaignFilterInput;
@@ -857,8 +953,8 @@ export type UserFilterField = (typeof userFilterFields)[number];
 export const campaignFilterFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isGm", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
 export type CampaignFilterField = (typeof campaignFilterFields)[number];
 
-export const campaignPlayerFilterFields = ["campaignId", "displayName", "id", "campaign"] as const;
-export type CampaignPlayerFilterField = (typeof campaignPlayerFilterFields)[number];
+export const characterFilterFields = ["campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "id", "isMine", "name", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "campaign"] as const;
+export type CharacterFilterField = (typeof characterFilterFields)[number];
 
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
 export type InvitationFilterField = (typeof invitationFilterFields)[number];
@@ -882,8 +978,8 @@ export type UserSortField = (typeof userSortFields)[number];
 export const campaignSortFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isGm", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
 export type CampaignSortField = (typeof campaignSortFields)[number];
 
-export const campaignPlayerSortFields = ["campaignId", "displayName", "id"] as const;
-export type CampaignPlayerSortField = (typeof campaignPlayerSortFields)[number];
+export const characterSortFields = ["campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "id", "isMine", "name", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion"] as const;
+export type CharacterSortField = (typeof characterSortFields)[number];
 
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;
 export type InvitationSortField = (typeof invitationSortFields)[number];

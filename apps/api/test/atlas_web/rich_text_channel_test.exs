@@ -61,6 +61,17 @@ defmodule AtlasWeb.RichTextChannelTest do
      session_id: session_id}
   end
 
+  defp player_description_ref(ctx, email) do
+    user = Atlas.Fixtures.user_by_email(email)
+
+    player =
+      Atlas.Campaigns.Character
+      |> Ash.Query.filter(campaign_id == ^ctx.campaign_id and user_id == ^user.id)
+      |> Ash.read_one!(authorize?: false)
+
+    "character:#{player.id}:description"
+  end
+
   # A socket as the browser opens it: the session cookie and the CSRF token of /api/session.
   defp open_socket(conn) do
     {session_conn, _csrf} = csrf(conn)
@@ -320,6 +331,30 @@ defmodule AtlasWeb.RichTextChannelTest do
       assert {:error, %{reason: "forbidden"}} = join(ctx.outsider, ref)
     end
 
+    test "a character's description is written by its player and the GM, read by every member",
+         ctx do
+      ref = player_description_ref(ctx, "ann@example.com")
+
+      assert {:ok, %{canWrite: true}, _} = join(ctx.ann, ref)
+      assert {:ok, %{canWrite: false}, _} = join(ctx.bob, ref)
+      assert {:ok, %{canWrite: true}, _} = join(ctx.gm, ref)
+      assert {:error, %{reason: "forbidden"}} = join(ctx.outsider, ref)
+    end
+
+    test "a character's secret notes are open to the GM alone", ctx do
+      ref =
+        String.replace(
+          player_description_ref(ctx, "ann@example.com"),
+          "description",
+          "secret_notes"
+        )
+
+      assert {:ok, %{canWrite: true}, _} = join(ctx.gm, ref)
+      assert {:error, %{reason: "forbidden"}} = join(ctx.ann, ref)
+      assert {:error, %{reason: "forbidden"}} = join(ctx.bob, ref)
+      assert {:error, %{reason: "forbidden"}} = join(ctx.outsider, ref)
+    end
+
     test "a section the server cannot build a document from is unavailable, not forbidden", ctx do
       save_section!(
         Atlas.Content.Note,
@@ -399,6 +434,13 @@ defmodule AtlasWeb.RichTextChannelTest do
                  input: %{sessionId: ctx.session_id},
                  fields: ["bodyJson", "bodyRevision"]
                })
+    end
+
+    test "another player cannot write a character's description", ctx do
+      ref = player_description_ref(ctx, "ann@example.com")
+      {%{canWrite: false}, socket, doc} = open(ctx.bob, ref)
+      send_update(socket, type(doc, "Not mine to write."))
+      assert_push "rejected", %{reason: "forbidden"}
     end
 
     test "a player cannot write the GM's session log", ctx do

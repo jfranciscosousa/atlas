@@ -6,15 +6,18 @@ Domain terms for Atlas. Use these words in code and tests.
 
 - **Campaign**: one closed game with one GM and many players. Only members can access it.
 - **GM**: the one person who runs a campaign. Use "GM", not "DM". Roles belong to a campaign, not to an account.
-- **Player**: a member of a campaign who is not the GM.
-- **Account**: a signed-in user. An account is not a player character.
-- **Member**: the GM or a player of a campaign.
+- **Player**: the person at the table: an account that plays one or more characters in a campaign. The GM is not a player.
+- **Character**: someone a player plays in a campaign. It has a name, which starts empty and shows as "Unnamed character", and a description. Its player is the account that created or joined with it. A player may have several characters in one campaign. Every member reads a character. Its player and the GM write its description. Only its player writes its name.
+- **Player name**: the name of the player of a character. It is the account's display name.
+- **Character description**: the rich text of a character. Every member reads it. Its player and the GM write it.
+- **Secret notes**: the GM-only rich text of a character. Only the GM reads and writes it.
+- **Account**: a signed-in user. An account is not a character.
+- **Member**: the GM or a player of a campaign. A player is a member as long as they have a character in it.
 - **Invitation**: a reusable invite link to a campaign. It has no expiry and works until the GM revokes it. A campaign has at most one active invitation. Revoking stops future joins and keeps existing players.
 
 ## Content
 
-- **Entry**: a named item in a campaign. Kinds: player character, NPC, creature, location, faction, item, note.
-- **Player character**: an entry that always belongs to one player, even when the GM creates it.
+- **Entry**: a named item in a campaign. Kinds: character, NPC, creature, location, faction, item, note.
 - **NPC**: a unique individual. Not the same as a creature.
 - **Creature**: a reusable monster description. The bestiary is a set of creatures.
 - **Faction**: an organization. It has a GM-only reputation toward the whole party.

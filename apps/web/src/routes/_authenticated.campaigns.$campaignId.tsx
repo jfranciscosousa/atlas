@@ -1,4 +1,4 @@
-import { CalendarDays, Eye, ScrollText } from "lucide-react";
+import { CalendarDays, Eye, ScrollText, Users } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
@@ -13,7 +13,6 @@ import { Badge } from "../components/ui/badge";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
 import { PageHeader } from "../components/page-header";
 import { CampaignReadOnly } from "../components/campaign-read-only";
-import { InvitePlayersButton } from "../components/campaign-players";
 import { CampaignAvatar } from "../components/campaign-avatar";
 
 // BlockNote only runs in the browser, so it stays out of the main bundle.
@@ -75,6 +74,15 @@ function CampaignPage() {
               Sessions
             </Link>
             <Link
+              id="campaign-characters"
+              to="/campaigns/$campaignId/characters"
+              params={{ campaignId: campaign.id }}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Users />
+              Characters
+            </Link>
+            <Link
               id="campaign-notes"
               to="/campaigns/$campaignId/notes"
               params={{ campaignId: campaign.id }}
@@ -106,10 +114,6 @@ function CampaignPage() {
         actions={
           <div className="flex items-center gap-3">
             <Badge variant="secondary">You are the GM</Badge>
-            <InvitePlayersButton
-              campaignId={campaign.id}
-              gmName={campaign.gmName}
-            />
             <Link
               id="campaign-sessions"
               to="/campaigns/$campaignId/sessions"
@@ -118,6 +122,15 @@ function CampaignPage() {
             >
               <CalendarDays />
               Sessions
+            </Link>
+            <Link
+              id="campaign-characters"
+              to="/campaigns/$campaignId/characters"
+              params={{ campaignId: campaign.id }}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Users />
+              Characters
             </Link>
             <Link
               id="campaign-notes"

@@ -22,8 +22,11 @@ defmodule Atlas.Campaigns do
       rpc_action :create_player_log, :create
     end
 
-    resource Atlas.Campaigns.CampaignPlayer do
-      rpc_action :list_campaign_players, :list
+    resource Atlas.Campaigns.Character do
+      rpc_action :list_characters, :list
+      rpc_action :get_character, :read, get_by: [:id]
+      rpc_action :create_character, :create
+      rpc_action :rename_character, :rename
       rpc_action :join_campaign, :join
     end
 
@@ -39,7 +42,7 @@ defmodule Atlas.Campaigns do
     resource Atlas.Campaigns.Campaign
     resource Atlas.Campaigns.Session
     resource Atlas.Campaigns.PlayerLog
-    resource Atlas.Campaigns.CampaignPlayer
+    resource Atlas.Campaigns.Character
     resource Atlas.Campaigns.Invitation
   end
 end

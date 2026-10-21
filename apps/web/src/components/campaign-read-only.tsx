@@ -5,7 +5,7 @@ import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { getEditor } from "./rich-text-editor-loader";
 import { PageHeader } from "./page-header";
-import { PlayersList } from "./campaign-players";
+import { CharactersList } from "./campaign-players";
 import { CampaignAvatar } from "./campaign-avatar";
 
 type Campaign = {
@@ -75,8 +75,8 @@ export function CampaignReadOnly({
         </TabsContent>
       </Tabs>
       <section className="space-y-3">
-        <h2 className="font-heading text-xl font-semibold">Players</h2>
-        <PlayersList campaignId={campaign.id} gmName={campaign.gmName} />
+        <h2 className="font-heading text-xl font-semibold">Characters</h2>
+        <CharactersList campaignId={campaign.id} gmName={campaign.gmName} />
       </section>
     </div>
   );

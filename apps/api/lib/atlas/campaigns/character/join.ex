@@ -1,7 +1,7 @@
-defmodule Atlas.Campaigns.CampaignPlayer.Join do
+defmodule Atlas.Campaigns.Character.Join do
   @moduledoc """
   Sets the campaign from an active invitation token. A revoked or unknown token fails the same
-  way, so a token reveals nothing. The GM of the campaign cannot become its player.
+  way, so a token reveals nothing. The GM of the campaign cannot play a character in it.
   """
   use Ash.Resource.Change
 

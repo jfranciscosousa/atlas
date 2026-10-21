@@ -1,4 +1,4 @@
-defmodule AtlasWeb.CampaignPlayerRpcTest do
+defmodule AtlasWeb.CharacterRpcTest do
   use AtlasWeb.ConnCase, async: true
 
   import AtlasWeb.RpcHelpers
@@ -79,9 +79,9 @@ defmodule AtlasWeb.CampaignPlayerRpcTest do
     assert {:ok, _} = save.("gm@example.com")
 
     assert %{"success" => true, "data" => [_]} =
-             rpc(ctx.player, "list_campaign_players", %{
+             rpc(ctx.player, "list_characters", %{
                input: %{campaignId: ctx.campaign_id},
-               fields: ["id", "displayName"]
+               fields: ["id", "playerName", "name"]
              })
   end
 
@@ -91,7 +91,7 @@ defmodule AtlasWeb.CampaignPlayerRpcTest do
     assert %{"success" => true, "data" => %{"id" => ^id}} = join(ctx.player, token)
 
     assert %{"data" => [_only_one]} =
-             rpc(ctx.gm, "list_campaign_players", %{
+             rpc(ctx.gm, "list_characters", %{
                input: %{campaignId: ctx.campaign_id},
                fields: ["id"]
              })
@@ -194,7 +194,128 @@ defmodule AtlasWeb.CampaignPlayerRpcTest do
            })["success"]
 
     assert %{"success" => true, "data" => []} =
-             rpc(ctx.stranger, "list_campaign_players", %{
+             rpc(ctx.stranger, "list_characters", %{
+               input: %{campaignId: ctx.campaign_id},
+               fields: ["id"]
+             })
+  end
+
+  test "every member reads a character's description; its player and the GM write it", ctx do
+    other = register(ctx.conn, "other@example.com")
+    assert %{"data" => %{"token" => token}} = invite(ctx)
+    assert %{"success" => true, "data" => %{"id" => ann_id}} = join(ctx.player, token)
+    assert %{"success" => true} = join(other, token)
+
+    save = fn email, id ->
+      Atlas.Fixtures.save_section(
+        Atlas.Campaigns.Character,
+        id,
+        :description,
+        [paragraph("A tiefling bard.")],
+        email
+      )
+    end
+
+    assert {:error, %Ash.Error.Forbidden{}} = save.("other@example.com", ann_id)
+    assert {:error, %Ash.Error.Forbidden{}} = save.("stranger@example.com", ann_id)
+    assert {:ok, %{description_revision: 1}} = save.("gm@example.com", ann_id)
+    assert {:ok, %{description_revision: 2}} = save.("player@example.com", ann_id)
+
+    for {reader, mine} <- [{ctx.gm, false}, {ctx.player, true}, {other, false}] do
+      assert %{
+               "success" => true,
+               "data" => %{
+                 "isMine" => ^mine,
+                 "playerName" => "Test User",
+                 "descriptionJson" => [%{"content" => [%{"text" => "A tiefling bard."}]}]
+               }
+             } =
+               rpc(reader, "get_character", %{
+                 getBy: %{id: ann_id},
+                 fields: ["id", "isMine", "playerName", "descriptionJson"]
+               })
+    end
+
+    assert not_found?(rpc(ctx.stranger, "get_character", %{getBy: %{id: ann_id}, fields: ["id"]}))
+  end
+
+  test "only the GM reads and writes a character's secret notes", ctx do
+    assert %{"data" => %{"token" => token}} = invite(ctx)
+    assert %{"success" => true, "data" => %{"id" => id}} = join(ctx.player, token)
+
+    save = fn email ->
+      Atlas.Fixtures.save_section(
+        Atlas.Campaigns.Character,
+        id,
+        :secret_notes,
+        [paragraph("Serves the Veiled Alliance.")],
+        email
+      )
+    end
+
+    assert {:error, %Ash.Error.Forbidden{}} = save.("player@example.com")
+    assert {:error, %Ash.Error.Forbidden{}} = save.("stranger@example.com")
+    assert {:ok, %{secret_notes_revision: 1}} = save.("gm@example.com")
+
+    fields = ["id", "secretNotesJson", "secretNotesRevision"]
+
+    assert %{"success" => true, "data" => %{"secretNotesJson" => [%{"content" => [_]}]}} =
+             rpc(ctx.gm, "get_character", %{getBy: %{id: id}, fields: fields})
+
+    assert %{"success" => true, "data" => player_view} =
+             rpc(ctx.player, "get_character", %{getBy: %{id: id}, fields: fields})
+
+    assert player_view["secretNotesJson"] == nil
+    assert player_view["secretNotesRevision"] == nil
+    refute inspect(player_view) =~ "Veiled"
+  end
+
+  test "a player adds characters, names them, and only that player renames them", ctx do
+    assert %{"data" => %{"token" => token}} = invite(ctx)
+    assert %{"success" => true, "data" => %{"id" => first}} = join(ctx.player, token)
+
+    assert %{"success" => true, "data" => %{"id" => second, "name" => nil, "isMine" => true}} =
+             rpc(ctx.player, "create_character", %{
+               input: %{campaignId: ctx.campaign_id},
+               fields: ["id", "name", "isMine"]
+             })
+
+    assert second != first
+
+    rename = fn who, id, name ->
+      rpc(who, "rename_character", %{identity: id, input: %{name: name}, fields: ["id", "name"]})
+    end
+
+    assert %{"success" => true, "data" => %{"name" => "Gale Voss"}} =
+             rename.(ctx.player, second, "  Gale Voss ")
+
+    for who <- [ctx.gm, ctx.stranger], do: refute(rename.(who, second, "Mine")["success"])
+
+    assert %{"success" => true, "data" => characters} =
+             rpc(ctx.gm, "list_characters", %{
+               input: %{campaignId: ctx.campaign_id},
+               fields: ["id", "name", "playerName"]
+             })
+
+    assert [%{"id" => ^first, "name" => nil}, %{"id" => ^second, "name" => "Gale Voss"}] =
+             characters
+
+    # Joining again keeps the first character and adds none.
+    assert %{"success" => true, "data" => %{"id" => ^first}} = join(ctx.player, token)
+  end
+
+  test "only a player of the campaign adds a character to it", ctx do
+    assert %{"data" => %{"token" => token}} = invite(ctx)
+    assert %{"success" => true} = join(ctx.player, token)
+
+    for who <- [ctx.gm, ctx.stranger] do
+      refute rpc(who, "create_character", %{input: %{campaignId: ctx.campaign_id}, fields: ["id"]})[
+               "success"
+             ]
+    end
+
+    assert %{"data" => [_only_one]} =
+             rpc(ctx.gm, "list_characters", %{
                input: %{campaignId: ctx.campaign_id},
                fields: ["id"]
              })

@@ -16,47 +16,51 @@ import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
 import {
   activeInvitationQueryOptions,
-  playersQueryOptions,
   useInvitationCreate,
   useInvitationRevoke,
 } from "../hooks/use-players";
+import { charactersQueryOptions } from "../hooks/use-characters";
 
-/** The GM first, then the players in join order. Members and the GM can read it. */
-export function PlayersList({
+/** The GM first, then the characters in creation order. Members and the GM can read it. */
+export function CharactersList({
   campaignId,
   gmName,
 }: {
   campaignId: string;
   gmName: string | null;
 }) {
-  const players = useQuery(playersQueryOptions(campaignId));
+  const characters = useQuery(charactersQueryOptions(campaignId));
 
   return (
-    <ul id="players-list" className="divide-y rounded-xl border bg-card">
+    <ul id="characters-list" className="divide-y rounded-xl border bg-card">
       <li className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
         <span className="font-medium">{gmName ?? "GM"}</span>
         <Badge variant="secondary">GM</Badge>
       </li>
-      {players.data?.map(player => (
+      {characters.data?.map(character => (
         <li
-          key={player.id}
+          key={character.id}
           className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
         >
-          <span className="font-medium">{player.displayName}</span>
-          <Badge variant="outline">Player</Badge>
+          <span className="font-medium">
+            {character.name ?? "Unnamed character"}
+          </span>
+          <span className="text-muted-foreground">
+            played by {character.playerName ?? "a player"}
+          </span>
         </li>
       ))}
-      {players.data?.length === 0 && (
+      {characters.data?.length === 0 && (
         <li
-          id="players-empty"
+          id="characters-empty"
           className="px-4 py-3 text-sm text-muted-foreground"
         >
-          No players yet. Share the invite link to add some.
+          No characters yet. Share the invite link to add some.
         </li>
       )}
-      {players.error && (
+      {characters.error && (
         <li className="px-4 py-3 text-sm text-destructive">
-          {players.error.message}
+          {characters.error.message}
         </li>
       )}
     </ul>
@@ -141,7 +145,7 @@ function InviteLink({ campaignId }: { campaignId: string }) {
   );
 }
 
-/** GM only: the invite link and the player list in one dialog. */
+/** GM only: the invite link and the character list in one dialog. */
 export function InvitePlayersButton({
   campaignId,
   gmName,
@@ -153,21 +157,21 @@ export function InvitePlayersButton({
     <Dialog>
       <DialogTrigger
         render={
-          <Button id="campaign-players" variant="outline">
+          <Button id="invite-players" variant="outline">
             <UserPlusIcon aria-hidden="true" data-icon="inline-start" />
-            Players
+            Invite players
           </Button>
         }
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Players</DialogTitle>
+          <DialogTitle>Invite players</DialogTitle>
           <DialogDescription>
             Invite players with a link. They sign in or register, then join.
           </DialogDescription>
         </DialogHeader>
         <InviteLink campaignId={campaignId} />
-        <PlayersList campaignId={campaignId} gmName={gmName} />
+        <CharactersList campaignId={campaignId} gmName={gmName} />
       </DialogContent>
     </Dialog>
   );

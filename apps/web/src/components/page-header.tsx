@@ -15,8 +15,14 @@ type Crumb = {
   label: string;
   to?: "/campaigns";
   campaignId?: string;
-  list?: { campaignId: string; kind: "notes" | "sessions" };
+  list?: { campaignId: string; kind: "notes" | "sessions" | "characters" };
 };
+
+const LIST_PATHS = {
+  notes: "/campaigns/$campaignId/notes",
+  sessions: "/campaigns/$campaignId/sessions",
+  characters: "/campaigns/$campaignId/characters",
+} as const;
 
 export function PageHeader({
   crumbs,
@@ -48,11 +54,7 @@ export function PageHeader({
                     <BreadcrumbLink
                       render={
                         <Link
-                          to={
-                            crumb.list.kind === "notes"
-                              ? "/campaigns/$campaignId/notes"
-                              : "/campaigns/$campaignId/sessions"
-                          }
+                          to={LIST_PATHS[crumb.list.kind]}
                           params={{ campaignId: crumb.list.campaignId }}
                         />
                       }

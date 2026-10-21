@@ -30,7 +30,8 @@ defmodule Atlas.RichText.Collab do
     "campaign" => Atlas.Campaigns.Campaign,
     "session" => Atlas.Campaigns.Session,
     "note" => Atlas.Content.Note,
-    "player_log" => Atlas.Campaigns.PlayerLog
+    "player_log" => Atlas.Campaigns.PlayerLog,
+    "character" => Atlas.Campaigns.Character
   }
   @max_update 512_000
   @max_state 4_000_000

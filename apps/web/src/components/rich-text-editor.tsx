@@ -17,6 +17,7 @@ import type { BlockNoteDocument } from "../lib/blocknote-schema";
 import "@blocknote/shadcn/style.css";
 
 import type { SessionSection } from "../hooks/use-sessions";
+import type { CharacterSection } from "../hooks/use-characters";
 
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
@@ -50,8 +51,11 @@ function UploadOnlyFilePanel(props: FilePanelProps) {
 
 type Props = {
   // The campaign, note, or session that owns this section. It decides where a save goes.
-  parent: { kind: "campaign" | "note" | "session" | "playerLog"; id: string };
-  section: Section | "body" | SessionSection;
+  parent: {
+    kind: "campaign" | "note" | "session" | "playerLog" | "character";
+    id: string;
+  };
+  section: Section | "body" | SessionSection | CharacterSection;
   // Page elements get this ID prefix. Set it when one page holds several editors of a section.
   id?: string;
   label: string;
@@ -70,6 +74,7 @@ const KINDS = {
   note: "note",
   session: "session",
   playerLog: "player_log",
+  character: "character",
 } as const;
 
 const NOTICES: Record<CollabNotice["kind"], string> = {

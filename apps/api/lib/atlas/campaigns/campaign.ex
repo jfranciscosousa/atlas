@@ -38,7 +38,7 @@ defmodule Atlas.Campaigns.Campaign do
     end
   end
 
-  # The GM and the players can read a campaign. Only the GM can change it.
+  # The GM and the players (the accounts with a character) can read a campaign. Only the GM can change it.
   # Everyone else gets not found.
   policies do
     policy always() do
@@ -47,7 +47,7 @@ defmodule Atlas.Campaigns.Campaign do
     end
 
     policy action_type(:read) do
-      authorize_if expr(gm_id == ^actor(:id) or exists(players, user_id == ^actor(:id)))
+      authorize_if expr(gm_id == ^actor(:id) or exists(characters, user_id == ^actor(:id)))
     end
 
     policy action_type(:update) do
@@ -74,7 +74,7 @@ defmodule Atlas.Campaigns.Campaign do
       attribute_writable? false
     end
 
-    has_many :players, Atlas.Campaigns.CampaignPlayer
+    has_many :characters, Atlas.Campaigns.Character
   end
 
   calculations do

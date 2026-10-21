@@ -23,7 +23,9 @@ defmodule Atlas.Campaigns.PlayerLog.ActorIsSessionPlayer do
 
       session_id ->
         Session
-        |> Ash.Query.filter(id == ^session_id and exists(campaign.players, user_id == ^actor.id))
+        |> Ash.Query.filter(
+          id == ^session_id and exists(campaign.characters, user_id == ^actor.id)
+        )
         |> Ash.exists?(actor: actor)
     end
   end
