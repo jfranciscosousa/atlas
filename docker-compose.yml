@@ -46,6 +46,8 @@ services:
     environment:
       - SERVICE_FQDN_WEB
       - SERVICE_URL_WEB
+      # The nginx image only reads /etc/resolv.conf into NGINX_LOCAL_RESOLVERS when this is set.
+      - NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
     restart: unless-stopped
 
 volumes:
