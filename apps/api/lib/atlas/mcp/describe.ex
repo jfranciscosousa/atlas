@@ -6,23 +6,29 @@ defmodule Atlas.Mcp.Describe do
   """
   use Ash.Resource.Actions.Implementation
 
-  alias Atlas.RichText.PlainText
+  alias Atlas.RichText.{Mentions, PlainText}
 
   @impl true
   def run(input, opts, context) do
     with {:ok, record} <- Ash.get(input.resource, input.arguments.id, actor: context.actor) do
       fields = Map.new(opts[:fields], &{&1, Map.fetch!(record, &1)})
 
-      sections =
+      documents =
         Map.new(opts[:sections], fn section ->
-          {section, text(Map.fetch!(record, Atlas.RichText.json_attribute(section)))}
+          {section, Map.fetch!(record, Atlas.RichText.json_attribute(section))}
         end)
+
+      # The names of mentions are read as the actor, so a restricted entry stays nameless.
+      labels =
+        documents |> Map.values() |> Enum.filter(&is_list/1) |> Mentions.labels(context.actor)
+
+      sections = Map.new(documents, fn {section, blocks} -> {section, text(blocks, labels)} end)
 
       {:ok, Map.merge(fields, sections)}
     end
   end
 
   # A field policy replaces a hidden section with a `%Ash.ForbiddenField{}`.
-  defp text(blocks) when is_list(blocks), do: PlainText.render(blocks)
-  defp text(_hidden), do: nil
+  defp text(blocks, labels) when is_list(blocks), do: PlainText.render(blocks, labels: labels)
+  defp text(_hidden, _labels), do: nil
 end

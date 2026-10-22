@@ -41,7 +41,7 @@ Domain terms for Atlas. Use these words in code and tests.
 - **Epoch**: the number of times the shared document was rebuilt from the section's JSON, because something other than live editing changed the JSON. An editor that holds an older epoch must start over.
 - **History**: the saved versions of a section. A restore creates a new revision.
 - **Checkpoint**: a user-visible history version, made after 30 s without edits or every 5 min of editing.
-- **Mention**: an inline @ link to another entry. It stores the kind and the ID, and shows the current name. Kinds: character, session, note. A player is not a kind: mention the character. Every rich-text section accepts mentions. The author may mention any entry the author can read, hidden ones included. A reader who cannot read the entry sees "Restricted entry". In Markdown a mention is `[@Name](atlas-entry:<kind>:<id>)`.
+- **Mention**: an inline @ link to another entry. It stores the kind and the ID, and shows the current name. Kinds: character, session, note. A player is not a kind: mention the character. Every rich-text section accepts mentions. The author may mention any entry the author can read, hidden ones included. A reader who cannot read the entry sees "Restricted entry". In Markdown a mention is `[@Name](atlas-entry:<kind>:<id>)`. MCP tools and the AI log draft read the current name, looked up with the access of the reader. The label of an archived note is "Deleted entry" for a reader who may read it.
 - **Image**: an uploaded picture, converted to WebP. It stands alone, with no parent. The document stores its ID, never a URL.
 
 ## Access

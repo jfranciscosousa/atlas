@@ -35,6 +35,30 @@ defmodule Atlas.RichText.Document do
     |> Enum.uniq()
   end
 
+  @doc "`{kind, id}` pairs of the mentions in a validated document."
+  def mention_refs(nil), do: []
+
+  def mention_refs(blocks) when is_list(blocks) do
+    blocks
+    |> Enum.flat_map(fn block ->
+      own = block["content"] |> inline_nodes() |> Enum.flat_map(&mention_ref/1)
+      own ++ mention_refs(block["children"] || [])
+    end)
+    |> Enum.uniq()
+  end
+
+  defp inline_nodes(%{"rows" => rows}),
+    do: Enum.flat_map(rows, fn %{"cells" => cells} -> Enum.flat_map(cells, &inline_nodes/1) end)
+
+  defp inline_nodes(%{"content" => content}), do: inline_nodes(content)
+  defp inline_nodes(nodes) when is_list(nodes), do: nodes
+  defp inline_nodes(_), do: []
+
+  defp mention_ref(%{"type" => "mention", "props" => %{"kind" => kind, "id" => id}}),
+    do: [{kind, id}]
+
+  defp mention_ref(_), do: []
+
   @impl true
   def storage_type(_), do: :map
 
