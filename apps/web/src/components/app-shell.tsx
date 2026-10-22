@@ -4,6 +4,7 @@ import {
   CompassIcon,
   LogOutIcon,
   ScrollTextIcon,
+  SettingsIcon,
   UserIcon,
 } from "lucide-react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
@@ -131,6 +132,10 @@ function UserMenu({ user }: { user: ShellUser }) {
             <DropdownMenuItem id="edit-profile" render={<Link to="/profile" />}>
               <UserIcon aria-hidden="true" />
               Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem id="settings" render={<Link to="/settings" />}>
+              <SettingsIcon aria-hidden="true" />
+              Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

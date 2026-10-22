@@ -64,6 +64,14 @@ defmodule Atlas.Campaigns.Session do
       accept [:title, :played_on, :status]
     end
 
+    # Plain text for a language model, as the actor may read it. Used by the MCP tools.
+    action :describe, :map do
+      argument :id, :uuid, allow_nil?: false
+
+      run {Atlas.Mcp.Describe,
+           fields: [:id, :number, :title, :played_on, :status], sections: [:log, :prep]}
+    end
+
     # Returns a Markdown draft and the conflicts between the logs, for the GM to review.
     # It saves nothing.
     action :draft_log, :map do
@@ -95,6 +103,10 @@ defmodule Atlas.Campaigns.Session do
 
     policy action_type(:create) do
       authorize_if ActorIsCampaignGm
+    end
+
+    policy action(:describe) do
+      authorize_if always()
     end
 
     policy action(:draft_log) do

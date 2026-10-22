@@ -14,6 +14,7 @@ Domain terms for Atlas. Use these words in code and tests.
 - **Account**: a signed-in user. An account is not a character.
 - **Member**: the GM or a player of a campaign. A player is a member as long as they have a character in it.
 - **Invitation**: a reusable invite link to a campaign. It has no expiry and works until the GM revokes it. A campaign has at most one active invitation. Revoking stops future joins and keeps existing players.
+- **MCP connection**: an MCP client (Claude, ChatGPT, opencode, pi) that an account allowed through OAuth. It reads what the account can read and changes nothing. The account lists and revokes its connections in Settings.
 
 ## Content
 

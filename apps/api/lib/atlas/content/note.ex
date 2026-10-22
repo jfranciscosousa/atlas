@@ -74,6 +74,12 @@ defmodule Atlas.Content.Note do
     update :hide do
       change set_attribute(:revealed, false)
     end
+
+    # Plain text for a language model, as the actor may read it. Used by the MCP tools.
+    action :describe, :map do
+      argument :id, :uuid, allow_nil?: false
+      run {Atlas.Mcp.Describe, fields: [:id, :title, :revealed, :archived_at], sections: [:body]}
+    end
   end
 
   # The GM and the owner see and manage a note. Other members read a revealed, active note and
@@ -96,6 +102,10 @@ defmodule Atlas.Content.Note do
                      revealed and is_nil(archived_at) and
                        exists(campaign.characters, user_id == ^actor(:id))
                    )
+    end
+
+    policy action(:describe) do
+      authorize_if always()
     end
 
     policy action([:rename, :archive, :restore, :reveal, :hide]) do

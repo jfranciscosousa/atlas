@@ -70,6 +70,12 @@ defmodule Atlas.Campaigns.Character do
     update :rename do
       accept [:name]
     end
+
+    # Plain text for a language model, as the actor may read it. Used by the MCP tools.
+    action :describe, :map do
+      argument :id, :uuid, allow_nil?: false
+      run {Atlas.Mcp.Describe, fields: [:id, :name], sections: [:description, :secret_notes]}
+    end
   end
 
   # Members and the GM can see who plays. Everyone else gets not found.
@@ -86,6 +92,10 @@ defmodule Atlas.Campaigns.Character do
                        gm_id == ^actor(:id) or exists(characters, user_id == ^actor(:id))
                      )
                    )
+    end
+
+    policy action(:describe) do
+      authorize_if always()
     end
 
     policy action(:join) do

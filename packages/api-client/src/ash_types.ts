@@ -236,6 +236,45 @@ export type ImageAttributesOnlySchema = {
 };
 
 
+// McpClient Schema
+export type McpClientResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "id" | "name";
+  id: UUID;
+  name: string;
+};
+
+
+
+export type McpClientAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "id" | "name";
+  id: UUID;
+  name: string;
+};
+
+
+// McpConnection Schema
+export type McpConnectionResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "clientName" | "id" | "insertedAt" | "lastUsedAt";
+  clientName: string | null;
+  id: UUID;
+  insertedAt: UtcDateTimeUsec;
+  lastUsedAt: UtcDateTimeUsec | null;
+};
+
+
+
+export type McpConnectionAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "id" | "insertedAt" | "lastUsedAt";
+  id: UUID;
+  insertedAt: UtcDateTimeUsec;
+  lastUsedAt: UtcDateTimeUsec | null;
+};
+
+
 export type UserFilterInput = {
   and?: Array<UserFilterInput>;
   or?: Array<UserFilterInput>;
@@ -945,6 +984,88 @@ export type ImageFilterInput = {
 
 
 };
+export type McpClientFilterInput = {
+  and?: Array<McpClientFilterInput>;
+  or?: Array<McpClientFilterInput>;
+  not?: Array<McpClientFilterInput>;
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  name?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+
+};
+export type McpConnectionFilterInput = {
+  and?: Array<McpConnectionFilterInput>;
+  or?: Array<McpConnectionFilterInput>;
+  not?: Array<McpConnectionFilterInput>;
+
+  clientName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  insertedAt?: {
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
+  };
+
+  lastUsedAt?: {
+    isNil?: boolean;
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
+  };
+
+
+};
 
 
 export const userFilterFields = ["avatar", "displayName", "email", "id"] as const;
@@ -971,6 +1092,12 @@ export type NoteFilterField = (typeof noteFilterFields)[number];
 export const imageFilterFields = ["id"] as const;
 export type ImageFilterField = (typeof imageFilterFields)[number];
 
+export const mcpClientFilterFields = ["id", "name"] as const;
+export type McpClientFilterField = (typeof mcpClientFilterFields)[number];
+
+export const mcpConnectionFilterFields = ["clientName", "id", "insertedAt", "lastUsedAt"] as const;
+export type McpConnectionFilterField = (typeof mcpConnectionFilterFields)[number];
+
 
 export const userSortFields = ["avatar", "displayName", "email", "id"] as const;
 export type UserSortField = (typeof userSortFields)[number];
@@ -995,6 +1122,12 @@ export type NoteSortField = (typeof noteSortFields)[number];
 
 export const imageSortFields = ["id"] as const;
 export type ImageSortField = (typeof imageSortFields)[number];
+
+export const mcpClientSortFields = ["id", "name"] as const;
+export type McpClientSortField = (typeof mcpClientSortFields)[number];
+
+export const mcpConnectionSortFields = ["clientName", "id", "insertedAt", "lastUsedAt"] as const;
+export type McpConnectionSortField = (typeof mcpConnectionSortFields)[number];
 
 
 // Utility Types

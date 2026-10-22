@@ -1,7 +1,7 @@
 defmodule Atlas.Campaigns do
   use Ash.Domain,
     otp_app: :atlas,
-    extensions: [AshTypescript.Rpc]
+    extensions: [AshTypescript.Rpc, AshAi]
 
   typescript_rpc do
     resource Atlas.Campaigns.Campaign do
@@ -37,6 +37,30 @@ defmodule Atlas.Campaigns do
       rpc_action :create_invitation, :create
       rpc_action :revoke_invitation, :revoke
     end
+  end
+
+  tools do
+    tool :list_campaigns, Atlas.Campaigns.Campaign, :list_as_gm,
+      select: [:id, :name],
+      description: "List the campaigns you run as GM."
+
+    tool :get_campaign, Atlas.Campaigns.Campaign, :describe,
+      description: "Read a campaign: its name, description and progress/rewards as text."
+
+    tool :list_sessions, Atlas.Campaigns.Session, :list,
+      select: [:id, :number, :title, :played_on, :status],
+      description: "List the sessions of a campaign, newest first."
+
+    tool :get_session, Atlas.Campaigns.Session, :describe,
+      description: "Read a session: its details, the log and the GM-only prep as text."
+
+    tool :list_characters, Atlas.Campaigns.Character, :list,
+      select: [:id, :name],
+      load: [:player_name],
+      description: "List the characters of a campaign and who plays them."
+
+    tool :get_character, Atlas.Campaigns.Character, :describe,
+      description: "Read a character: its name, description and GM-only secret notes as text."
   end
 
   resources do

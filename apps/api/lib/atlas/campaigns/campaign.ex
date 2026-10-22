@@ -31,10 +31,21 @@ defmodule Atlas.Campaigns.Campaign do
       prepare build(sort: [inserted_at: :desc, id: :desc])
     end
 
+    read :list_as_gm do
+      filter expr(gm_id == ^actor(:id))
+      prepare build(sort: [inserted_at: :desc, id: :desc])
+    end
+
     create :create do
       primary? true
       accept [:name]
       change relate_actor(:gm)
+    end
+
+    # Plain text for a language model, as the actor may read it. Used by the MCP tools.
+    action :describe, :map do
+      argument :id, :uuid, allow_nil?: false
+      run {Atlas.Mcp.Describe, fields: [:id, :name], sections: [:description, :progress_rewards]}
     end
   end
 
@@ -43,6 +54,10 @@ defmodule Atlas.Campaigns.Campaign do
   policies do
     policy always() do
       forbid_unless actor_present()
+      authorize_if always()
+    end
+
+    policy action(:describe) do
       authorize_if always()
     end
 

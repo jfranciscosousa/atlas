@@ -24,6 +24,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": api,
+      "/.well-known": api,
+      "/mcp": api,
+      "/oauth": api,
       "/auth": api,
       "/rpc": api,
       "/socket": { ...api, ws: true },

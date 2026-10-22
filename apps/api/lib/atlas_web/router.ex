@@ -13,6 +13,39 @@ defmodule AtlasWeb.Router do
     plug :set_actor, :user
   end
 
+  pipeline :mcp do
+    plug AtlasWeb.Plugs.McpAuth
+  end
+
+  # The MCP server and its OAuth endpoints. Clients authenticate with a bearer token or none, so
+  # there is no session and no CSRF check here.
+  scope "/", AtlasWeb do
+    get "/.well-known/oauth-protected-resource", OAuthMetadataController, :protected_resource
+    get "/.well-known/oauth-protected-resource/mcp", OAuthMetadataController, :protected_resource
+    get "/.well-known/oauth-authorization-server", OAuthMetadataController, :authorization_server
+
+    post "/oauth/register", OAuthController, :register
+    get "/oauth/authorize", OAuthController, :authorize
+    post "/oauth/token", OAuthController, :token
+  end
+
+  scope "/mcp" do
+    pipe_through :mcp
+
+    forward "/", AshAi.Mcp.Router,
+      otp_app: :atlas,
+      tools: [
+        :list_campaigns,
+        :get_campaign,
+        :list_sessions,
+        :get_session,
+        :list_characters,
+        :get_character,
+        :list_notes,
+        :get_note
+      ]
+  end
+
   scope "/", AtlasWeb do
     pipe_through :api
 
@@ -22,6 +55,9 @@ defmodule AtlasWeb.Router do
     post "/rpc/validate", AshTypescriptRpcController, :validate
 
     post "/api/images", ImageUploadController, :create
+
+    # The consent page of the web app posts the decision here.
+    post "/oauth/authorize", OAuthController, :decide
 
     for name <- [:password, :confirm_new_user],
         strategy = AshAuthentication.Info.strategy!(Atlas.Accounts.User, name),
