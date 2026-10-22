@@ -1,0 +1,52 @@
+# Production stack for Coolify. Coolify fills every SERVICE_* variable.
+# For a local run, copy .env.example to .env and add docker-compose.local.yml.
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_DB: atlas
+    volumes:
+      # PostgreSQL 18 keeps its data in a versioned directory below this path.
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d atlas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ecto://atlas:${SERVICE_PASSWORD_POSTGRES}@db/atlas
+      SECRET_KEY_BASE: ${SERVICE_PASSWORD_64_SECRETKEYBASE}
+      TOKEN_SIGNING_SECRET: ${SERVICE_PASSWORD_64_TOKENSIGNINGSECRET}
+      PHX_HOST: ${SERVICE_FQDN_WEB_80}
+      FRONTEND_URL: ${SERVICE_URL_WEB_80}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?}
+      R2_BUCKET: ${R2_BUCKET:?}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?}
+      # ReqLLM reads this key for the session log draft.
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - SERVICE_FQDN_WEB_80
+      - SERVICE_URL_WEB_80
+    restart: unless-stopped
+
+volumes:
+  db-data:
