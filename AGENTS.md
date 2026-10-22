@@ -38,6 +38,10 @@ use GitHub Issues or any other tracker. The repository is the only source of tru
 - Treat a proposal or an open question as unresolved. Ask the user when it blocks the task.
 - Do not add Markdown documentation or decision records unless the user asks. The exceptions are
   `AGENTS.md` and `GLOSSARY.md`.
+- The app and MCP must match. Whatever a person sees in the app, the same person sees through
+  MCP and the AI features, with the same names, labels, and access rules. When you change what
+  one surface shows or hides, change the others in the same commit, and add a test that
+  compares them. A difference is a bug, not a design choice.
 - Every rich-text field behaves the same: one editor, one image behavior, one autosave path.
   Do not build a variant with fewer features.
 

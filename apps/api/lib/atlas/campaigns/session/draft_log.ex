@@ -78,7 +78,7 @@ defmodule Atlas.Campaigns.Session.DraftLog do
       [{"Log of the GM", session.log_json}] ++
         Enum.map(player_logs, &{"Log of the player #{&1.author_name}", &1.body_json})
 
-    labels = sources |> Enum.map(&elem(&1, 1)) |> Mentions.labels(actor)
+    labels = sources |> Enum.map(&elem(&1, 1)) |> Mentions.labels(actor, session.campaign_id)
 
     parts =
       for {title, json} <- sources,

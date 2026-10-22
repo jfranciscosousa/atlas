@@ -20,13 +20,22 @@ defmodule Atlas.Mcp.Describe do
 
       # The names of mentions are read as the actor, so a restricted entry stays nameless.
       labels =
-        documents |> Map.values() |> Enum.filter(&is_list/1) |> Mentions.labels(context.actor)
+        documents
+        |> Map.values()
+        |> Enum.filter(&is_list/1)
+        |> Mentions.labels(context.actor, campaign_id(record))
 
       sections = Map.new(documents, fn {section, blocks} -> {section, text(blocks, labels)} end)
 
       {:ok, Map.merge(fields, sections)}
     end
   end
+
+  defp campaign_id(%Atlas.Campaigns.Campaign{id: id}), do: id
+  defp campaign_id(%{campaign_id: id}), do: id
+
+  defp campaign_id(%Atlas.Campaigns.PlayerLog{session_id: session_id}),
+    do: Ash.get!(Atlas.Campaigns.Session, session_id, authorize?: false).campaign_id
 
   # A field policy replaces a hidden section with a `%Ash.ForbiddenField{}`.
   defp text(blocks, labels) when is_list(blocks), do: PlainText.render(blocks, labels: labels)

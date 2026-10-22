@@ -6,7 +6,7 @@ defmodule Atlas.RichText.PlainText do
 
   Options:
 
-    * `:labels` - the names of the mentioned entries, from `Atlas.RichText.Mentions.labels/2`.
+    * `:labels` - the names of the mentioned entries, from `Atlas.RichText.Mentions.labels/3`.
       An entry that has no name there reads as "Restricted entry". Without this option the name
       is the kind of the entry.
     * `:links` - set to `false` to write `@Name` only, for text that a model reads and never

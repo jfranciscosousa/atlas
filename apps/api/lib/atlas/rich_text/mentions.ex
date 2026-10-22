@@ -5,6 +5,7 @@ defmodule Atlas.RichText.Mentions do
   A text stores only the kind and the ID of a mention. The normal read policies decide what the
   actor may see: an entry that the actor cannot read has no name here, and the caller shows
   "Restricted entry". An archived note that the actor may read is "Deleted entry".
+  An entry of another campaign is restricted too, as in the editor, which lists one campaign.
   """
   require Ash.Query
 
@@ -15,15 +16,15 @@ defmodule Atlas.RichText.Mentions do
   @resources %{"character" => Character, "session" => Session, "note" => Note}
 
   @doc "Map of `{kind, id}` to the name of the entry, for the mentions in `documents`."
-  @spec labels([[map()] | nil], term()) :: %{{String.t(), String.t()} => String.t()}
-  def labels(documents, actor) do
+  @spec labels([[map()] | nil], term(), String.t()) :: %{{String.t(), String.t()} => String.t()}
+  def labels(documents, actor, campaign_id) do
     documents
     |> Enum.flat_map(&Document.mention_refs/1)
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
     |> Enum.flat_map(fn {kind, ids} ->
       @resources
       |> Map.fetch!(kind)
-      |> Ash.Query.filter(id in ^ids)
+      |> Ash.Query.filter(campaign_id == ^campaign_id and id in ^ids)
       |> Ash.read!(actor: actor)
       |> Enum.map(&{{kind, &1.id}, label(kind, &1)})
     end)

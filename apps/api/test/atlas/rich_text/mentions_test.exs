@@ -34,6 +34,13 @@ defmodule Atlas.RichText.MentionsTest do
     archived = Ash.update!(archived, %{}, action: :reveal, actor: gm)
     Ash.update!(archived, %{}, action: :archive, actor: gm)
 
+    # The GM may read this note, but it belongs to another campaign. The editor lists one
+    # campaign only, so it shows "Restricted entry" and MCP must show the same.
+    elsewhere =
+      Ash.create!(Note, %{campaign_id: campaign(gm, "Other").id, title: "Other campaign"},
+        actor: gm
+      )
+
     character = campaign |> Ash.load!(:characters, authorize?: false) |> Map.fetch!(:characters)
 
     refs =
@@ -43,7 +50,8 @@ defmodule Atlas.RichText.MentionsTest do
         mention("note", shown.id),
         mention("note", archived.id),
         mention("character", hd(character).id),
-        mention("note", Ash.UUID.generate())
+        mention("note", Ash.UUID.generate()),
+        mention("note", elsewhere.id)
       ]
 
     save_section!(
@@ -73,6 +81,7 @@ defmodule Atlas.RichText.MentionsTest do
     assert text =~ "[@Handout]("
     assert text =~ "[@Deleted entry]("
     assert text =~ "[@Unnamed character]("
+    refute text =~ "Other campaign"
   end
 
   test "a player gets no name for a hidden note, an archived note or an unknown entry", ctx do
@@ -84,8 +93,8 @@ defmodule Atlas.RichText.MentionsTest do
     refute text =~ "Secret plot"
     refute text =~ "Old idea"
     refute text =~ "Deleted entry"
-    # The hidden note, the archived note and the unknown ID.
-    assert length(String.split(text, "[@Restricted entry](")) == 4
+    # The hidden note, the archived note, the unknown ID and the other campaign's note.
+    assert length(String.split(text, "[@Restricted entry](")) == 5
     # The ID stays, so a model that writes the text back keeps the mention.
     assert text =~ "atlas-entry:note:#{ctx.hidden.id}"
   end
