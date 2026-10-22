@@ -179,7 +179,7 @@ Deploy only `apps/web/dist/client/` to the static host. The temporary
 in production. No frontend Node server is required.
 
 The API release needs `DATABASE_URL`, `SECRET_KEY_BASE`,
-`TOKEN_SIGNING_SECRET`, `PHX_HOST`, and `PHX_SERVER=true`. Set
+`TOKEN_SIGNING_SECRET`, `RESEND_API_KEY`, `PHX_HOST`, and `PHX_SERVER=true`. Set
 `FRONTEND_URL` if it differs from `https://$PHX_HOST`. Run database migrations
 before serving traffic.
 

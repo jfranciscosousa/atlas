@@ -116,6 +116,7 @@ config :atlas, AtlasWeb.Endpoint,
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
 config :atlas, Atlas.Mailer, adapter: Swoosh.Adapters.Local
+config :atlas, mail_from: {"Atlas", "noreply@atlas.jfranciscosousa.com"}
 
 # Configure Elixir's Logger
 config :logger, :default_formatter,
