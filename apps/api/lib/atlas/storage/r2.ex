@@ -27,6 +27,26 @@ defmodule Atlas.Storage.R2 do
   end
 
   @impl true
+  def delete(key) do
+    config = config()
+
+    response =
+      Req.new(retry: :transient)
+      |> ReqS3.attach()
+      |> Req.delete(
+        url: "s3://#{config[:bucket]}/#{key}",
+        aws_endpoint_url_s3: config[:endpoint_url],
+        aws_sigv4: sigv4(config)
+      )
+
+    case response do
+      {:ok, %{status: status}} when status in 200..299 or status == 404 -> :ok
+      {:ok, %{status: status}} -> {:error, {:r2_status, status}}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  @impl true
   def signed_url(key, ttl_seconds) do
     config = config()
 

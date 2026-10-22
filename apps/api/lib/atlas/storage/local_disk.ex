@@ -19,6 +19,15 @@ defmodule Atlas.Storage.LocalDisk do
   end
 
   @impl true
+  def delete(key) do
+    case File.rm(path(key)) do
+      :ok -> :ok
+      {:error, :enoent} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @impl true
   def signed_url(key, _ttl_seconds) do
     "/api/images/" <> Phoenix.Token.sign(AtlasWeb.Endpoint, @salt, key)
   end

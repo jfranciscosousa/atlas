@@ -97,7 +97,13 @@ defmodule Atlas.Images.Image do
   def all_exist?(ids) do
     ids = Enum.uniq(ids)
     # Internal integrity check on document content. It reveals nothing to the caller.
-    count = __MODULE__ |> Ash.Query.filter(id in ^ids) |> Ash.count!(authorize?: false)
-    count == length(ids)
+    images =
+      __MODULE__
+      |> Ash.Query.filter(id in ^ids)
+      |> Ash.Query.sort(:id)
+      |> Ash.Query.lock("FOR SHARE")
+      |> Ash.read!(authorize?: false)
+
+    length(images) == length(ids)
   end
 end

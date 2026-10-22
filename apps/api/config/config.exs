@@ -38,7 +38,7 @@ config :atlas, Oban,
   lifeline: [rescue_after: {2, :hours}],
   pruner: [max_age: {1, :day}],
   repo: Atlas.Repo,
-  cron: [crontab: []]
+  cron: [crontab: [{"0 0 * * *", Atlas.Images.Cleanup}], timezone: "Etc/UTC"]
 
 # These enable behaviors that will become the default in the next major
 # version of Ash. Setting them now opts your application into the new
