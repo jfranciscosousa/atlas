@@ -26,8 +26,8 @@ services:
       DATABASE_URL: ecto://atlas:${SERVICE_PASSWORD_POSTGRES}@db/atlas
       SECRET_KEY_BASE: ${SERVICE_PASSWORD_64_SECRETKEYBASE}
       TOKEN_SIGNING_SECRET: ${SERVICE_PASSWORD_64_TOKENSIGNINGSECRET}
-      PHX_HOST: ${SERVICE_FQDN_WEB_80}
-      FRONTEND_URL: ${SERVICE_URL_WEB_80}
+      PHX_HOST: ${SERVICE_FQDN_WEB}
+      FRONTEND_URL: ${SERVICE_URL_WEB}
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?}
       R2_BUCKET: ${R2_BUCKET:?}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?}
@@ -44,8 +44,8 @@ services:
       api:
         condition: service_healthy
     environment:
-      - SERVICE_FQDN_WEB_80
-      - SERVICE_URL_WEB_80
+      - SERVICE_FQDN_WEB
+      - SERVICE_URL_WEB
     restart: unless-stopped
 
 volumes:
