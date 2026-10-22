@@ -16,6 +16,7 @@ defmodule Atlas.Campaigns.Session do
     authorizers: [Ash.Policy.Authorizer],
     extensions: [AshTypescript.Resource, Atlas.RichText]
 
+  alias Atlas.Campaigns.Session.ActorIsSessionGm
   alias Atlas.Content.Checks.ActorIsCampaignGm
 
   postgres do
@@ -62,6 +63,18 @@ defmodule Atlas.Campaigns.Session do
     update :update_details do
       accept [:title, :played_on, :status]
     end
+
+    # Returns a Markdown draft and the conflicts between the logs, for the GM to review.
+    # It saves nothing.
+    action :draft_log, :map do
+      constraints fields: [
+                    draft: [type: :string, allow_nil?: false],
+                    conflicts: [type: {:array, :string}, allow_nil?: false]
+                  ]
+
+      argument :id, :uuid, allow_nil?: false
+      run Atlas.Campaigns.Session.DraftLog
+    end
   end
 
   # Members read a session; the GM changes it. Everyone else gets not found.
@@ -82,6 +95,10 @@ defmodule Atlas.Campaigns.Session do
 
     policy action_type(:create) do
       authorize_if ActorIsCampaignGm
+    end
+
+    policy action(:draft_log) do
+      authorize_if ActorIsSessionGm
     end
 
     policy action_type(:update) do

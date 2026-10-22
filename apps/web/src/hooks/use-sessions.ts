@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   createSession,
+  draftSessionLog,
   getSession,
   listSessions,
   updateSessionDetails,
@@ -95,5 +96,18 @@ export function useSessionDetails(campaignId: string, sessionId: string) {
         ),
       invalidate: [sessionsKey(campaignId)],
     }
+  );
+}
+
+// The draft is Markdown. The conflicts are contradictions between the logs. The GM reviews both. Nothing is saved until the GM accepts it.
+export function useSessionDraftLog(sessionId: string) {
+  return useRpcMutation(
+    draftSessionLog,
+    (run, _: void) =>
+      run({
+        input: { id: sessionId },
+        fields: ["draft", "conflicts"],
+      }),
+    { fallback: "Could not draft the log." }
   );
 }

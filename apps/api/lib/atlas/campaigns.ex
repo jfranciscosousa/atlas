@@ -15,6 +15,7 @@ defmodule Atlas.Campaigns do
       rpc_action :get_session, :read, get_by: [:id]
       rpc_action :create_session, :create
       rpc_action :update_session_details, :update_details
+      rpc_action :draft_session_log, :draft_log
     end
 
     resource Atlas.Campaigns.PlayerLog do

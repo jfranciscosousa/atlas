@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { LockIcon } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
@@ -20,6 +20,7 @@ import { Input } from "../components/ui/input";
 import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { SessionStatusBadge } from "../components/session-status-badge";
+import { SessionLogDraft } from "../components/session-log-draft";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
 import { PlayerLogs } from "../components/player-logs";
 import { PageHeader } from "../components/page-header";
@@ -74,6 +75,16 @@ function SessionPage() {
   const details = useSessionDetails(campaignId, sessionId);
   const [title, setTitle] = useState(session.title ?? "");
   const RichTextEditor = getEditor();
+  const [tab, setTab] = useState(
+    campaign.isGm && session.status === "in_prep" ? "prep" : "log"
+  );
+  const [replaceLog, setReplaceLog] =
+    useState<(markdown: string) => Promise<void>>();
+  // State holds a function, so the setter gets a function that returns it.
+  const onReplaceLog = useCallback(
+    (replace: typeof replaceLog) => setReplaceLog(() => replace),
+    []
+  );
   const heading = `Session ${session.number}`;
 
   const commitTitle = () => {
@@ -101,6 +112,18 @@ function SessionPage() {
         actions={
           <div className="flex items-center gap-3">
             <SessionStatusBadge status={session.status} />
+            {campaign.isGm && (
+              <SessionLogDraft
+                sessionId={session.id}
+                replaceLog={
+                  replaceLog &&
+                  (async markdown => {
+                    await replaceLog(markdown);
+                    setTab("log");
+                  })
+                }
+              />
+            )}
             {campaign.isGm && (
               <Button
                 id="session-status-button"
@@ -156,11 +179,7 @@ function SessionPage() {
       )}
       {/* The key gives each session its own editor; BlockNote reads its content only once. */}
       {/* keepMounted: a hidden editor keeps its text and its pending autosave. */}
-      <Tabs
-        defaultValue={
-          campaign.isGm && session.status === "in_prep" ? "prep" : "log"
-        }
-      >
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           {campaign.isGm && (
             <TabsTrigger value="prep">
@@ -198,6 +217,7 @@ function SessionPage() {
             }
             initial={session.logJson}
             readOnly={!campaign.isGm}
+            onReplace={onReplaceLog}
           />
         </TabsContent>
         <TabsContent value="player-logs" keepMounted>

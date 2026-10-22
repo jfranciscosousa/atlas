@@ -66,6 +66,11 @@ type Props = {
   initial: BlockNoteDocument;
   // The editor stays read-only, whatever the server allows.
   readOnly?: boolean;
+  // Gives the caller a way to replace the whole text from Markdown, while the editor is live and
+  // writable. The change goes through live editing like a typed one. Pass a stable function.
+  onReplace?: (
+    replace: ((markdown: string) => Promise<void>) | undefined
+  ) => void;
 };
 
 // The server names a section `kind:id:section`.
@@ -99,6 +104,7 @@ export default function RichTextEditor({
   hideLabel = false,
   initial,
   readOnly = false,
+  onReplace,
 }: Props) {
   const queryClient = useQueryClient();
   const meta = () => queryClient.getDefaultOptions().mutations?.meta;
@@ -199,6 +205,17 @@ export default function RichTextEditor({
           : undefined;
 
   const { shown, more } = summarize(people);
+
+  useEffect(() => {
+    if (!onReplace || !live || !writing) return;
+    onReplace(async markdown => {
+      editor.replaceBlocks(
+        editor.document,
+        await editor.tryParseMarkdownToBlocks(markdown)
+      );
+    });
+    return () => onReplace(undefined);
+  }, [onReplace, editor, live, writing]);
 
   // Leaving with edits that never reached the server asks first.
   useBlocker({

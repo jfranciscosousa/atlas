@@ -1411,6 +1411,78 @@ export async function validateCreateSession(
 }
 
 
+export type DraftSessionLogInput = {
+  id: UUID;
+};
+
+export type DraftSessionLogFields = UnifiedFieldSelection<{draft: string, conflicts: Array<string>, __type: "TypedMap", __primitiveFields: "draft" | "conflicts"}>[];
+
+export type InferDraftSessionLogResult<
+  Fields extends DraftSessionLogFields | undefined,
+> = InferResult<{draft: string, conflicts: Array<string>, __type: "TypedMap", __primitiveFields: "draft" | "conflicts"}, Fields>;
+
+export type DraftSessionLogResult<Fields extends DraftSessionLogFields | undefined = undefined> = | { success: true; data: InferDraftSessionLogResult<Fields>; }
+| { success: false; errors: AshRpcError[]; }
+
+;
+
+/**
+ * Execute generic action on Session
+ *
+ * @ashActionType :action
+ */
+export async function draftSessionLog<Fields extends DraftSessionLogFields | undefined = undefined>(
+  config: {
+  tenant?: string;
+  input: DraftSessionLogInput;
+  fields: Fields;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<DraftSessionLogResult<Fields extends undefined ? [] : Fields>> {
+  const payload = {
+    action: "draft_session_log",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input,
+    ...(config.fields !== undefined && { fields: config.fields })
+  };
+
+  return executeActionRpcRequest<DraftSessionLogResult<Fields extends undefined ? [] : Fields>>(
+    payload,
+    config
+  );
+}
+
+
+/**
+ * Validate: Execute generic action on Session
+ *
+ * @ashActionType :action
+ * @validation true
+ */
+export async function validateDraftSessionLog(
+  config: {
+  tenant?: string;
+  input: DraftSessionLogInput;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<ValidationResult> {
+  const payload = {
+    action: "draft_session_log",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input
+  };
+
+  return executeValidationRpcRequest<ValidationResult>(
+    payload,
+    config
+  );
+}
+
+
 export type ListSessionsInput = {
   campaignId: UUID;
 };
