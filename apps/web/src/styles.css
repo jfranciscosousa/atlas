@@ -156,3 +156,8 @@
 .bn-container[data-color-scheme] {
   --bn-colors-editor-background: transparent;
 }
+
+/* While the editor resolves an image reference, hide the broken image and its file name. */
+.bn-visual-media[src^="atlas-image:"] {
+  visibility: hidden;
+}

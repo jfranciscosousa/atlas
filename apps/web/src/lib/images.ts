@@ -40,7 +40,7 @@ export function createImageResolver(options: {
   const { fetchUrl, ttlMs = 8 * 60 * 1000, now = Date.now } = options;
   const cache = new Map<string, { url: Promise<string>; expires: number }>();
 
-  return function resolve(reference: string): Promise<string> {
+  function resolve(reference: string): Promise<string> {
     if (!reference.startsWith(IMAGE_REF_PREFIX))
       return Promise.resolve(reference);
     const id = reference.slice(IMAGE_REF_PREFIX.length);
@@ -51,5 +51,14 @@ export function createImageResolver(options: {
     cache.set(id, { url, expires: now() + ttlMs });
     url.catch(() => cache.delete(id));
     return url;
-  };
+  }
+
+  /** Answers a reference with a local URL, so a fresh upload shows without a round trip. */
+  resolve.prime = (reference: string, url: string) =>
+    cache.set(reference.slice(IMAGE_REF_PREFIX.length), {
+      url: Promise.resolve(url),
+      expires: now() + ttlMs,
+    });
+
+  return resolve;
 }

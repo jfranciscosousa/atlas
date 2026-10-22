@@ -121,6 +121,7 @@ export default function RichTextEditor({
   // The blocker reads the latest value outside React's render cycle.
   const collabRef = useRef<Collab>(undefined);
   const uploadsRef = useRef(0);
+  const previewsRef = useRef<string[]>([]);
 
   useEffect(() => {
     const opened = openDocument(ref, meta()?.csrfToken ?? "", {
@@ -157,6 +158,12 @@ export default function RichTextEditor({
     [queryClient]
   );
 
+  // A primed preview stays valid until the editor closes.
+  useEffect(
+    () => () => previewsRef.current.forEach(url => URL.revokeObjectURL(url)),
+    []
+  );
+
   const common = {
     schema,
     uploadFile: async (file: File, blockId?: string) => {
@@ -173,11 +180,17 @@ export default function RichTextEditor({
         image.style.opacity = "0.5";
         loading.replaceChildren(image);
       }
+      previewsRef.current.push(preview);
       try {
-        return await uploadImage({ file, csrfToken: meta()?.csrfToken });
+        const reference = await uploadImage({
+          file,
+          csrfToken: meta()?.csrfToken,
+        });
+        // The block then shows the local image at once, without a second load from the server.
+        resolveFileUrl.prime(reference, preview);
+        return reference;
       } finally {
         uploadsRef.current--;
-        URL.revokeObjectURL(preview);
       }
     },
     resolveFileUrl,

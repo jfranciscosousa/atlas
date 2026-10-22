@@ -90,3 +90,11 @@ test("the resolver caches a signed URL, refreshes it after the TTL, and drops fa
   fail = false;
   assert.equal(await resolve("atlas-image:b"), "/api/images/b-4");
 });
+
+test("a primed reference resolves to the local URL without a fetch", async () => {
+  const resolve = createImageResolver({
+    fetchUrl: async () => assert.fail("must not fetch"),
+  });
+  resolve.prime("atlas-image:p", "blob:local");
+  assert.equal(await resolve("atlas-image:p"), "blob:local");
+});
