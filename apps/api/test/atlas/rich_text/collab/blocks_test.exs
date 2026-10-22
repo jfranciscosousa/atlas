@@ -88,4 +88,23 @@ defmodule Atlas.RichText.Collab.BlocksTest do
     assert {:ok, [%{"props" => %{}}, %{"props" => %{}}]} =
              blocks |> Blocks.seed() |> Blocks.project()
   end
+
+  test "a prop BlockNote left undefined reads as absent" do
+    doc =
+      Blocks.seed([
+        %{"id" => "i1", "type" => "image", "props" => %{"url" => ""}, "children" => []}
+      ])
+
+    image =
+      doc
+      |> Yex.Doc.get_xml_fragment("document-store")
+      |> Yex.XmlFragment.first_child()
+      |> Yex.XmlElement.first_child()
+      |> Yex.XmlElement.first_child()
+
+    :ok = Yex.XmlElement.insert_attribute(image, "name", :undefined)
+
+    assert {:ok, [%{"props" => props}]} = Blocks.project(doc)
+    refute Map.has_key?(props, "name")
+  end
 end

@@ -135,7 +135,8 @@ defmodule Atlas.RichText.Collab.Blocks do
 
   defp props(attrs, allowed) do
     :ok = check(Map.keys(attrs) -- allowed == [], :attribute)
-    Map.new(attrs, fn {key, value} -> {key, scalar(value)} end)
+    # BlockNote writes an unset prop as `undefined`, which means the default: leave it out.
+    for {key, value} <- attrs, value != :undefined, into: %{}, do: {key, scalar(value)}
   end
 
   # yrs reads every JavaScript number as a float.

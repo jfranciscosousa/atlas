@@ -120,6 +120,7 @@ export default function RichTextEditor({
   const [live, setLive] = useState(false);
   // The blocker reads the latest value outside React's render cycle.
   const collabRef = useRef<Collab>(undefined);
+  const uploadsRef = useRef(0);
 
   useEffect(() => {
     const opened = openDocument(ref, meta()?.csrfToken ?? "", {
@@ -158,8 +159,27 @@ export default function RichTextEditor({
 
   const common = {
     schema,
-    uploadFile: (file: File) =>
-      uploadImage({ file, csrfToken: meta()?.csrfToken }),
+    uploadFile: async (file: File, blockId?: string) => {
+      uploadsRef.current++;
+      // The block holds no URL until the upload ends, so the preview lives only in the DOM.
+      const preview = URL.createObjectURL(file);
+      const loading = document.querySelector(
+        `[data-id="${blockId}"] .bn-file-loading-preview`
+      );
+      if (loading) {
+        const image = document.createElement("img");
+        image.src = preview;
+        image.className = "bn-visual-media";
+        image.style.opacity = "0.5";
+        loading.replaceChildren(image);
+      }
+      try {
+        return await uploadImage({ file, csrfToken: meta()?.csrfToken });
+      } finally {
+        uploadsRef.current--;
+        URL.revokeObjectURL(preview);
+      }
+    },
     resolveFileUrl,
   };
   const editor = useCreateBlockNote(
@@ -217,12 +237,14 @@ export default function RichTextEditor({
     return () => onReplace(undefined);
   }, [onReplace, editor, live, writing]);
 
-  // Leaving with edits that never reached the server asks first.
+  // Leaving with edits that never reached the server, or an image still uploading, asks first.
+  const unsaved = () =>
+    !!collabRef.current?.hasUnsyncedEdits() || uploadsRef.current > 0;
   useBlocker({
     shouldBlockFn: () =>
-      !!collabRef.current?.hasUnsyncedEdits() &&
+      unsaved() &&
       !window.confirm("Your latest edits are not saved. Leave anyway?"),
-    enableBeforeUnload: () => !!collabRef.current?.hasUnsyncedEdits(),
+    enableBeforeUnload: unsaved,
   });
 
   return (
