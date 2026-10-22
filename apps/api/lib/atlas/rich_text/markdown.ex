@@ -4,13 +4,16 @@ defmodule Atlas.RichText.Markdown do
 
   Supported: headings, paragraphs, bullet, numbered and check lists (nested by two-space
   indentation), quotes, fenced code, dividers, images (`![alt](atlas-image:<id>)` on its own
-  line), and **bold**, *italic*, ~~strike~~, `code` and [links](https://example.com).
+  line), mentions (`[@Name](atlas-entry:<kind>:<id>)`, kind character, session or note; the label
+  is dropped, because the editor shows the current name), and **bold**, *italic*, ~~strike~~,
+  `code` and [links](https://example.com).
   Tables and raw HTML are not supported and stay plain text. The result still goes through
   `Atlas.RichText.Document`, which has the final say.
   """
 
   @link_schemes ~w(http https mailto)
   @list ~r/^(\s*)([-*+]|\d+[.)])\s+(?:\[([ xX])\]\s+)?(.*)$/
+  @mention ~r/\Aatlas-entry:(character|session|note):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\z/
   @image ~r/^!\[([^\]]*)\]\((atlas-image:[0-9a-f-]{36})\)\s*$/
   @inline [
     {:link, ~r/\[([^\]]+)\]\(([^)\s]+)\)/},
@@ -132,9 +135,17 @@ defmodule Atlas.RichText.Markdown do
   end
 
   defp span(:link, matched, [label, url], styles) do
-    if URI.parse(url).scheme in @link_schemes,
-      do: [%{"type" => "link", "href" => url, "content" => scan(label, styles)}],
-      else: [text(matched, styles)]
+    cond do
+      match = Regex.run(@mention, url) ->
+        [_, kind, id] = match
+        [%{"type" => "mention", "props" => %{"kind" => kind, "id" => id}}]
+
+      URI.parse(url).scheme in @link_schemes ->
+        [%{"type" => "link", "href" => url, "content" => scan(label, styles)}]
+
+      true ->
+        [text(matched, styles)]
+    end
   end
 
   defp span(:code, _, [code], styles), do: [text(code, Map.put(styles, "code", true))]

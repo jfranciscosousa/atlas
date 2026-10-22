@@ -14,6 +14,8 @@ defmodule Atlas.RichText.Document do
   @block_keys ~w(id type props content children)
   @styles ~w(bold italic underline strike code textColor backgroundColor)
   @link_schemes ~w(http https mailto)
+  @mention_kinds ~w(character session note)
+  @uuid ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/
   @image_ref ~r/\Aatlas-image:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\z/
 
   def schema_version, do: @schema_version
@@ -144,6 +146,15 @@ defmodule Atlas.RichText.Document do
     with :ok <- unknown_keys(node, ~w(type href content), "link"),
          :ok <- scheme(href) do
       all(content, &inline/1)
+    end
+  end
+
+  defp inline(%{"type" => "mention", "props" => %{"kind" => kind, "id" => id} = props} = node)
+       when map_size(props) == 2 do
+    with :ok <- unknown_keys(node, ~w(type props), "mention") do
+      if kind in @mention_kinds and is_binary(id) and Regex.match?(@uuid, id),
+        do: :ok,
+        else: {:error, "mention needs a kind and an entry id"}
     end
   end
 

@@ -4,8 +4,24 @@ import * as Y from "yjs";
 // Run it again after a BlockNote upgrade and check the API tests.
 import { writeFileSync } from "node:fs";
 import { ServerBlockNoteEditor } from "@blocknote/server-util";
+import {
+  BlockNoteSchema,
+  createInlineContentSpec,
+  defaultInlineContentSpecs,
+} from "@blocknote/core";
 
-import { schema } from "../src/lib/blocknote-schema.ts";
+import { blockSpecs, mentionConfig } from "../src/lib/blocknote-schema.ts";
+
+// Same config as the editor's schema. Only the rendering differs, and the server never renders.
+const schema = BlockNoteSchema.create({
+  blockSpecs,
+  inlineContentSpecs: {
+    ...defaultInlineContentSpecs,
+    mention: createInlineContentSpec(mentionConfig, {
+      render: () => ({ dom: undefined as unknown as HTMLElement }),
+    }),
+  },
+});
 
 const FRAGMENT = "document-store";
 const editor = ServerBlockNoteEditor.create({ schema });
@@ -21,6 +37,10 @@ const cell = (t: string, props = {}) => ({
     textAlignment: "left",
     ...props,
   },
+});
+const mention = (kind: string, id: string) => ({
+  type: "mention",
+  props: { kind, id },
 });
 const IMAGE = "atlas-image:11111111-1111-1111-1111-111111111111";
 
@@ -138,6 +158,54 @@ const cases: Record<string, any[]> = {
     },
     { id: "q1", type: "quote", content: [text("quoted")] },
   ],
+  mentions: [
+    {
+      id: "p1",
+      type: "paragraph",
+      content: [
+        text("met "),
+        mention("character", "11111111-1111-1111-1111-111111111111"),
+        mention("session", "22222222-2222-2222-2222-222222222222"),
+        text(" and "),
+        text("bold", { bold: true }),
+        mention("note", "33333333-3333-3333-3333-333333333333"),
+      ],
+      children: [
+        {
+          id: "b1",
+          type: "bulletListItem",
+          content: [mention("note", "33333333-3333-3333-3333-333333333333")],
+        },
+      ],
+    },
+    {
+      id: "t1",
+      type: "table",
+      content: {
+        type: "tableContent",
+        rows: [
+          {
+            cells: [
+              {
+                type: "tableCell",
+                content: [
+                  text("in a cell "),
+                  mention("session", "22222222-2222-2222-2222-222222222222"),
+                ],
+                props: {
+                  colspan: 1,
+                  rowspan: 1,
+                  backgroundColor: "default",
+                  textColor: "default",
+                  textAlignment: "left",
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
   breaks_and_unicode: [
     { id: "p1", type: "paragraph", content: [text("line one\nline two 😀 é")] },
     { id: "p2", type: "paragraph", content: [] },
@@ -172,7 +240,12 @@ const props = Object.fromEntries(
     Object.keys(s.config.propSchema),
   ])
 );
+const inline = Object.fromEntries(
+  Object.entries(schema.inlineContentSpecs)
+    .filter(([, s]: any) => s.config.content === "none")
+    .map(([k, s]: any) => [k, Object.keys(s.config.propSchema)])
+);
 writeFileSync(
   process.argv[2]!,
-  JSON.stringify({ fragment: FRAGMENT, props, cases: out }, null, 1)
+  JSON.stringify({ fragment: FRAGMENT, props, inline, cases: out }, null, 1)
 );

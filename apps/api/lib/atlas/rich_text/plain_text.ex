@@ -1,7 +1,8 @@
 defmodule Atlas.RichText.PlainText do
   @moduledoc """
   Reads a validated BlockNote document as Markdown-like text, for a language model.
-  Styles and images are dropped. Headings, lists, quotes and nesting are kept.
+  Styles and images are dropped. A mention stays as `[@kind](atlas-entry:kind:id)`, so a model
+  that writes the text back keeps it. Headings, lists, quotes and nesting are kept.
   """
 
   @spec render([map()] | nil) :: String.t()
@@ -34,5 +35,9 @@ defmodule Atlas.RichText.PlainText do
 
   defp inline_node(%{"type" => "text", "text" => text}), do: text
   defp inline_node(%{"type" => "link", "content" => content}), do: inline(content)
+
+  defp inline_node(%{"type" => "mention", "props" => %{"kind" => kind, "id" => id}}),
+    do: "[@#{kind}](atlas-entry:#{kind}:#{id})"
+
   defp inline_node(cell), do: inline(cell)
 end

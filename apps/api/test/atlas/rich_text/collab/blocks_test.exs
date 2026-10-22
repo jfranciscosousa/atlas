@@ -43,6 +43,10 @@ defmodule Atlas.RichText.Collab.BlocksTest do
     assert Enum.sort(Map.keys(Blocks.props())) == Enum.sort(Map.keys(@fixtures["props"]))
   end
 
+  test "the inline prop allow-list matches BlockNote's schema" do
+    assert Enum.sort(Blocks.mention_props()) == Enum.sort(@fixtures["inline"]["mention"])
+  end
+
   for %{"name" => name} = fixture <- @fixtures["cases"] do
     @fixture fixture
 
@@ -65,6 +69,26 @@ defmodule Atlas.RichText.Collab.BlocksTest do
     test "#{name}: a seeded document projects back to what was stored" do
       assert {:ok, blocks} = @fixture["output"] |> Blocks.seed() |> Blocks.project()
       assert blocks == @fixture["output"]
+    end
+  end
+
+  test "a mention with an unknown attribute or a child is rejected" do
+    for {attrs, children} <- [
+          {%{"kind" => "note", "id" => "x", "extra" => "y"}, []},
+          {%{"kind" => "note", "id" => "x"}, [Yex.XmlTextPrelim.from("a")]}
+        ] do
+      doc =
+        Blocks.seed([%{"id" => "p1", "type" => "paragraph", "content" => [], "children" => []}])
+
+      paragraph =
+        doc
+        |> Yex.Doc.get_xml_fragment("document-store")
+        |> Yex.XmlFragment.first_child()
+        |> Yex.XmlElement.first_child()
+        |> Yex.XmlElement.first_child()
+
+      :ok = Yex.XmlElement.push(paragraph, Yex.XmlElementPrelim.new("mention", children, attrs))
+      assert {:error, _} = Blocks.project(doc)
     end
   end
 

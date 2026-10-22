@@ -37,10 +37,14 @@ defmodule Atlas.RichText.Collab.Blocks do
   @simple_marks ~w(bold italic underline strike code)
   @color_marks ~w(textColor backgroundColor)
   @link_keys ~w(href target rel class)
+  @mention_props ~w(kind id)
   @id ~r/\A[A-Za-z0-9_-]{1,80}\z/
 
   @doc "Block types and the props each one accepts."
   def props, do: @props
+
+  @doc "Attributes a mention element accepts."
+  def mention_props, do: @mention_props
 
   @doc "Name of the Yjs root that holds the document."
   def fragment, do: @fragment
@@ -220,12 +224,12 @@ defmodule Atlas.RichText.Collab.Blocks do
   defp width(value) when is_number(value), do: scalar(value)
   defp width(_), do: throw({:invalid, :column_width})
 
-  # Inline content: XmlText runs, with hard breaks between them.
+  # Inline content: XmlText runs, with hard breaks and mentions between them.
   defp inline(children) do
     children
     |> Enum.flat_map(fn
       %Yex.XmlText{} = text -> text(text)
-      %Yex.XmlElement{} = node -> hard_break(node)
+      %Yex.XmlElement{} = node -> inline_element(node)
       _ -> throw({:invalid, :inline})
     end)
     |> merge()
@@ -240,10 +244,24 @@ defmodule Atlas.RichText.Collab.Blocks do
     end)
   end
 
-  defp hard_break(node) do
+  defp inline_element(node) do
     {tag, attrs, children} = element(node)
-    :ok = check(tag == "hardBreak" and attrs == %{} and children == [], :inline_element)
-    [{"\n", %{}, nil}]
+    :ok = check(children == [], :inline_element)
+
+    case tag do
+      "hardBreak" ->
+        :ok = check(attrs == %{}, :inline_element)
+        [{"\n", %{}, nil}]
+
+      "mention" ->
+        :ok = check(Map.keys(attrs) -- @mention_props == [], :attribute)
+        # BlockNote writes an unset prop as `undefined`: leave it out. The validation rejects it.
+        props = for {key, value} <- attrs, value != :undefined, into: %{}, do: {key, value}
+        [{:mention, props}]
+
+      _ ->
+        throw({:invalid, :inline_element})
+    end
   end
 
   defp text(%Yex.XmlText{} = node) do
@@ -282,7 +300,7 @@ defmodule Atlas.RichText.Collab.Blocks do
   # Joins neighbouring runs that carry the same marks, as BlockNote does.
   defp merge(runs) do
     runs
-    |> Enum.reject(fn {text, _, _} -> text == "" end)
+    |> Enum.reject(&match?({"", _, _}, &1))
     |> Enum.reduce([], fn
       {text, styles, link}, [{previous, styles, link} | rest] ->
         [{previous <> text, styles, link} | rest]
@@ -296,8 +314,14 @@ defmodule Atlas.RichText.Collab.Blocks do
   # Runs with the same link become one link node.
   defp link_runs(runs) do
     runs
-    |> Enum.chunk_by(fn {_, _, link} -> link end)
+    |> Enum.chunk_by(fn
+      {:mention, _} -> :mention
+      {_, _, link} -> link
+    end)
     |> Enum.flat_map(fn
+      [{:mention, _} | _] = mentions ->
+        Enum.map(mentions, fn {:mention, props} -> %{"type" => "mention", "props" => props} end)
+
       [{_, _, nil} | _] = plain ->
         Enum.map(plain, fn {text, styles, _} ->
           %{"type" => "text", "text" => text, "styles" => styles}
@@ -453,6 +477,7 @@ defmodule Atlas.RichText.Collab.Blocks do
   end
 
   # Text becomes XmlText runs with marks as attributes. A newline becomes a hard break element.
+  # A mention becomes an element with its props as attributes.
   defp inline_prelims(content, breaks? \\ true) do
     content
     |> Enum.flat_map(fn
@@ -462,21 +487,34 @@ defmodule Atlas.RichText.Collab.Blocks do
       run ->
         [{run, %{}}]
     end)
-    |> Enum.flat_map(fn {%{"text" => text} = run, extra} ->
-      marks = Map.merge(styles_to_marks(run["styles"] || %{}), extra)
+    |> Enum.flat_map(fn
+      {%{"type" => "mention", "props" => props}, _} ->
+        [{:mention, Map.take(props, @mention_props)}]
 
-      text
-      |> split_breaks(breaks?)
-      |> Enum.intersperse(:break)
-      |> Enum.map(fn
-        :break -> :break
-        part -> {part, marks}
-      end)
+      {%{"text" => text} = run, extra} ->
+        marks = Map.merge(styles_to_marks(run["styles"] || %{}), extra)
+
+        text
+        |> split_breaks(breaks?)
+        |> Enum.intersperse(:break)
+        |> Enum.map(fn
+          :break -> :break
+          part -> {part, marks}
+        end)
     end)
-    |> Enum.chunk_by(&(&1 == :break))
+    |> Enum.chunk_by(fn
+      :break -> :break
+      {:mention, _} -> :mention
+      _ -> :text
+    end)
     |> Enum.flat_map(fn
       [:break | _] = breaks ->
         Enum.map(breaks, fn _ -> Yex.XmlElementPrelim.empty("hardBreak") end)
+
+      [{:mention, _} | _] = mentions ->
+        Enum.map(mentions, fn {:mention, props} ->
+          Yex.XmlElementPrelim.new("mention", [], props)
+        end)
 
       parts ->
         case Enum.reject(parts, fn {text, _} -> text == "" end) do

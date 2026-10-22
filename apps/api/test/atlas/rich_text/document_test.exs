@@ -83,4 +83,37 @@ defmodule Atlas.RichText.DocumentTest do
     big = [paragraph(String.duplicate("a", 1_000_001))]
     assert {:error, _} = cast(big)
   end
+
+  describe "mentions" do
+    @entry_id "0b0c7f0e-8d1d-4a43-9f5f-3f7d1f1e2a11"
+
+    defp mention(props),
+      do: [
+        %{
+          "id" => "p",
+          "type" => "paragraph",
+          "props" => %{},
+          "content" => [%{"type" => "mention", "props" => props}],
+          "children" => []
+        }
+      ]
+
+    test "accepts a character, session or note by ID" do
+      for kind <- ~w(character session note) do
+        assert {:ok, _} = cast(mention(%{"kind" => kind, "id" => @entry_id}))
+      end
+    end
+
+    test "rejects other kinds, bad IDs, a stored name and extra keys" do
+      for props <- [
+            %{"kind" => "campaign", "id" => @entry_id},
+            %{"kind" => "note", "id" => "not-a-uuid"},
+            %{"kind" => "note", "id" => ""},
+            %{"kind" => "note"},
+            %{"kind" => "note", "id" => @entry_id, "name" => "Secret"}
+          ] do
+        assert {:error, _} = cast(mention(props)), inspect(props)
+      end
+    end
+  end
 end

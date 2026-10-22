@@ -83,4 +83,29 @@ defmodule Atlas.RichText.MarkdownTest do
     assert "# Title\nHello world" ==
              "# Title\n\nHello **world**" |> Markdown.parse() |> PlainText.render()
   end
+
+  test "reads a mention link and writes it back" do
+    id = "0b8f7d6e-1c2a-4f3b-9d4e-5a6b7c8d9e0f"
+
+    [paragraph] =
+      Markdown.parse("Met [@Mira](atlas-entry:character:#{id}) at [home](https://a.example)")
+
+    assert [
+             %{"text" => "Met "},
+             %{"type" => "mention", "props" => %{"kind" => "character", "id" => ^id}},
+             %{"text" => " at "},
+             %{"type" => "link"}
+           ] = paragraph["content"]
+
+    assert {:ok, _} = Document.cast_input([paragraph], [])
+    assert PlainText.render([paragraph]) =~ "Met [@character](atlas-entry:character:#{id}) at "
+  end
+
+  test "a mention link with an unknown kind or a bad ID stays text" do
+    for url <- ["atlas-entry:campaign:0b8f7d6e-1c2a-4f3b-9d4e-5a6b7c8d9e0f", "atlas-entry:note:x"] do
+      [paragraph] = Markdown.parse("[x](#{url})")
+      assert [%{"type" => "text"}] = paragraph["content"]
+      assert {:ok, _} = Document.cast_input([paragraph], [])
+    end
+  end
 end

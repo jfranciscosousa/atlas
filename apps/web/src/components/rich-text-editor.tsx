@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "cn";
-import { useBlocker } from "@tanstack/react-router";
+import { useBlocker, useParams } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { BlockNoteView } from "@blocknote/shadcn";
 import {
   FilePanel,
   FilePanelController,
+  SuggestionMenuController,
   UploadTab,
   useCreateBlockNote,
   type FilePanelProps,
 } from "@blocknote/react";
 import { withCollaboration } from "@blocknote/core/yjs";
+import { filterSuggestionItems } from "@blocknote/core";
 
 import type { SaveState } from "../lib/save-tracker";
 import type { BlockNoteDocument } from "../lib/blocknote-schema";
@@ -23,6 +25,7 @@ import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
 import { summarize, type Person } from "../lib/presence";
 import { createImageResolver, uploadImage } from "../lib/images";
+import { schema } from "../lib/editor-schema";
 import {
   FRAGMENT,
   openDocument,
@@ -30,7 +33,7 @@ import {
   type CollabNotice,
   type CollabStatus,
 } from "../lib/collab";
-import { schema } from "../lib/blocknote-schema";
+import { useMentionEntries } from "../hooks/use-mentions";
 import { fetchImageUrl, type Section } from "../hooks/use-campaigns";
 
 // Documents hold only uploaded images, so the panel offers no "Embed" tab for external URLs.
@@ -82,6 +85,12 @@ const KINDS = {
   character: "character",
 } as const;
 
+const MENTION_GROUPS = {
+  character: "Characters",
+  session: "Sessions",
+  note: "Notes",
+} as const;
+
 const NOTICES: Record<CollabNotice["kind"], string> = {
   revoked: "You no longer have access to this text.",
   unavailable: "This text could not be opened. Reload to try again.",
@@ -107,6 +116,8 @@ export default function RichTextEditor({
   onReplace,
 }: Props) {
   const queryClient = useQueryClient();
+  const { campaignId } = useParams({ strict: false });
+  const { entries: mentionable } = useMentionEntries(campaignId);
   const meta = () => queryClient.getDefaultOptions().mutations?.meta;
   const ref = `${KINDS[parent.kind]}:${parent.id}:${section}`;
 
@@ -312,6 +323,26 @@ export default function RichTextEditor({
             filePanel={false}
           >
             <FilePanelController filePanel={UploadOnlyFilePanel} />
+            <SuggestionMenuController
+              triggerCharacter="@"
+              getItems={async query =>
+                filterSuggestionItems(
+                  mentionable.map(entry => ({
+                    title: entry.label,
+                    group: MENTION_GROUPS[entry.kind],
+                    onItemClick: () =>
+                      editor.insertInlineContent([
+                        {
+                          type: "mention",
+                          props: { kind: entry.kind, id: entry.id },
+                        },
+                        " ",
+                      ]),
+                  })),
+                  query
+                )
+              }
+            />
           </BlockNoteView>
         </div>
       )}
