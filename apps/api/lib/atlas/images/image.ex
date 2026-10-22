@@ -35,6 +35,12 @@ defmodule Atlas.Images.Image do
       change relate_actor(:uploader)
     end
 
+    # Stores an image from a public URL. Used by the MCP tools.
+    action :upload_from_url, :map do
+      argument :url, :string, allow_nil?: false
+      run Atlas.Images.Image.UploadFromUrl
+    end
+
     action :signed_url, :string do
       argument :id, :uuid, allow_nil?: false
       run Atlas.Images.Image.SignedUrl
@@ -55,6 +61,11 @@ defmodule Atlas.Images.Image do
     # Storage costs money, so only people who play in some campaign may upload.
     policy action_type(:create) do
       authorize_if ActorIsCampaignMember
+    end
+
+    # `Uploads` checks the create rule before it does any work.
+    policy action(:upload_from_url) do
+      authorize_if always()
     end
 
     policy action(:signed_url) do

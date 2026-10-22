@@ -27,11 +27,41 @@ defmodule Atlas.Documents.Doc do
       upsert_identity :doc
       upsert_fields [:state, :revision, :epoch]
     end
+
+    # Writes Markdown into one rich-text section as a live edit. Used by the MCP tools.
+    action :write_text, :map do
+      argument :kind, :atom do
+        allow_nil? false
+        constraints one_of: [:campaign, :session, :character, :note, :player_log]
+      end
+
+      argument :id, :uuid, allow_nil?: false
+
+      argument :section, :atom do
+        allow_nil? false
+        constraints one_of: [:description, :progress_rewards, :log, :prep, :secret_notes, :body]
+      end
+
+      argument :markdown, :string, allow_nil?: false
+
+      argument :mode, :atom do
+        allow_nil? false
+        default :replace
+        constraints one_of: [:replace, :append]
+      end
+
+      run Atlas.Mcp.WriteText
+    end
   end
 
+  # The write action checks the actor against the parent's own policies through `Collab`.
   policies do
-    policy always() do
+    policy action_type([:read, :create]) do
       forbid_if always()
+    end
+
+    policy action(:write_text) do
+      authorize_if always()
     end
   end
 

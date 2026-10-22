@@ -35,6 +35,12 @@ defmodule Atlas.Campaigns.PlayerLog do
       prepare build(sort: [inserted_at: :asc, id: :asc])
     end
 
+    # Plain text for a language model, as the actor may read it. Used by the MCP tools.
+    action :describe, :map do
+      argument :id, :uuid, allow_nil?: false
+      run {Atlas.Mcp.Describe, fields: [:id], sections: [:body]}
+    end
+
     # Starting a log twice keeps the first one.
     create :create do
       primary? true
@@ -49,6 +55,10 @@ defmodule Atlas.Campaigns.PlayerLog do
   policies do
     policy always() do
       forbid_unless actor_present()
+      authorize_if always()
+    end
+
+    policy action(:describe) do
       authorize_if always()
     end
 

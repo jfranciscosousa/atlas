@@ -17,6 +17,23 @@ defmodule Atlas.Content do
   end
 
   tools do
+    tool :create_note, Atlas.Content.Note, :create,
+      description:
+        "Create an empty note in a campaign. It starts hidden. Use write_text for the body."
+
+    tool :rename_note, Atlas.Content.Note, :rename, description: "Change the title of a note."
+
+    tool :archive_note, Atlas.Content.Note, :archive,
+      description: "Archive a note. Notes are never deleted."
+
+    tool :restore_note, Atlas.Content.Note, :restore, description: "Restore an archived note."
+
+    tool :reveal_note, Atlas.Content.Note, :reveal,
+      description: "Reveal a note: every member of the campaign can then read it."
+
+    tool :hide_note, Atlas.Content.Note, :hide,
+      description: "Hide a note again: only its owner and the GM can read it."
+
     tool :list_notes, Atlas.Content.Note, :list,
       select: [:id, :title, :revealed],
       description: "List the active notes of a campaign that you can read."

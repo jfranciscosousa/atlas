@@ -16,7 +16,8 @@ defmodule Atlas.Content.Checks.ActorIsCampaignMember do
 
   def match?(actor, %{subject: %Ash.Changeset{} = changeset}, _opts) do
     case Ash.Changeset.get_attribute(changeset, :campaign_id) do
-      nil -> false
+      # AshAi lists a tool when the action passes with empty input. The real call names a campaign.
+      nil -> get_in(changeset.context, [:private, :ash_ai_pre_check?]) == true
       campaign_id -> match?({:ok, %Campaign{}}, Ash.get(Campaign, campaign_id, actor: actor))
     end
   end

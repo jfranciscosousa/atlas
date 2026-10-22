@@ -22,9 +22,10 @@ export function McpSettings({ userId }: { userId: string }) {
         <h2 className="text-lg font-semibold">MCP server</h2>
         <p className="text-sm text-muted-foreground">
           Add this URL as a remote MCP server in Claude, ChatGPT, opencode or
-          pi. Atlas asks you to sign in and allow the app. The app can read what
-          you can read: your campaigns, sessions, characters and notes,
-          including GM-only text. It cannot change anything.
+          pi. Atlas asks you to sign in and allow the app. The app acts as you:
+          it reads your campaigns, sessions, characters and notes, including
+          GM-only text, and it writes where you can write. It creates sessions
+          and notes, edits text and uploads images. It deletes nothing.
         </p>
       </div>
       <div className="flex gap-2">

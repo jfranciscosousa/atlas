@@ -170,6 +170,8 @@ defmodule Atlas.RichText.Collab do
 
     case result do
       {:ok, {:ok, value}} -> {:ok, value}
+      # A rejection inside the save's own transaction rolls back this one with the changeset.
+      {:error, %Ash.Changeset{} = changeset} -> {:error, {:rejected, error_text(changeset)}}
       {:error, reason} -> {:error, reason}
     end
   end

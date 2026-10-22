@@ -42,7 +42,21 @@ defmodule AtlasWeb.Router do
         :list_characters,
         :get_character,
         :list_notes,
-        :get_note
+        :get_note,
+        :list_player_logs,
+        :get_player_log,
+        :create_campaign,
+        :create_session,
+        :update_session,
+        :rename_character,
+        :create_note,
+        :rename_note,
+        :archive_note,
+        :restore_note,
+        :reveal_note,
+        :hide_note,
+        :upload_image,
+        :write_text
       ]
   end
 

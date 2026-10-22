@@ -40,6 +40,27 @@ defmodule Atlas.Campaigns do
   end
 
   tools do
+    tool :create_campaign, Atlas.Campaigns.Campaign, :create,
+      description: "Create a campaign. You become its GM."
+
+    tool :create_session, Atlas.Campaigns.Session, :create,
+      description: "Add the next session to a campaign you run as GM."
+
+    tool :update_session, Atlas.Campaigns.Session, :update_details,
+      description:
+        "Change the title, the played date or the status (in_prep or done) of a session. Use write_text for the log and the prep."
+
+    tool :rename_character, Atlas.Campaigns.Character, :rename,
+      description: "Change the name of a character."
+
+    tool :list_player_logs, Atlas.Campaigns.PlayerLog, :list,
+      select: [:id],
+      load: [:author_name],
+      description: "List the player logs of a session and who wrote each one."
+
+    tool :get_player_log, Atlas.Campaigns.PlayerLog, :describe,
+      description: "Read one player log as text."
+
     tool :list_campaigns, Atlas.Campaigns.Campaign, :list_as_gm,
       select: [:id, :name],
       description: "List the campaigns you run as GM."

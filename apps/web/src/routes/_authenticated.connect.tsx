@@ -56,9 +56,10 @@ function Connect() {
         Connect {client.data?.name ?? "an app"} to Atlas?
       </h1>
       <p className="text-sm text-muted-foreground">
-        The app will read what you can read in Atlas: your campaigns, sessions,
-        characters and notes, including GM-only text. It cannot change anything.
-        You can revoke the access in Settings.
+        The app will act as you in Atlas. It will read your campaigns, sessions,
+        characters and notes, including GM-only text, and it will write where
+        you can write: it creates sessions and notes, edits text and uploads
+        images. It deletes nothing. You can revoke the access in Settings.
       </p>
       {error && (
         <Alert id="connect-error" variant="destructive">

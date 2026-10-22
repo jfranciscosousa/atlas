@@ -335,11 +335,29 @@ defmodule Atlas.RichText.Collab.Blocks do
   """
   @spec seed([map()]) :: Yex.Doc.t()
   def seed(blocks) when is_list(blocks) do
-    blocks = if blocks == [], do: [empty_paragraph()], else: blocks
     doc = Yex.Doc.new()
-    fragment = Yex.Doc.get_xml_fragment(doc, @fragment)
-    :ok = Yex.XmlFragment.push(fragment, group_prelim(blocks))
+    :ok = replace(doc, blocks)
     doc
+  end
+
+  @doc """
+  Replaces the whole content of a Yjs document with `blocks`, as an edit that other editors of
+  the document merge. The edit deletes what the document holds now.
+  """
+  @spec replace(Yex.Doc.t(), [map()]) :: :ok
+  def replace(%Yex.Doc{} = doc, blocks) do
+    blocks = if blocks == [], do: [empty_paragraph()], else: blocks
+    fragment = Yex.Doc.get_xml_fragment(doc, @fragment)
+    :ok = Yex.XmlFragment.delete(fragment, 0, Yex.XmlFragment.length(fragment))
+    :ok = Yex.XmlFragment.push(fragment, group_prelim(blocks))
+  end
+
+  @doc "Adds `blocks` after the last block of a Yjs document that `seed/1` or an editor made."
+  @spec append(Yex.Doc.t(), [map()]) :: :ok
+  def append(%Yex.Doc{} = doc, blocks) do
+    fragment = Yex.Doc.get_xml_fragment(doc, @fragment)
+    group = Yex.XmlFragment.first_child(fragment)
+    Enum.each(blocks, &(:ok = Yex.XmlElement.push(group, container_prelim(&1))))
   end
 
   defp empty_paragraph do
