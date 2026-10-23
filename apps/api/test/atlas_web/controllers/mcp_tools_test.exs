@@ -193,6 +193,45 @@ defmodule AtlasWeb.McpToolsTest do
     assert %{"body" => "I saw a ghost"} = ok!(ctx.token, "get_player_log", %{input: %{id: id}})
   end
 
+  test "MCP and the app show an unclaimed character the same way", ctx do
+    unclaimed =
+      Ash.create!(
+        Atlas.Campaigns.Character,
+        %{campaign_id: ctx.campaign.id, player_label: "Ana"},
+        action: :create_unclaimed,
+        actor: ctx.gm
+      )
+
+    load = [:player_name, :claimed, :claim_path]
+    app = Ash.get!(Atlas.Campaigns.Character, unclaimed.id, actor: ctx.gm, load: load)
+
+    assert [%{"player_name" => "Ana", "claimed" => false}] =
+             ok!(ctx.token, "list_characters", %{input: %{campaign_id: ctx.campaign.id}})
+
+    assert %{"player_name" => player_name, "claimed" => claimed, "claim_path" => claim_path} =
+             ok!(ctx.token, "get_character", %{input: %{id: unclaimed.id}})
+
+    assert {player_name, claimed, claim_path} == {app.player_name, app.claimed, app.claim_path}
+    assert "/claim/" <> _ = claim_path
+
+    # A player sees the same name and no link, in the app and through MCP.
+    player = Fixtures.user()
+
+    invitation =
+      Ash.create!(Atlas.Campaigns.Invitation, %{campaign_id: ctx.campaign.id}, actor: ctx.gm)
+
+    Ash.create!(Atlas.Campaigns.Character, %{token: invitation.token},
+      action: :join,
+      actor: player
+    )
+
+    app = Ash.get!(Atlas.Campaigns.Character, unclaimed.id, actor: player, load: load)
+    assert %Ash.ForbiddenField{} = app.claim_path
+
+    assert %{"player_name" => "Ana", "claimed" => false, "claim_path" => nil} =
+             ok!(token_for(player), "get_character", %{input: %{id: unclaimed.id}})
+  end
+
   test "upload_image refuses an address inside the server's network", ctx do
     for url <- [
           "http://127.0.0.1/a.png",

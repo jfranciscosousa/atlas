@@ -1,11 +1,14 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
+  claimCharacter,
   createCharacter,
+  createUnclaimedCharacter,
   getCharacter,
   listCharacters,
   renameCharacter,
 } from "@atlas/api-client";
 
+import { campaignsKey } from "./use-campaigns.ts";
 import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
 
 const charactersKey = (campaignId: string) =>
@@ -17,7 +20,7 @@ export function charactersQueryOptions(campaignId: string) {
     run =>
       run({
         input: { campaignId },
-        fields: ["id", "name", "playerName", "isMine"],
+        fields: ["id", "name", "playerName", "isMine", "claimed"],
       }),
     { fallback: "Could not load the characters." }
   );
@@ -37,6 +40,28 @@ export function useCharacterCreate(campaignId: string) {
   );
 }
 
+// The GM prepares a character for a person who has no account yet.
+export function useUnclaimedCharacterCreate(campaignId: string) {
+  return useRpcMutation(
+    createUnclaimedCharacter,
+    (run, playerLabel: string) =>
+      run({ input: { campaignId, playerLabel }, fields: ["id"] }),
+    { fallback: "Could not create the character." }
+  );
+}
+
+export function useClaimCharacter(userId: string) {
+  return useRpcMutation(
+    claimCharacter,
+    (run, token: string) =>
+      run({ input: { token }, fields: ["id", "campaignId"] }),
+    {
+      fallback: "Could not claim the character.",
+      invalidate: [campaignsKey(userId)],
+    }
+  );
+}
+
 export type CharacterSection = "description" | "secret_notes";
 
 // A player's request for the secret notes comes back empty. Only the GM's page reads them.
@@ -52,6 +77,8 @@ export function characterQueryOptions(characterId: string) {
           "name",
           "playerName",
           "isMine",
+          "claimed",
+          "claimPath",
           "descriptionJson",
           "secretNotesJson",
         ],

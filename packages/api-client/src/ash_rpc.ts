@@ -548,6 +548,78 @@ export async function validateGetCampaign(
 }
 
 
+export type ClaimCharacterInput = {
+  token: string;
+};
+
+export type ClaimCharacterFields = UnifiedFieldSelection<CharacterResourceSchema>[];
+
+export type InferClaimCharacterResult<
+  Fields extends ClaimCharacterFields | undefined,
+> = InferResult<CharacterResourceSchema, Fields>;
+
+export type ClaimCharacterResult<Fields extends ClaimCharacterFields | undefined = undefined> = | { success: true; data: InferClaimCharacterResult<Fields>; }
+| { success: false; errors: AshRpcError[]; }
+
+;
+
+/**
+ * Create a new Character
+ *
+ * @ashActionType :create
+ */
+export async function claimCharacter<Fields extends ClaimCharacterFields | undefined = undefined>(
+  config: {
+  tenant?: string;
+  input: ClaimCharacterInput;
+  fields?: Fields;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<ClaimCharacterResult<Fields extends undefined ? [] : Fields>> {
+  const payload = {
+    action: "claim_character",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input,
+    ...(config.fields !== undefined && { fields: config.fields })
+  };
+
+  return executeActionRpcRequest<ClaimCharacterResult<Fields extends undefined ? [] : Fields>>(
+    payload,
+    config
+  );
+}
+
+
+/**
+ * Validate: Create a new Character
+ *
+ * @ashActionType :create
+ * @validation true
+ */
+export async function validateClaimCharacter(
+  config: {
+  tenant?: string;
+  input: ClaimCharacterInput;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<ValidationResult> {
+  const payload = {
+    action: "claim_character",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input
+  };
+
+  return executeValidationRpcRequest<ValidationResult>(
+    payload,
+    config
+  );
+}
+
+
 export type CreateCharacterInput = {
   campaignId: UUID;
 };
@@ -609,6 +681,79 @@ export async function validateCreateCharacter(
 ): Promise<ValidationResult> {
   const payload = {
     action: "create_character",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input
+  };
+
+  return executeValidationRpcRequest<ValidationResult>(
+    payload,
+    config
+  );
+}
+
+
+export type CreateUnclaimedCharacterInput = {
+  campaignId: UUID;
+  playerLabel?: string | null;
+};
+
+export type CreateUnclaimedCharacterFields = UnifiedFieldSelection<CharacterResourceSchema>[];
+
+export type InferCreateUnclaimedCharacterResult<
+  Fields extends CreateUnclaimedCharacterFields | undefined,
+> = InferResult<CharacterResourceSchema, Fields>;
+
+export type CreateUnclaimedCharacterResult<Fields extends CreateUnclaimedCharacterFields | undefined = undefined> = | { success: true; data: InferCreateUnclaimedCharacterResult<Fields>; }
+| { success: false; errors: AshRpcError[]; }
+
+;
+
+/**
+ * Create a new Character
+ *
+ * @ashActionType :create
+ */
+export async function createUnclaimedCharacter<Fields extends CreateUnclaimedCharacterFields | undefined = undefined>(
+  config: {
+  tenant?: string;
+  input: CreateUnclaimedCharacterInput;
+  fields?: Fields;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<CreateUnclaimedCharacterResult<Fields extends undefined ? [] : Fields>> {
+  const payload = {
+    action: "create_unclaimed_character",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input,
+    ...(config.fields !== undefined && { fields: config.fields })
+  };
+
+  return executeActionRpcRequest<CreateUnclaimedCharacterResult<Fields extends undefined ? [] : Fields>>(
+    payload,
+    config
+  );
+}
+
+
+/**
+ * Validate: Create a new Character
+ *
+ * @ashActionType :create
+ * @validation true
+ */
+export async function validateCreateUnclaimedCharacter(
+  config: {
+  tenant?: string;
+  input: CreateUnclaimedCharacterInput;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<ValidationResult> {
+  const payload = {
+    action: "create_unclaimed_character",
     ...(config.tenant !== undefined && { tenant: config.tenant }),
     input: config.input
   };

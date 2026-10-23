@@ -6,9 +6,11 @@ Domain terms for Atlas. Use these words in code and tests.
 
 - **Campaign**: one closed game with one GM and many players. Only members can access it.
 - **GM**: the one person who runs a campaign. Use "GM", not "DM". Roles belong to a campaign, not to an account.
-- **Player**: the person at the table: an account that plays one or more characters in a campaign. The GM is not a player.
-- **Character**: someone a player plays in a campaign. It has a name, which starts empty and shows as "Unnamed character", and a description. Its player is the account that created or joined with it. A player may have several characters in one campaign. Every member reads a character. Its player and the GM write its description. Its player and the GM write its name.
-- **Player name**: the name of the player of a character. It is the account's display name.
+- **Player**: the person at the table: an account that plays one or more characters in a campaign. The GM is not a player. A person without an account has no player; the GM manages their character.
+- **Character**: someone a player plays in a campaign. It has a name, which starts empty and shows as "Unnamed character", and a description. Its player is the account that created it, joined with it, or claimed it. A character with no player is unclaimed. A player may have several characters in one campaign. Every member reads a character. Its player and the GM write its description. Its player and the GM write its name.
+- **Player name**: the name of the player of a character. It is the account's display name. For an unclaimed character it is the label the GM gave.
+- **Unclaimed character**: a character the GM prepared for a person who has no account yet, or who never signs up. It has a player label, no account, and a claim link. Every member reads it. The GM writes its name and description. It makes nobody a member and has no player logs; player logs are optional.
+- **Claim link**: the single-use link to one unclaimed character. Only the GM reads it. Whoever opens it sees the campaign and the character, signs up or signs in, and claims the character. The claimer becomes its player and a member, and the link stops working. The GM cannot claim.
 - **Character description**: the rich text of a character. Every member reads it. Its player and the GM write it.
 - **Secret notes**: the GM-only rich text of a character. Only the GM reads and writes it.
 - **Account**: a signed-in user. An account is not a character.

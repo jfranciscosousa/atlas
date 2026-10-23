@@ -22,6 +22,7 @@ import { Route as GuestSignInRouteImport } from './routes/_guest.sign-in'
 import { Route as AuthenticatedCampaignsIndexRouteImport } from './routes/_authenticated.campaigns.index'
 import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_authenticated.campaigns.$campaignId'
 import { Route as AuthenticatedJoinTokenRouteImport } from './routes/_authenticated.join.$token'
+import { Route as PublicClaimTokenRouteImport } from './routes/_public.claim.$token'
 import { Route as PublicConfirm_new_userTokenRouteImport } from './routes/_public.confirm_new_user.$token'
 import { Route as PublicPasswordResetTokenRouteImport } from './routes/_public.password-reset.$token'
 import { Route as AuthenticatedCampaignsCampaignIdPreviewRouteImport } from './routes/_authenticated.campaigns.$campaignId_.preview'
@@ -96,6 +97,11 @@ const AuthenticatedJoinTokenRoute = AuthenticatedJoinTokenRouteImport.update({
   path: '/join/$token',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const PublicClaimTokenRoute = PublicClaimTokenRouteImport.update({
+  id: '/claim/$token',
+  path: '/claim/$token',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicConfirm_new_userTokenRoute =
   PublicConfirm_new_userTokenRouteImport.update({
     id: '/confirm_new_user/$token',
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof GuestSignInRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/join/$token': typeof AuthenticatedJoinTokenRoute
+  '/claim/$token': typeof PublicClaimTokenRoute
   '/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof GuestSignInRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/join/$token': typeof AuthenticatedJoinTokenRoute
+  '/claim/$token': typeof PublicClaimTokenRoute
   '/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns': typeof AuthenticatedCampaignsIndexRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/_guest/': typeof GuestIndexRoute
   '/_authenticated/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/_authenticated/join/$token': typeof AuthenticatedJoinTokenRoute
+  '/_public/claim/$token': typeof PublicClaimTokenRoute
   '/_public/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/_public/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/campaigns/$campaignId'
     | '/join/$token'
+    | '/claim/$token'
     | '/confirm_new_user/$token'
     | '/password-reset/$token'
     | '/campaigns/'
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/campaigns/$campaignId'
     | '/join/$token'
+    | '/claim/$token'
     | '/confirm_new_user/$token'
     | '/password-reset/$token'
     | '/campaigns'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/_guest/'
     | '/_authenticated/campaigns/$campaignId'
     | '/_authenticated/join/$token'
+    | '/_public/claim/$token'
     | '/_public/confirm_new_user/$token'
     | '/_public/password-reset/$token'
     | '/_authenticated/campaigns/'
@@ -385,6 +397,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/join/$token'
       preLoaderRoute: typeof AuthenticatedJoinTokenRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_public/claim/$token': {
+      id: '/_public/claim/$token'
+      path: '/claim/$token'
+      fullPath: '/claim/$token'
+      preLoaderRoute: typeof PublicClaimTokenRouteImport
+      parentRoute: typeof PublicRoute
     }
     '/_public/confirm_new_user/$token': {
       id: '/_public/confirm_new_user/$token'
@@ -512,11 +531,13 @@ const GuestRouteChildren: GuestRouteChildren = {
 const GuestRouteWithChildren = GuestRoute._addFileChildren(GuestRouteChildren)
 
 interface PublicRouteChildren {
+  PublicClaimTokenRoute: typeof PublicClaimTokenRoute
   PublicConfirm_new_userTokenRoute: typeof PublicConfirm_new_userTokenRoute
   PublicPasswordResetTokenRoute: typeof PublicPasswordResetTokenRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
+  PublicClaimTokenRoute: PublicClaimTokenRoute,
   PublicConfirm_new_userTokenRoute: PublicConfirm_new_userTokenRoute,
   PublicPasswordResetTokenRoute: PublicPasswordResetTokenRoute,
 }

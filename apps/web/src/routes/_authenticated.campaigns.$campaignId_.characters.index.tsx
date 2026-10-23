@@ -15,6 +15,7 @@ import {
 } from "../components/ui/empty";
 import { Badge } from "../components/ui/badge";
 import { PageHeader } from "../components/page-header";
+import { NewUnclaimedCharacterButton } from "../components/new-unclaimed-character-button";
 import { NewCharacterButton } from "../components/new-character-button";
 import { InvitePlayersButton } from "../components/campaign-players";
 
@@ -59,10 +60,13 @@ function CharactersPage() {
         description="Who is in this campaign and who plays them. Each player writes their own characters."
         actions={
           campaign.isGm ? (
-            <InvitePlayersButton
-              campaignId={campaignId}
-              gmName={campaign.gmName}
-            />
+            <div className="flex flex-wrap gap-2">
+              <NewUnclaimedCharacterButton campaignId={campaignId} />
+              <InvitePlayersButton
+                campaignId={campaignId}
+                gmName={campaign.gmName}
+              />
+            </div>
           ) : (
             <NewCharacterButton campaignId={campaignId} />
           )
@@ -77,7 +81,7 @@ function CharactersPage() {
             <EmptyTitle>No characters yet</EmptyTitle>
             <EmptyDescription>
               {campaign.isGm
-                ? "Share the invite link to add some."
+                ? "Share the invite link, or prepare a character."
                 : "Nothing here yet."}
             </EmptyDescription>
           </EmptyHeader>
@@ -101,6 +105,9 @@ function CharactersPage() {
                   </span>
                 </span>
                 {character.isMine && <Badge variant="secondary">You</Badge>}
+                {!character.claimed && (
+                  <Badge variant="outline">Unclaimed</Badge>
+                )}
                 <ChevronRightIcon
                   aria-hidden="true"
                   className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"

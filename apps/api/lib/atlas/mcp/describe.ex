@@ -10,8 +10,12 @@ defmodule Atlas.Mcp.Describe do
 
   @impl true
   def run(input, opts, context) do
-    with {:ok, record} <- Ash.get(input.resource, input.arguments.id, actor: context.actor) do
-      fields = Map.new(opts[:fields], &{&1, Map.fetch!(record, &1)})
+    with {:ok, record} <-
+           Ash.get(input.resource, input.arguments.id,
+             actor: context.actor,
+             load: Keyword.get(opts, :load, [])
+           ) do
+      fields = Map.new(opts[:fields], &{&1, field(Map.fetch!(record, &1))})
 
       documents =
         Map.new(opts[:sections], fn section ->
@@ -36,6 +40,10 @@ defmodule Atlas.Mcp.Describe do
 
   defp campaign_id(%Atlas.Campaigns.PlayerLog{session_id: session_id}),
     do: Ash.get!(Atlas.Campaigns.Session, session_id, authorize?: false).campaign_id
+
+  # A field policy replaces a hidden value with a `%Ash.ForbiddenField{}`.
+  defp field(%Ash.ForbiddenField{}), do: nil
+  defp field(value), do: value
 
   # A field policy replaces a hidden section with a `%Ash.ForbiddenField{}`.
   defp text(blocks, labels) when is_list(blocks), do: PlainText.render(blocks, labels: labels)

@@ -64,6 +64,7 @@ defmodule AtlasWeb.Router do
     pipe_through :api
 
     get "/api/session", SessionController, :show
+    get "/api/claims/:token", ClaimController, :show
     delete "/api/session", SessionController, :delete
     post "/rpc/run", AshTypescriptRpcController, :run
     post "/rpc/validate", AshTypescriptRpcController, :validate

@@ -64,14 +64,19 @@ export type CampaignAttributesOnlySchema = {
 // Character Schema
 export type CharacterResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "isMine" | "name" | "playerName" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
+  __primitiveFields: "campaignId" | "campaignName" | "claimPath" | "claimed" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "gmName" | "id" | "isMine" | "name" | "playerLabel" | "playerName" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
   campaignId: UUID;
+  campaignName: string | null;
+  claimPath: string | null;
+  claimed: boolean | null;
   descriptionJson: Array<Record<string, unknown>>;
   descriptionRevision: number;
   descriptionSchemaVersion: number;
+  gmName: string | null;
   id: UUID;
   isMine: boolean | null;
   name: string | null;
+  playerLabel: string | null;
   playerName: string | null;
   secretNotesJson: Array<Record<string, unknown>>;
   secretNotesRevision: number;
@@ -83,13 +88,14 @@ export type CharacterResourceSchema = {
 
 export type CharacterAttributesOnlySchema = {
   __type: "Resource";
-  __primitiveFields: "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "name" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
+  __primitiveFields: "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "name" | "playerLabel" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
   campaignId: UUID;
   descriptionJson: Array<Record<string, unknown>>;
   descriptionRevision: number;
   descriptionSchemaVersion: number;
   id: UUID;
   name: string | null;
+  playerLabel: string | null;
   secretNotesJson: Array<Record<string, unknown>>;
   secretNotesRevision: number;
   secretNotesSchemaVersion: number;
@@ -458,6 +464,41 @@ export type CharacterFilterInput = {
     greaterThanOrEqual?: UUID;
   };
 
+  campaignName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  claimPath?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  claimed?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
   descriptionJson?: {
     eq?: Array<Record<string, unknown>>;
     notEq?: Array<Record<string, unknown>>;
@@ -488,6 +529,20 @@ export type CharacterFilterInput = {
     greaterThanOrEqual?: number;
   };
 
+  gmName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
   id?: {
     eq?: UUID;
     notEq?: UUID;
@@ -506,6 +561,20 @@ export type CharacterFilterInput = {
   };
 
   name?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  playerLabel?: {
     isNil?: boolean;
     eq?: string;
     notEq?: string;
@@ -1074,7 +1143,7 @@ export type UserFilterField = (typeof userFilterFields)[number];
 export const campaignFilterFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isGm", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
 export type CampaignFilterField = (typeof campaignFilterFields)[number];
 
-export const characterFilterFields = ["campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "id", "isMine", "name", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "campaign"] as const;
+export const characterFilterFields = ["campaignId", "campaignName", "claimPath", "claimed", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isMine", "name", "playerLabel", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "campaign"] as const;
 export type CharacterFilterField = (typeof characterFilterFields)[number];
 
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
@@ -1105,7 +1174,7 @@ export type UserSortField = (typeof userSortFields)[number];
 export const campaignSortFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isGm", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
 export type CampaignSortField = (typeof campaignSortFields)[number];
 
-export const characterSortFields = ["campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "id", "isMine", "name", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion"] as const;
+export const characterSortFields = ["campaignId", "campaignName", "claimPath", "claimed", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isMine", "name", "playerLabel", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion"] as const;
 export type CharacterSortField = (typeof characterSortFields)[number];
 
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;

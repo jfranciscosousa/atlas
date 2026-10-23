@@ -29,6 +29,8 @@ defmodule Atlas.Campaigns do
       rpc_action :create_character, :create
       rpc_action :rename_character, :rename
       rpc_action :join_campaign, :join
+      rpc_action :create_unclaimed_character, :create_unclaimed
+      rpc_action :claim_character, :claim
     end
 
     resource Atlas.Campaigns.Invitation do
@@ -77,11 +79,13 @@ defmodule Atlas.Campaigns do
 
     tool :list_characters, Atlas.Campaigns.Character, :list,
       select: [:id, :name],
-      load: [:player_name],
-      description: "List the characters of a campaign and who plays them."
+      load: [:player_name, :claimed],
+      description:
+        "List the characters of a campaign, who plays them, and whether a player has claimed each one."
 
     tool :get_character, Atlas.Campaigns.Character, :describe,
-      description: "Read a character: its name, description and GM-only secret notes as text."
+      description:
+        "Read a character: its name, player, description and GM-only secret notes as text. The GM also gets the path of the claim link of an unclaimed character."
   end
 
   resources do

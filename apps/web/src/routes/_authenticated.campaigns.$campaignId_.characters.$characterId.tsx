@@ -19,6 +19,7 @@ import { buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
 import { PageHeader } from "../components/page-header";
+import { ClaimLink } from "../components/claim-link";
 
 export const Route = createFileRoute(
   "/_authenticated/campaigns/$campaignId_/characters/$characterId"
@@ -84,8 +85,14 @@ function CharacterPage() {
           { label: title },
         ]}
         title={title}
-        description={`Played by ${character.playerName ?? "a player"}`}
+        description={`Played by ${character.playerName ?? "a player"}${character.claimed ? "" : " (unclaimed)"}`}
       />
+      {character.claimPath && (
+        <ClaimLink
+          claimPath={character.claimPath}
+          playerName={character.playerName}
+        />
+      )}
       {(character.isMine || campaign.isGm) && (
         <div className="grid gap-3">
           <Input

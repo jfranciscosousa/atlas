@@ -5,6 +5,11 @@ defmodule Atlas.Campaigns.Character do
   The account is the player: the person at the table. `player_name` is that person's name. The
   character's own `name` starts empty and shows as "Unnamed character".
 
+  The GM may prepare an unclaimed character for a person who has no account yet. It has no
+  account, only a `player_label`, and a single-use claim link. The person opens the link, signs
+  up or signs in, and claims it. A person who never signs up stays unclaimed, and the GM manages
+  the character. An unclaimed character makes nobody a member.
+
   A person joins with the token of an active invitation. The token is the credential, so the
   join action needs only a signed-in account. Joining creates the first character; joining again
   keeps it. A player adds more characters with `create`. Leaving and removal do not exist yet.
@@ -25,9 +30,14 @@ defmodule Atlas.Campaigns.Character do
     repo Atlas.Repo
   end
 
-  # A player never receives the secret notes, even when a request asks for them.
+  # A player never receives the secret notes or the claim link, even when a request asks for them.
   field_policies do
-    field_policy [:secret_notes_json, :secret_notes_schema_version, :secret_notes_revision] do
+    field_policy [
+      :secret_notes_json,
+      :secret_notes_schema_version,
+      :secret_notes_revision,
+      :claim_path
+    ] do
       authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
     end
 
@@ -67,6 +77,42 @@ defmodule Atlas.Campaigns.Character do
       change relate_actor(:user)
     end
 
+    # The GM prepares a character for a person who plays without an account, or before they sign up.
+    create :create_unclaimed do
+      accept [:campaign_id, :player_label]
+      validate present(:player_label)
+      change set_attribute(:claim_token, &Atlas.Campaigns.Character.new_claim_token/0)
+    end
+
+    # The claim page reads this without an account. The token is the credential.
+    read :by_claim_token do
+      argument :token, :string, allow_nil?: false
+      get? true
+      filter expr(claim_token == ^arg(:token) and is_nil(user_id))
+    end
+
+    # The token is the credential, so claiming needs only a signed-in account.
+    create :claim do
+      argument :token, :string, allow_nil?: false
+      change Atlas.Campaigns.Character.Claim
+      manual Atlas.Campaigns.Character.ClaimManual
+    end
+
+    # Internal: `claim` calls it after it has checked the token.
+    update :assign_player do
+      require_atomic? false
+      argument :user_id, :uuid, allow_nil?: false
+
+      change fn changeset, _ ->
+        changeset
+        |> Ash.Changeset.force_change_attribute(
+          :user_id,
+          Ash.Changeset.get_argument(changeset, :user_id)
+        )
+        |> Ash.Changeset.force_change_attribute(:claim_token, nil)
+      end
+    end
+
     update :rename do
       accept [:name]
     end
@@ -74,12 +120,21 @@ defmodule Atlas.Campaigns.Character do
     # Plain text for a language model, as the actor may read it. Used by the MCP tools.
     action :describe, :map do
       argument :id, :uuid, allow_nil?: false
-      run {Atlas.Mcp.Describe, fields: [:id, :name], sections: [:description, :secret_notes]}
+
+      run {Atlas.Mcp.Describe,
+           fields: [:id, :name, :player_name, :claimed, :claim_path],
+           load: [:player_name, :claimed, :claim_path],
+           sections: [:description, :secret_notes]}
     end
   end
 
   # Members and the GM can see who plays. Everyone else gets not found.
   policies do
+    # A person without an account opens a claim link, so this read needs no actor.
+    bypass action(:by_claim_token) do
+      authorize_if always()
+    end
+
     policy always() do
       forbid_unless actor_present()
       authorize_if always()
@@ -98,8 +153,12 @@ defmodule Atlas.Campaigns.Character do
       authorize_if always()
     end
 
-    policy action(:join) do
+    policy action([:join, :claim]) do
       authorize_if always()
+    end
+
+    policy action(:create_unclaimed) do
+      authorize_if Atlas.Content.Checks.ActorIsCampaignGm
     end
 
     policy action(:create) do
@@ -129,6 +188,15 @@ defmodule Atlas.Campaigns.Character do
       constraints max_length: 200, trim?: true
     end
 
+    # Shown as the player's name until someone claims the character.
+    attribute :player_label, :string do
+      public? true
+      constraints max_length: 100, trim?: true
+    end
+
+    # Set while the character is unclaimed. Claiming clears it, so a link works once.
+    attribute :claim_token, :string
+
     create_timestamp :inserted_at
   end
 
@@ -139,13 +207,31 @@ defmodule Atlas.Campaigns.Character do
     end
 
     belongs_to :user, Atlas.Accounts.User do
-      allow_nil? false
       attribute_writable? false
     end
   end
 
   calculations do
-    calculate :player_name, :string, expr(user.display_name), public?: true
-    calculate :is_mine, :boolean, expr(user_id == ^actor(:id)), public?: true
+    calculate :player_name, :string, expr(user.display_name || player_label), public?: true
+    calculate :claimed, :boolean, expr(not is_nil(user_id)), public?: true
+
+    calculate :is_mine,
+              :boolean,
+              expr(not is_nil(user_id) and user_id == ^actor(:id)),
+              public?: true
+
+    calculate :claim_path,
+              :string,
+              expr(if is_nil(claim_token), do: nil, else: "/claim/" <> claim_token),
+              public?: true
+
+    calculate :campaign_name, :string, expr(campaign.name), public?: true
+    calculate :gm_name, :string, expr(campaign.gm.display_name), public?: true
   end
+
+  identities do
+    identity :unique_claim_token, [:claim_token]
+  end
+
+  def new_claim_token, do: :crypto.strong_rand_bytes(24) |> Base.url_encode64(padding: false)
 end
