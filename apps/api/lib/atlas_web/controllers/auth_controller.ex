@@ -2,6 +2,8 @@ defmodule AtlasWeb.AuthController do
   use AtlasWeb, :controller
   use AshAuthentication.Phoenix.Controller
 
+  alias AshAuthentication.Errors.UnconfirmedUser
+
   defdelegate sign_out(conn, params), to: AtlasWeb.SessionController, as: :delete
 
   def success(conn, {:password, :reset_request}, _user, _token) do
@@ -17,6 +19,10 @@ defmodule AtlasWeb.AuthController do
     |> store_in_session(user)
     |> AtlasWeb.SessionController.respond(user)
   end
+
+  # Registration creates the account but signs nobody in: the person must confirm the email first.
+  def failure(conn, {:password, :register}, %{caused_by: %UnconfirmedUser{}}),
+    do: AtlasWeb.SessionController.respond(conn, nil)
 
   def failure(conn, activity, reason) do
     {status, message, fields} =
@@ -37,6 +43,15 @@ defmodule AtlasWeb.AuthController do
             end
 
           {422, message, fields}
+
+        {:password, :sign_in} ->
+          if match?(%{caused_by: %UnconfirmedUser{}}, reason) do
+            {401,
+             "Confirm your email address to sign in. Use the link we sent you, or reset your password to confirm by email.",
+             %{}}
+          else
+            {401, "Incorrect email or password", %{}}
+          end
 
         {:confirm_new_user, :confirm} ->
           {422, "This confirmation link is invalid or has expired.", %{}}

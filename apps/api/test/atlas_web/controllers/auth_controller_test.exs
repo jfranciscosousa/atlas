@@ -14,14 +14,69 @@ defmodule AtlasWeb.AuthControllerTest do
     assert get_resp_header(conn, "cache-control") == ["no-store"]
   end
 
-  test "registration, session persistence, logout, and password login", %{conn: conn} do
+  test "registration signs nobody in until the email is confirmed", %{conn: conn} do
     registered = register(conn)
+
+    assert %{"user" => nil, "csrfToken" => _} = json_response(registered, 200)
+    refute get_session(registered, :user_token)
+    assert is_binary(email_token("Confirm your email address", "confirm_new_user"))
+
+    user = Atlas.Fixtures.user_by_email("new@example.com")
+    assert user.display_name == "New User"
+    assert is_nil(user.confirmed_at)
+
+    unconfirmed =
+      post(conn, ~p"/auth/user/password/sign_in",
+        user: %{email: "new@example.com", password: @password}
+      )
+
+    assert %{"error" => "Confirm your email address to sign in." <> _} =
+             json_response(unconfirmed, 401)
+
+    refute get_session(unconfirmed, :user_token)
+
+    wrong_password =
+      post(conn, ~p"/auth/user/password/sign_in",
+        user: %{email: "new@example.com", password: "wrong-password"}
+      )
+
+    assert %{"error" => "Incorrect email or password"} = json_response(wrong_password, 401)
+  end
+
+  test "a password reset confirms the email", %{conn: conn} do
+    assert register(conn).status == 200
+
+    assert post(conn, ~p"/auth/user/password/reset_request", user: %{email: "new@example.com"}).status ==
+             200
+
+    token = email_token("Reset your password", "password-reset")
+
+    reset =
+      post(conn, ~p"/auth/user/password/reset",
+        user: %{
+          reset_token: token,
+          password: "replacement-password",
+          password_confirmation: "replacement-password"
+        }
+      )
+
+    assert reset.status == 200
+
+    signed_in =
+      post(conn, ~p"/auth/user/password/sign_in",
+        user: %{email: "new@example.com", password: "replacement-password"}
+      )
+
+    assert %{"user" => %{"email" => "new@example.com"}} = json_response(signed_in, 200)
+  end
+
+  test "session persistence, logout, and password login", %{conn: conn} do
+    registered = register_confirmed(conn)
 
     assert %{"user" => %{"id" => id, "email" => "new@example.com"}, "csrfToken" => _} =
              json_response(registered, 200)
 
     assert is_binary(id)
-    assert Ash.get!(Atlas.Accounts.User, id, authorize?: false).display_name == "New User"
     assert get_session(registered, :user_token)
     assert Map.keys(json_response(registered, 200)["user"]) == ["email", "id"]
 
@@ -146,7 +201,7 @@ defmodule AtlasWeb.AuthControllerTest do
   end
 
   test "password reset revokes old sessions and the reset token", %{conn: conn} do
-    registered = register(conn)
+    registered = register_confirmed(conn)
     %{"user" => %{"id" => id}} = json_response(registered, 200)
 
     assert post(conn, ~p"/auth/user/password/reset_request", user: %{email: "new@example.com"}).status ==
@@ -229,9 +284,9 @@ defmodule AtlasWeb.AuthControllerTest do
   end
 
   test "email confirmation requires a POST and confirms only once", %{conn: conn} do
-    registered = register(conn)
-    %{"user" => %{"id" => id}} = json_response(registered, 200)
+    assert register(conn).status == 200
     token = email_token("Confirm your email address", "confirm_new_user")
+    id = Atlas.Fixtures.user_by_email("new@example.com").id
 
     assert conn |> get("/auth/user/confirm_new_user?confirm=" <> token) |> json_response(404)
 
@@ -296,13 +351,13 @@ defmodule AtlasWeb.AuthControllerTest do
       |> put_req_header("x-csrf-token", token)
       |> register()
 
-    assert %{"user" => %{"email" => "new@example.com"}} = json_response(registered, 200)
+    assert %{"user" => nil, "csrfToken" => _} = json_response(registered, 200)
   end
 
   test "logout returns a valid CSRF token for the next login", %{conn: conn} do
     anonymous = get(conn, ~p"/api/session")
     token = json_response(anonymous, 200)["csrfToken"]
-    registered = anonymous |> csrf_request(token) |> register()
+    registered = anonymous |> csrf_request(token) |> register_confirmed()
     token = json_response(registered, 200)["csrfToken"]
 
     signed_out = registered |> csrf_request(token) |> delete(~p"/api/session")
@@ -329,6 +384,12 @@ defmodule AtlasWeb.AuthControllerTest do
     |> recycle()
     |> put_private(:plug_skip_csrf_protection, false)
     |> put_req_header("x-csrf-token", token)
+  end
+
+  defp register_confirmed(conn) do
+    assert register(conn).status == 200
+    token = email_token("Confirm your email address", "confirm_new_user")
+    post(conn, ~p"/auth/user/confirm_new_user", user: %{confirm: token})
   end
 
   defp register(conn) do

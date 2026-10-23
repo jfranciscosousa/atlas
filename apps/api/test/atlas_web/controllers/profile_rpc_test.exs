@@ -156,8 +156,8 @@ defmodule AtlasWeb.ProfileRpcTest do
         }
       )
 
-    assert %{"user" => %{"id" => _}} = json_response(response, 200)
-    response
+    assert %{"user" => nil} = json_response(response, 200)
+    AtlasWeb.RpcHelpers.confirm_email(conn)
   end
 
   defp rpc(conn, action, params, status \\ 200) do

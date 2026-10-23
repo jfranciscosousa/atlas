@@ -36,6 +36,7 @@ defmodule Atlas.Accounts.User do
         identity_field :email
         hash_provider AshAuthentication.BcryptProvider
         sign_in_tokens_enabled? false
+        require_confirmed_with :confirmed_at
 
         resettable do
           sender Atlas.Accounts.User.Senders.SendPasswordResetEmail

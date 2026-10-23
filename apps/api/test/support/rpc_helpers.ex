@@ -17,6 +17,18 @@ defmodule AtlasWeb.RpcHelpers do
         }
       )
 
+    assert %{"user" => nil} = json_response(response, 200)
+    confirm_email(conn)
+  end
+
+  @doc "Confirms the account from the email it was sent. This signs the person in."
+  def confirm_email(conn) do
+    assert_receive {:email, %Swoosh.Email{subject: "Confirm your email address", html_body: body}}
+    [_, token] = Regex.run(~r{href="http://localhost:3000/confirm_new_user/([^"]+)"}, body)
+
+    response =
+      post(conn, "/auth/user/confirm_new_user", user: %{confirm: URI.decode_www_form(token)})
+
     assert %{"user" => %{"id" => _}} = json_response(response, 200)
     response
   end

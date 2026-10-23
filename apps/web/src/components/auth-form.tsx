@@ -79,12 +79,17 @@ export function AuthForm(props: AuthFormProps) {
               : registering
                 ? value
                 : { email: value.email, password: value.password };
-        await sessionRequest(copy.endpoint, {
+        const session = await sessionRequest(copy.endpoint, {
           method: "POST",
           queryClient,
           user,
         });
-        if (mode === "reset-request" || mode === "reset-password") {
+        // Registration signs nobody in: the person must confirm the email first.
+        if (
+          mode === "reset-request" ||
+          mode === "reset-password" ||
+          (registering && !session.user)
+        ) {
           if (mode === "reset-password") await router.invalidate();
           setComplete(true);
         } else {
@@ -111,25 +116,33 @@ export function AuthForm(props: AuthFormProps) {
   });
 
   if (complete) {
+    const done = {
+      register: {
+        id: "confirmation-sent",
+        title: "Check your inbox",
+        text: "We sent you a link. Confirm your email address, then sign in.",
+      },
+      "reset-request": {
+        id: "reset-request-sent",
+        title: "Check your inbox",
+        text: "If an account exists for this email address, you will receive a password reset link.",
+      },
+      "reset-password": {
+        id: "password-reset-complete",
+        title: "Password reset",
+        text: "Sign in with your new password. Your previous sessions have been signed out.",
+      },
+    }[mode as "register" | "reset-request" | "reset-password"];
+
     return (
-      <div
-        id={
-          mode === "reset-request"
-            ? "reset-request-sent"
-            : "password-reset-complete"
-        }
-        role="status"
-      >
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {mode === "reset-request" ? "Check your inbox" : "Password reset"}
-        </h1>
+      <div id={done.id} role="status">
+        <h1 className="text-3xl font-semibold tracking-tight">{done.title}</h1>
         <p className="mt-4 text-sm leading-7 text-muted-foreground">
-          {mode === "reset-request"
-            ? "If an account exists for this email address, you will receive a password reset link."
-            : "Sign in with your new password. Your previous sessions have been signed out."}
+          {done.text}
         </p>
         <Link
           to="/sign-in"
+          search={{ redirect: registering ? props.redirect : undefined }}
           className={buttonVariants({ variant: "link", className: "mt-6" })}
         >
           Back to sign in
