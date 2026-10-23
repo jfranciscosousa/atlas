@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Prepare a new git worktree: copy built dependencies from the main checkout, install, and create
+# the worktree's own database. T3 Code runs this on worktree creation. Safe to run again.
+set -euo pipefail
+
+worktree=$(git rev-parse --show-toplevel)
+main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+lock="$main/.git/worktree-setup.lock"
+
+warn() { echo "worktree-setup: $*" >&2; }
+
+# mkdir is the portable lock. shortcut: a killed script leaves a stale lock, delete $lock by hand.
+acquire_lock() {
+  local waited=0
+  until mkdir "$lock" 2>/dev/null; do
+    waited=$((waited + 1))
+    ((waited > 300)) && return 1
+    sleep 1
+  done
+  trap 'rmdir "$lock"' EXIT
+}
+
+refresh_main() {
+  cd "$main"
+  [[ $(git branch --show-current) == master ]] && git diff --quiet HEAD \
+    && GIT_TERMINAL_PROMPT=0 timeout 60 git fetch --quiet origin master \
+    && git merge --ff-only --quiet origin/master \
+    || warn "main not updated, using what it has"
+  # These commands do nothing when main is already current.
+  pnpm install --frozen-lockfile --prefer-offline \
+    && cd apps/api && mix deps.get && mix deps.compile && MIX_ENV=test mix deps.compile \
+    || warn "main dependencies not refreshed"
+}
+
+copy_from_main() {
+  local dir
+  for dir in deps _build; do
+    [[ -d "$main/apps/api/$dir" && ! -e "$worktree/apps/api/$dir" ]] \
+      && cp -a "$main/apps/api/$dir" "$worktree/apps/api/$dir"
+  done
+  return 0
+}
+
+if [[ "$main" != "$worktree" ]]; then
+  if acquire_lock; then
+    (refresh_main) || true
+    copy_from_main
+    rmdir "$lock" && trap - EXIT
+  else
+    warn "main is locked by another setup, skipping the copy"
+  fi
+fi
+
+cd "$worktree"
+pnpm install --frozen-lockfile --prefer-offline
+cd apps/api
+mix setup
+mix compile
+
+db=$(elixir -e 'IO.puts(elem(Code.eval_file("config/worktree.exs"), 0))')
+echo "worktree-setup: done. Dev database: atlas_dev$db, test database: atlas_test$db"

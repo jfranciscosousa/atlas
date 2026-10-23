@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Drop the databases of deleted worktrees. Lists them only, unless you pass --force.
+# Needs PGPORT when Postgres does not run on 5432.
+set -euo pipefail
+
+force=false
+[[ "${1:-}" == "--force" ]] && force=true
+
+export PGHOST=localhost PGUSER=postgres PGPASSWORD=postgres
+psql_run() { psql -X -qAt "$@" postgres; }
+
+# Ask each live worktree for its suffix, so the naming rule stays in config/worktree.exs only.
+live=$(git worktree list --porcelain | sed -n 's/^worktree //p' | elixir -e '
+  for dir <- IO.stream(:stdio, :line),
+      file = Path.join(String.trim(dir), "apps/api/config/worktree.exs"),
+      File.regular?(file),
+      do: IO.puts(elem(Code.eval_file(file), 0))')
+
+orphans=()
+while IFS= read -r db; do
+  suffix=${db#atlas_dev}
+  suffix=${suffix#atlas_test}
+  grep -qxF -- "$suffix" <<<"$live" || orphans+=("$db")
+done < <(psql_run -c "select datname from pg_database where datname ~ '^atlas_(dev|test)_'")
+
+((${#orphans[@]})) || { echo "worktree-prune: no orphan databases"; exit 0; }
+
+for db in "${orphans[@]}"; do
+  if $force; then
+    psql_run -c "drop database \"$db\"" >/dev/null && echo "dropped $db" || echo "could not drop $db" >&2
+  else
+    echo "orphan $db"
+  fi
+done
+$force || echo "worktree-prune: nothing dropped. Run again with --force to drop them."

@@ -4,12 +4,14 @@ config :ash, policies: [show_policy_breakdowns?: true]
 # Set FRONTEND_URL to the public URL (for example the Tailscale one) to connect an MCP client.
 config :atlas, frontend_url: System.get_env("FRONTEND_URL", "http://localhost:3000")
 
+{db_suffix, _} = Code.eval_file("worktree.exs", __DIR__)
+
 config :atlas, Atlas.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",
   port: String.to_integer(System.get_env("PGPORT", "5432")),
-  database: "atlas_dev",
+  database: "atlas_dev#{db_suffix}",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10

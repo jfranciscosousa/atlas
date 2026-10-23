@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# T3 Code runs this when a thread settles. It removes the other clean worktrees whose commits are all
+# in origin/master and are at least a day old, then drops the databases of worktrees that no longer exist.
+# It only lists what it would do, unless you pass --force.
+set -euo pipefail
+
+force=false
+[[ "${1:-}" == "--force" ]] && force=true
+
+here=$(cd "$(dirname "$0")" && pwd)
+current=$(git rev-parse --show-toplevel)
+main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+
+# A fresh worktree is also an ancestor of origin/master, so it must show a commit of its own.
+remove_if_merged() {
+  local path=$1 branch=$2
+  [[ -z $(git -C "$path" status --porcelain 2>/dev/null || echo unreadable) ]] || return 0
+  git merge-base --is-ancestor "$branch" origin/master || return 0
+  (($(git reflog show --format=%gs "$branch" | grep -c '^commit') > 0)) || return 0
+  (($(git log -1 --format=%ct "$branch") < $(date +%s) - 86400)) || return 0
+  if $force; then
+    git worktree remove "$path" && git branch -D "$branch" >/dev/null && echo "removed $path ($branch)"
+  else
+    echo "would remove $path ($branch)"
+  fi
+}
+
+GIT_TERMINAL_PROMPT=0 timeout 60 git fetch --quiet origin master 2>/dev/null || echo "worktree-cleanup: fetch failed, using the last known origin/master" >&2
+
+path="" branch=""
+while IFS= read -r line; do
+  case $line in
+    "worktree "*) path=${line#worktree }; branch="" ;;
+    "branch refs/heads/"*) branch=${line#branch refs/heads/} ;;
+    "")
+      if [[ -n $path && $path != "$main" && $path != "$current" && $branch =~ ^(fs|t3)/ ]]; then
+        remove_if_merged "$path" "$branch" || true
+      fi
+      path="" ;;
+  esac
+done < <(git worktree list --porcelain; echo)
+
+"$here/worktree-prune" ${force:+--force} 2>&1 | grep -v "native name encoding" || true

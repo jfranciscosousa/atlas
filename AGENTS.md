@@ -18,6 +18,11 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 - Fix failures before reporting completion.
 - Apply every new migration to the development database yourself. Do not ask. Find the database
   the running dev server uses first: its `PGPORT` is not always the default.
+- A worktree has its own databases, `atlas_dev_<slug>` and `atlas_test_<slug>`. `scripts/worktree-setup`
+  creates them and copies built dependencies from the main checkout. T3 Code runs it on worktree creation.
+  `scripts/worktree-prune` lists the databases of deleted worktrees; `--force` drops them.
+  `scripts/worktree-cleanup` runs when a T3 thread settles. It removes old, clean, fully merged worktrees and
+  prunes; it only lists them unless you pass `--force`.
 
 ## Git
 

@@ -11,12 +11,14 @@ config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
+{db_suffix, _} = Code.eval_file("worktree.exs", __DIR__)
+
 config :atlas, Atlas.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",
   port: String.to_integer(System.get_env("PGPORT", "5432")),
-  database: "atlas_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: "atlas_test#{db_suffix}#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
