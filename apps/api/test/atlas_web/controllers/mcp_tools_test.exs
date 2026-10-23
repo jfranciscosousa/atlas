@@ -193,6 +193,31 @@ defmodule AtlasWeb.McpToolsTest do
     assert %{"body" => "I saw a ghost"} = ok!(ctx.token, "get_player_log", %{input: %{id: id}})
   end
 
+  test "the GM prepares an unclaimed character through MCP and gets the claim link", ctx do
+    created =
+      ok!(ctx.token, "create_unclaimed_character", %{
+        input: %{campaign_id: ctx.campaign.id, player_label: "Ana"}
+      })
+
+    assert %{"player_name" => "Ana", "claim_path" => "/claim/" <> _} = created
+
+    assert %{claimed: false, player_label: "Ana"} =
+             Ash.get!(Atlas.Campaigns.Character, created["id"], actor: ctx.gm, load: [:claimed])
+
+    assert {true, _} =
+             call(ctx.token, "create_unclaimed_character", %{
+               input: %{campaign_id: ctx.campaign.id, player_label: ""}
+             })
+
+    # Only the GM of the campaign prepares one.
+    player = Fixtures.user()
+
+    assert {true, _} =
+             call(token_for(player), "create_unclaimed_character", %{
+               input: %{campaign_id: ctx.campaign.id, player_label: "Bo"}
+             })
+  end
+
   test "MCP and the app show an unclaimed character the same way", ctx do
     unclaimed =
       Ash.create!(

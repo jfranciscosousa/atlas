@@ -49,6 +49,7 @@ defmodule AtlasWeb.Router do
         :create_session,
         :update_session,
         :rename_character,
+        :create_unclaimed_character,
         :create_note,
         :rename_note,
         :archive_note,

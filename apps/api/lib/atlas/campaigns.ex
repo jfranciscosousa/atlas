@@ -55,6 +55,11 @@ defmodule Atlas.Campaigns do
     tool :rename_character, Atlas.Campaigns.Character, :rename,
       description: "Change the name of a character."
 
+    tool :create_unclaimed_character, Atlas.Campaigns.Character, :create_unclaimed,
+      load: [:player_name, :claim_path],
+      description:
+        "Prepare a character for a player who has no account yet, in a campaign you run as GM. Give the player's name as player_label. The result has claim_path: give the player the link (the app address plus claim_path). The player signs up or signs in through it and claims the character. You manage it until then."
+
     tool :list_player_logs, Atlas.Campaigns.PlayerLog, :list,
       select: [:id],
       load: [:author_name],
