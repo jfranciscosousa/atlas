@@ -41,6 +41,6 @@ USER atlas
 EXPOSE 4000
 # 127.0.0.1 is exempt from force_ssl, so the check needs no forwarded headers.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD curl -fsS http://127.0.0.1:4000/api/session || exit 1
+  CMD curl -fsS http://127.0.0.1:4000/health || exit 1
 
 CMD ["sh", "-c", "bin/atlas eval 'Atlas.Release.migrate()' && exec bin/atlas start"]
