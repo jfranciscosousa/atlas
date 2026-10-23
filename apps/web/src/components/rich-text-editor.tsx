@@ -15,10 +15,9 @@ import { withCollaboration } from "@blocknote/core/yjs";
 import { filterSuggestionItems } from "@blocknote/core";
 
 import type { SaveState } from "../lib/save-tracker";
-import type { BlockNoteDocument } from "../lib/blocknote-schema";
+import type { SessionSection } from "../hooks/use-sessions";
 import "@blocknote/shadcn/style.css";
 
-import type { SessionSection } from "../hooks/use-sessions";
 import type { CharacterSection } from "../hooks/use-characters";
 
 import { Button } from "./ui/button";
@@ -33,6 +32,10 @@ import {
   type CollabNotice,
   type CollabStatus,
 } from "../lib/collab";
+import {
+  mentionsToAtlasLinks,
+  type BlockNoteDocument,
+} from "../lib/blocknote-schema";
 import { useMentionEntries } from "../hooks/use-mentions";
 import { fetchImageUrl, type Section } from "../hooks/use-campaigns";
 
@@ -205,6 +208,20 @@ export default function RichTextEditor({
       }
     },
     resolveFileUrl,
+    pasteHandler: ({
+      event,
+      editor,
+      defaultPasteHandler,
+    }: {
+      event: ClipboardEvent;
+      editor: { pasteHTML: (html: string, raw?: boolean) => void };
+      defaultPasteHandler: () => boolean | undefined;
+    }) => {
+      const html = event.clipboardData?.getData("blocknote/html");
+      if (!html) return defaultPasteHandler();
+      editor.pasteHTML(mentionsToAtlasLinks(html), true);
+      return true;
+    },
   };
   const editor = useCreateBlockNote(
     live && collab
@@ -314,7 +331,12 @@ export default function RichTextEditor({
       {!closed && (
         <div
           id={`${id}-editor`}
-          className="mt-4 min-h-48 rounded-2xl border bg-card py-4 shadow-xs transition-shadow focus-within:shadow-md [&_.bn-editor]:min-h-36"
+          // The saved text is replaced by the live editor, which rebuilds every chip. A click that
+          // starts on an old chip and ends on a new one does nothing, so the old text takes no clicks.
+          className={cn(
+            "mt-4 min-h-48 rounded-2xl border bg-card py-4 shadow-xs transition-shadow focus-within:shadow-md [&_.bn-editor]:min-h-36",
+            !live && "pointer-events-none"
+          )}
         >
           <BlockNoteView
             editor={editor}

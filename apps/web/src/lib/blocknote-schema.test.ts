@@ -7,7 +7,12 @@ import {
   defaultInlineContentSpecs,
 } from "@blocknote/core";
 
-import { blockSpecs, mentionConfig, parseMention } from "./blocknote-schema.ts";
+import {
+  blockSpecs,
+  mentionConfig,
+  mentionsToAtlasLinks,
+  parseMention,
+} from "./blocknote-schema.ts";
 
 const schema = BlockNoteSchema.create({
   blockSpecs,
@@ -38,6 +43,19 @@ test("pasted Markdown and HTML Atlas links become mentions without storing label
       ]);
     }
   }
+});
+
+test("a mention copied from the editor pastes back as a mention, not a page link", async () => {
+  const copied = `<p>Met <a href="/campaigns/c/notes/${id}" data-inline-content-type="mention" data-kind="note" data-id="${id}">@Renoir</a></p>`;
+  const [asIs, rewritten] = await Promise.all([
+    editor.tryParseHTMLToBlocks(copied),
+    editor.tryParseHTMLToBlocks(mentionsToAtlasLinks(copied)),
+  ]);
+  assert.equal((asIs[0].content as { type: string }[])[1]!.type, "link");
+  assert.deepEqual(rewritten[0].content, [
+    { type: "text", text: "Met ", styles: {} },
+    { type: "mention", props: { kind: "note", id }, content: undefined },
+  ]);
 });
 
 test("web links stay links and malformed Atlas links do not become mentions", async () => {

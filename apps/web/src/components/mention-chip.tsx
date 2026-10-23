@@ -62,3 +62,29 @@ export function MentionChip({ kind, id }: { kind: MentionKind; id: string }) {
       );
   }
 }
+
+const PAGES = {
+  character: "characters",
+  session: "sessions",
+  note: "notes",
+} as const;
+
+/** What a copy carries to other apps: a link with a full URL, since a relative one is dead there. */
+export function MentionExternal({
+  kind,
+  id,
+}: {
+  kind: MentionKind;
+  id: string;
+}) {
+  const { campaignId } = useParams({ strict: false });
+  const mention = useMentionEntries(campaignId).describe(kind, id);
+  if (mention.status !== "found" || !campaignId)
+    return <span>{mention.label}</span>;
+
+  return (
+    <a
+      href={`${window.location.origin}/campaigns/${campaignId}/${PAGES[kind]}/${id}`}
+    >{`@${mention.label}`}</a>
+  );
+}

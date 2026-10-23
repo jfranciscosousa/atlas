@@ -35,5 +35,20 @@ export function parseMention(element: HTMLElement) {
   return { kind: match[1] as MentionKind, id: match[2]! };
 }
 
+// A chip copied from the editor links to its page, and BlockNote parses that as a web link, which
+// the server rejects. The chip also carries its kind and ID, so the paste uses the Atlas link.
+export function mentionsToAtlasLinks(html: string) {
+  const dom = document.createElement("template");
+  dom.innerHTML = html;
+  for (const chip of dom.content.querySelectorAll<HTMLElement>(
+    'a[data-inline-content-type="mention"]'
+  ))
+    chip.setAttribute(
+      "href",
+      `atlas-entry:${chip.dataset.kind}:${chip.dataset.id}`
+    );
+  return dom.innerHTML;
+}
+
 /** The native BlockNote block array, as the API sends and stores it. */
 export type BlockNoteDocument = Array<Record<string, unknown>>;
