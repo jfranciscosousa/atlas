@@ -20,6 +20,8 @@ defmodule AtlasWeb.Router do
   # The MCP server and its OAuth endpoints. Clients authenticate with a bearer token or none, so
   # there is no session and no CSRF check here.
   scope "/", AtlasWeb do
+    get "/health", HealthController, :show
+
     get "/.well-known/oauth-protected-resource", OAuthMetadataController, :protected_resource
     get "/.well-known/oauth-protected-resource/mcp", OAuthMetadataController, :protected_resource
     get "/.well-known/oauth-authorization-server", OAuthMetadataController, :authorization_server
