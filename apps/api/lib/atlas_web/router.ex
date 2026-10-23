@@ -56,6 +56,7 @@ defmodule AtlasWeb.Router do
         :restore_note,
         :set_note_visibility,
         :upload_image,
+        :upload_image_data,
         :write_text
       ]
   end

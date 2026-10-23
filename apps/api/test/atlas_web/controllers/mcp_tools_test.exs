@@ -328,4 +328,29 @@ defmodule AtlasWeb.McpToolsTest do
       assert message =~ "private address" or message =~ "http or https"
     end
   end
+
+  test "upload_image_data stores a base64 image and refuses bad input", ctx do
+    png = Atlas.ImageFixtures.png()
+
+    for data <- [Base.encode64(png), "data:image/png;base64," <> Base.encode64(png)] do
+      assert %{"id" => id, "markdown" => "![](atlas-image:" <> _} =
+               ok!(ctx.token, "upload_image_data", %{input: %{data: data}})
+
+      assert Ash.get!(Atlas.Images.Image, id, authorize?: false).content_type == "image/webp"
+    end
+
+    assert {true, message} = call(ctx.token, "upload_image_data", %{input: %{data: "%%%"}})
+    assert message =~ "base64"
+
+    assert {true, message} =
+             call(ctx.token, "upload_image_data", %{input: %{data: Base.encode64("not an image")}})
+
+    assert message =~ "image"
+
+    # Someone who plays in no campaign cannot store images.
+    outsider = Fixtures.user()
+
+    assert {true, _} =
+             call(token_for(outsider), "upload_image_data", %{input: %{data: Base.encode64(png)}})
+  end
 end
