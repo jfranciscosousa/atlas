@@ -11,15 +11,14 @@ defmodule Atlas.Content do
       rpc_action :rename_note, :rename
       rpc_action :archive_note, :archive
       rpc_action :restore_note, :restore
-      rpc_action :reveal_note, :reveal
-      rpc_action :hide_note, :hide
+      rpc_action :set_note_visibility, :set_visibility
     end
   end
 
   tools do
     tool :create_note, Atlas.Content.Note, :create,
       description:
-        "Create an empty note in a campaign. It starts hidden. Use write_text for the body."
+        "Create an empty note in a campaign. It starts visible to you and the GM. Use write_text for the body."
 
     tool :rename_note, Atlas.Content.Note, :rename, description: "Change the title of a note."
 
@@ -28,15 +27,15 @@ defmodule Atlas.Content do
 
     tool :restore_note, Atlas.Content.Note, :restore, description: "Restore an archived note."
 
-    tool :reveal_note, Atlas.Content.Note, :reveal,
-      description: "Reveal a note: every member of the campaign can then read it."
-
-    tool :hide_note, Atlas.Content.Note, :hide,
-      description: "Hide a note again: only its owner and the GM can read it."
+    tool :set_note_visibility, Atlas.Content.Note, :set_visibility,
+      description:
+        "Set who reads a note: only_me (the owner alone), me_and_gm (the owner and the GM), character (also the player of the linked character, give character_id), or everyone (every member)."
 
     tool :list_notes, Atlas.Content.Note, :list,
-      select: [:id, :title, :revealed],
-      description: "List the active notes of a campaign that you can read."
+      select: [:id, :title, :visibility],
+      load: [:character_name],
+      description:
+        "List the active notes of a campaign that you can read, who may read each, and the linked character."
 
     tool :get_note, Atlas.Content.Note, :describe,
       description: "Read a note: its title, state and body as text."

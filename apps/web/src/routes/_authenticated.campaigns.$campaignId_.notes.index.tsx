@@ -12,6 +12,7 @@ import {
   useNoteRestore,
   useNotesList,
 } from "../hooks/use-notes";
+import { charactersQueryOptions } from "../hooks/use-characters";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import {
   Empty,
@@ -25,9 +26,9 @@ import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { PageHeader } from "../components/page-header";
 import {
-  NoteRevealButton,
   NoteVisibilityBadge,
-} from "../components/note-reveal-button";
+  NoteVisibilityMenu,
+} from "../components/note-visibility";
 import { NewNoteButton } from "../components/new-note-button";
 
 export const Route = createFileRoute(
@@ -47,6 +48,9 @@ export const Route = createFileRoute(
       await Promise.all([
         context.queryClient.ensureQueryData(
           campaignQueryOptions(params.campaignId)
+        ),
+        context.queryClient.ensureQueryData(
+          charactersQueryOptions(params.campaignId)
         ),
         context.queryClient.fetchQuery({
           ...notesQueryOptions(params.campaignId, deps.archived),
@@ -80,8 +84,8 @@ function NotesPage() {
         title={archived ? "Archived notes" : "Notes"}
         description={
           campaign.isGm
-            ? "Plots, guides, handouts, and anything else that fits nowhere. A new note is hidden until you reveal it."
-            : "Notes the GM revealed, and your own. A new note is hidden until you reveal it."
+            ? "Plots, guides, handouts, and anything else that fits nowhere. A new note is visible to you and the GM until you share it."
+            : "Notes shared with you, and your own. A new note is visible to you and the GM until you share it."
         }
         actions={
           <div className="flex items-center gap-3">
@@ -119,7 +123,7 @@ function NotesPage() {
                 ? "Notes you archive appear here, and you can restore them."
                 : campaign.isGm
                   ? "Write down a plot, a campaign guide, or a handout."
-                  : "Write a note of your own, or wait for the GM to reveal one."}
+                  : "Write a note of your own, or wait for the GM to share one."}
             </EmptyDescription>
           </EmptyHeader>
           {!archived && (
@@ -133,7 +137,7 @@ function NotesPage() {
       ) : (
         <ul id="note-list" className="grid gap-3">
           {notes.map(note => {
-            // Other members read a revealed note but cannot change what it is.
+            // Other members read a shared note but cannot change what it is.
             const canManage = campaign.isGm || note.isOwner;
             return (
               <li
@@ -154,17 +158,22 @@ function NotesPage() {
                       {note.ownerName}
                     </span>
                   )}
-                  <NoteVisibilityBadge revealed={note.revealed} />
+                  <NoteVisibilityBadge
+                    visibility={note.visibility}
+                    characterName={note.characterName}
+                  />
                   <ChevronRightIcon
                     aria-hidden="true"
                     className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
                   />
                 </Link>
                 {canManage && !archived && (
-                  <NoteRevealButton
+                  <NoteVisibilityMenu
                     campaignId={campaignId}
                     id={note.id}
-                    revealed={note.revealed}
+                    visibility={note.visibility}
+                    characterId={note.characterId}
+                    isGm={campaign.isGm ?? false}
                     title={note.title}
                     icon
                   />

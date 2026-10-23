@@ -53,8 +53,7 @@ defmodule AtlasWeb.Router do
         :rename_note,
         :archive_note,
         :restore_note,
-        :reveal_note,
-        :hide_note,
+        :set_note_visibility,
         :upload_image,
         :write_text
       ]

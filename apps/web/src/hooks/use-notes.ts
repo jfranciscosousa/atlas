@@ -3,11 +3,10 @@ import {
   archiveNote,
   createNote,
   getNote,
-  hideNote,
   listNotes,
   renameNote,
   restoreNote,
-  revealNote,
+  setNoteVisibility,
 } from "@atlas/api-client";
 
 import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
@@ -22,7 +21,15 @@ export function notesQueryOptions(campaignId: string, archived = false) {
     run =>
       run({
         input: { campaignId, archived },
-        fields: ["id", "title", "revealed", "isOwner", "ownerName"],
+        fields: [
+          "id",
+          "title",
+          "visibility",
+          "characterId",
+          "characterName",
+          "isOwner",
+          "ownerName",
+        ],
       }),
     { fallback: "Could not load the notes." }
   );
@@ -55,44 +62,53 @@ export function useNoteRestore(campaignId: string) {
   );
 }
 
-// Set the open note directly: a refetch would hand its editor an older body revision.
-const revealOptions = (campaignId: string) => ({
-  fallback: "Could not update the note.",
-  onSuccess: (
-    { id, revealed }: { id: string; revealed: boolean },
-    queryClient: QueryClient
-  ) =>
-    queryClient.setQueryData(
-      noteQueryOptions(id).queryKey,
-      note => note && { ...note, revealed }
-    ),
-  invalidate: [notesKey(campaignId)],
-});
+export type NoteVisibility = "only_me" | "me_and_gm" | "character" | "everyone";
 
-/** Reveals a note to the players. The list and the open note follow. */
-export function useNoteReveal(campaignId: string) {
+/** Sets who reads a note. The list and the open note follow. */
+export function useNoteVisibility(campaignId: string) {
   return useRpcMutation(
-    revealNote,
-    (run, id: string) => run({ identity: id, fields: ["id", "revealed"] }),
-    revealOptions(campaignId)
-  );
-}
-
-export function useNoteHide(campaignId: string) {
-  return useRpcMutation(
-    hideNote,
-    (run, id: string) => run({ identity: id, fields: ["id", "revealed"] }),
-    revealOptions(campaignId)
+    setNoteVisibility,
+    (
+      run,
+      {
+        id,
+        visibility,
+        characterId,
+      }: { id: string; visibility: NoteVisibility; characterId?: string }
+    ) =>
+      run({
+        identity: id,
+        input: { visibility, characterId },
+        fields: ["id", "visibility", "characterId", "characterName"],
+      }),
+    {
+      fallback: "Could not update the note.",
+      // Set the open note directly: a refetch would hand its editor an older body revision.
+      onSuccess: ({ id, ...shared }, queryClient) =>
+        queryClient.setQueryData(
+          noteQueryOptions(id).queryKey,
+          note => note && { ...note, ...shared }
+        ),
+      invalidate: [notesKey(campaignId)],
+    }
   );
 }
 
 // No list refetch here: the list route reloads on every visit, and a refetch would flash the
 // new note in the list before the note page opens.
-export function useNoteCreate(campaignId: string) {
+export function useNoteCreate(campaignId: string, characterId?: string) {
   return useRpcMutation(
     createNote,
     (run, _: void) =>
-      run({ input: { campaignId, title: "Untitled note" }, fields: ["id"] }),
+      run({
+        input: {
+          campaignId,
+          title: "Untitled note",
+          // A note made on a character page is shared with that character's player.
+          ...(characterId && { visibility: "character", characterId }),
+        },
+        fields: ["id"],
+      }),
     { fallback: "Could not create the note." }
   );
 }
@@ -108,8 +124,9 @@ export function noteQueryOptions(noteId: string) {
           "campaignId",
           "title",
           "bodyJson",
-
-          "revealed",
+          "visibility",
+          "characterId",
+          "characterName",
           "isOwner",
           "ownerName",
         ],

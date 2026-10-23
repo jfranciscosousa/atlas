@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { noteQueryOptions, useNote, useNoteRename } from "../hooks/use-notes";
+import { charactersQueryOptions } from "../hooks/use-characters";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import { Input } from "../components/ui/input";
 import { buttonVariants } from "../components/ui/button";
@@ -9,9 +10,9 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
 import { PageHeader } from "../components/page-header";
 import {
-  NoteRevealButton,
   NoteVisibilityBadge,
-} from "../components/note-reveal-button";
+  NoteVisibilityMenu,
+} from "../components/note-visibility";
 
 export const Route = createFileRoute(
   "/_authenticated/campaigns/$campaignId_/notes/$noteId"
@@ -22,9 +23,12 @@ export const Route = createFileRoute(
   loader: async ({ context, params }) => {
     const editor = loadEditor();
     try {
-      const [, note] = await Promise.all([
+      const [, , note] = await Promise.all([
         context.queryClient.ensureQueryData(
           campaignQueryOptions(params.campaignId)
+        ),
+        context.queryClient.ensureQueryData(
+          charactersQueryOptions(params.campaignId)
         ),
         context.queryClient.fetchQuery({
           ...noteQueryOptions(params.noteId),
@@ -59,7 +63,7 @@ function NotePage() {
   const rename = useNoteRename(campaignId, noteId);
   const [title, setTitle] = useState(note.title);
   const RichTextEditor = getEditor();
-  // Other members edit a revealed body but cannot rename, hide, or archive the note.
+  // Other members edit a shared body but cannot rename, share, or archive the note.
   const canManage = campaign.isGm || note.isOwner;
 
   const commitTitle = () => {
@@ -83,12 +87,17 @@ function NotePage() {
         }
         actions={
           <div className="flex items-center gap-3">
-            <NoteVisibilityBadge revealed={note.revealed} />
+            <NoteVisibilityBadge
+              visibility={note.visibility}
+              characterName={note.characterName}
+            />
             {canManage && (
-              <NoteRevealButton
+              <NoteVisibilityMenu
                 campaignId={campaignId}
                 id={note.id}
-                revealed={note.revealed}
+                visibility={note.visibility}
+                characterId={note.characterId}
+                isGm={campaign.isGm ?? false}
                 title={note.title}
               />
             )}

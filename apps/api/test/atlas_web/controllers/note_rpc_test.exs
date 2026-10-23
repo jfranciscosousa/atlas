@@ -11,7 +11,8 @@ defmodule AtlasWeb.NoteRpcTest do
     "bodyJson",
     "bodyRevision",
     "archivedAt",
-    "revealed",
+    "visibility",
+    "characterName",
     "isOwner",
     "ownerName"
   ]
@@ -47,6 +48,9 @@ defmodule AtlasWeb.NoteRpcTest do
 
   defp note_action(who, action, id, input \\ %{}),
     do: rpc(who, action, %{identity: id, input: input, fields: @fields})
+
+  defp set_visibility(who, id, visibility, extra \\ %{}),
+    do: note_action(who, "set_note_visibility", id, Map.put(extra, :visibility, visibility))
 
   defp list(who, campaign_id, archived \\ false) do
     rpc(who, "list_notes", %{
@@ -180,12 +184,18 @@ defmodule AtlasWeb.NoteRpcTest do
   end
 
   test "a new note is hidden and owned by its creator", ctx do
-    assert %{"success" => true, "data" => %{"revealed" => false, "isOwner" => true} = gm_note} =
+    assert %{
+             "success" => true,
+             "data" => %{"visibility" => "me_and_gm", "isOwner" => true} = gm_note
+           } =
              create(ctx.gm, ctx.campaign_id)
 
     assert gm_note["ownerName"]
 
-    assert %{"success" => true, "data" => %{"id" => id, "revealed" => false, "isOwner" => true}} =
+    assert %{
+             "success" => true,
+             "data" => %{"id" => id, "visibility" => "me_and_gm", "isOwner" => true}
+           } =
              create(ctx.ann, ctx.campaign_id)
 
     assert %{"data" => %{"isOwner" => false}} =
@@ -204,7 +214,7 @@ defmodule AtlasWeb.NoteRpcTest do
     assert [] = list(ctx.bob, ctx.campaign_id)
 
     assert {:error, %Ash.Error.Forbidden{}} = save("bob@example.com", id)
-    assert %{"success" => false} = note_action(ctx.bob, "reveal_note", id)
+    assert %{"success" => false} = set_visibility(ctx.bob, id, "everyone")
   end
 
   test "the GM's notes stay hidden from players until revealed", ctx do
@@ -212,27 +222,27 @@ defmodule AtlasWeb.NoteRpcTest do
     assert [] = list(ctx.ann, ctx.campaign_id)
     refute readable?(ctx.ann, id)
 
-    assert %{"success" => true, "data" => %{"revealed" => true}} =
-             note_action(ctx.gm, "reveal_note", id)
+    assert %{"success" => true, "data" => %{"visibility" => "everyone"}} =
+             set_visibility(ctx.gm, id, "everyone")
 
     assert [%{"id" => ^id}] = list(ctx.ann, ctx.campaign_id)
     assert readable?(ctx.bob, id)
     refute readable?(ctx.other, id)
     assert [] = list(ctx.other, ctx.campaign_id)
 
-    assert %{"success" => true, "data" => %{"revealed" => false}} =
-             note_action(ctx.gm, "hide_note", id)
+    assert %{"success" => true, "data" => %{"visibility" => "me_and_gm"}} =
+             set_visibility(ctx.gm, id, "me_and_gm")
 
     refute readable?(ctx.ann, id)
   end
 
   test "an owner reveals their note; the GM can hide it again", ctx do
     assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.campaign_id)
-    assert %{"success" => true} = note_action(ctx.ann, "reveal_note", id)
+    assert %{"success" => true} = set_visibility(ctx.ann, id, "everyone")
     assert readable?(ctx.bob, id)
 
-    assert %{"success" => true, "data" => %{"revealed" => false}} =
-             note_action(ctx.gm, "hide_note", id)
+    assert %{"success" => true, "data" => %{"visibility" => "me_and_gm"}} =
+             set_visibility(ctx.gm, id, "me_and_gm")
 
     refute readable?(ctx.bob, id)
     assert readable?(ctx.ann, id)
@@ -240,7 +250,7 @@ defmodule AtlasWeb.NoteRpcTest do
 
   test "members edit the body of a revealed note but cannot rename, hide, or archive it", ctx do
     assert %{"data" => %{"id" => id}} = create(ctx.gm, ctx.campaign_id)
-    assert %{"success" => true} = note_action(ctx.gm, "reveal_note", id)
+    assert %{"success" => true} = set_visibility(ctx.gm, id, "everyone")
 
     assert {:ok, %{body_revision: 1}} = save("ann@example.com", id)
     assert {:ok, %{body_revision: 2}} = save("bob@example.com", id)
@@ -248,19 +258,21 @@ defmodule AtlasWeb.NoteRpcTest do
     assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Changes.StaleRecord{} | _]}} =
              save("ann@example.com", id, [paragraph("hi")], revision: 1)
 
-    for action <- ["hide_note", "archive_note", "restore_note"] do
+    assert %{"success" => false} = set_visibility(ctx.ann, id, "me_and_gm")
+
+    for action <- ["archive_note", "restore_note"] do
       assert %{"success" => false} = note_action(ctx.ann, action, id)
     end
 
     assert %{"success" => false} = note_action(ctx.ann, "rename_note", id, %{title: "x"})
 
-    assert %{"data" => %{"title" => "The Cult of the Drowned", "revealed" => true}} =
+    assert %{"data" => %{"title" => "The Cult of the Drowned", "visibility" => "everyone"}} =
              rpc(ctx.gm, "get_note", %{getBy: %{id: id}, fields: @fields})
   end
 
   test "other players never see an archived note; the owner and the GM do", ctx do
     assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.campaign_id)
-    assert %{"success" => true} = note_action(ctx.ann, "reveal_note", id)
+    assert %{"success" => true} = set_visibility(ctx.ann, id, "everyone")
     assert readable?(ctx.bob, id)
 
     assert %{"success" => true} = note_action(ctx.ann, "archive_note", id)
@@ -281,12 +293,127 @@ defmodule AtlasWeb.NoteRpcTest do
     assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.campaign_id)
 
     assert %{"success" => false} =
-             note_action(ctx.ann, "reveal_note", id, %{
-               revealed: false,
+             note_action(ctx.ann, "set_note_visibility", id, %{
+               visibility: "me_and_gm",
                ownerId: Ecto.UUID.generate()
              })
 
     assert %{"success" => false} =
              note_action(ctx.ann, "rename_note", id, %{title: "x", ownerId: Ecto.UUID.generate()})
+  end
+
+  defp create_with(who, ctx, input) do
+    rpc(who, "create_note", %{
+      input: Map.merge(%{campaignId: ctx.campaign_id, title: "Visions"}, input),
+      fields: @fields
+    })
+  end
+
+  defp my_character(who, ctx) do
+    %{"data" => characters} =
+      rpc(who, "list_characters", %{
+        input: %{campaignId: ctx.campaign_id},
+        fields: ["id", "isMine"]
+      })
+
+    Enum.find(characters, & &1["isMine"])["id"]
+  end
+
+  test "a player's only-me note is read by nobody else, not even the GM", ctx do
+    assert %{"success" => true, "data" => %{"id" => id, "visibility" => "only_me"}} =
+             create_with(ctx.ann, ctx, %{visibility: "only_me"})
+
+    assert readable?(ctx.ann, id)
+    refute readable?(ctx.gm, id)
+    refute readable?(ctx.bob, id)
+    assert [] = list(ctx.gm, ctx.campaign_id)
+    assert {:error, %Ash.Error.Forbidden{}} = save("gm@example.com", id)
+    assert %{"success" => false} = note_action(ctx.gm, "archive_note", id)
+    assert %{"success" => false} = set_visibility(ctx.gm, id, "everyone")
+
+    assert %{"success" => true} = set_visibility(ctx.ann, id, "me_and_gm")
+    assert readable?(ctx.gm, id)
+  end
+
+  test "the GM's only-me note is read by the GM alone", ctx do
+    assert %{"data" => %{"id" => id}} = create_with(ctx.gm, ctx, %{visibility: "only_me"})
+    assert readable?(ctx.gm, id)
+    refute readable?(ctx.ann, id)
+  end
+
+  test "a character note is read and edited by the GM and the character's player only", ctx do
+    character_id = my_character(ctx.ann, ctx)
+
+    assert %{"success" => true} =
+             rpc(ctx.ann, "rename_character", %{
+               identity: character_id,
+               input: %{name: "Brann"},
+               fields: ["id"]
+             })
+
+    assert %{"success" => true, "data" => %{"id" => id, "characterName" => "Brann"}} =
+             create_with(ctx.gm, ctx, %{visibility: "character", characterId: character_id})
+
+    assert readable?(ctx.ann, id)
+    assert [%{"id" => ^id}] = list(ctx.ann, ctx.campaign_id)
+    refute readable?(ctx.bob, id)
+    assert [] = list(ctx.bob, ctx.campaign_id)
+
+    assert {:ok, _} = save("ann@example.com", id)
+    assert {:error, %Ash.Error.Forbidden{}} = save("bob@example.com", id)
+
+    assert %{"success" => false} = note_action(ctx.ann, "rename_note", id, %{title: "x"})
+    assert %{"success" => false} = set_visibility(ctx.ann, id, "everyone")
+    assert %{"success" => false} = note_action(ctx.ann, "archive_note", id)
+
+    # The player no longer reads an archived character note.
+    assert %{"success" => true} = note_action(ctx.gm, "archive_note", id)
+    refute readable?(ctx.ann, id)
+  end
+
+  test "a character note needs a character of the campaign, and a player links only their own",
+       ctx do
+    assert %{"success" => false} = create_with(ctx.gm, ctx, %{visibility: "character"})
+
+    ann_character = my_character(ctx.ann, ctx)
+    bob_character = my_character(ctx.bob, ctx)
+
+    assert %{"success" => true} =
+             create_with(ctx.ann, ctx, %{visibility: "character", characterId: ann_character})
+
+    assert %{"success" => false} =
+             create_with(ctx.ann, ctx, %{visibility: "character", characterId: bob_character})
+
+    assert %{"success" => false} =
+             create_with(ctx.gm, ctx, %{
+               visibility: "character",
+               characterId: Ecto.UUID.generate()
+             })
+
+    # A note may link a character at any level. The link alone grants no access.
+    assert %{"success" => true, "data" => %{"id" => id}} =
+             create_with(ctx.gm, ctx, %{visibility: "me_and_gm", characterId: ann_character})
+
+    refute readable?(ctx.ann, id)
+  end
+
+  test "a character note for an unclaimed character is the GM's until a player claims it", ctx do
+    assert %{"data" => %{"id" => character_id, "claimPath" => "/claim/" <> token}} =
+             rpc(ctx.gm, "create_unclaimed_character", %{
+               input: %{campaignId: ctx.campaign_id, playerLabel: "Cy"},
+               fields: ["id", "claimPath"]
+             })
+
+    assert %{"data" => %{"id" => id}} =
+             create_with(ctx.gm, ctx, %{visibility: "character", characterId: character_id})
+
+    refute readable?(ctx.ann, id)
+    refute readable?(ctx.other, id)
+
+    assert %{"success" => true} =
+             rpc(ctx.other, "claim_character", %{input: %{token: token}, fields: ["id"]})
+
+    assert readable?(ctx.other, id)
+    refute readable?(ctx.ann, id)
   end
 end

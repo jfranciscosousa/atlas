@@ -1919,6 +1919,8 @@ export async function validateArchiveNote(
 export type CreateNoteInput = {
   campaignId: UUID;
   title: string;
+  visibility?: "character" | "everyone" | "me_and_gm" | "only_me";
+  characterId?: UUID | null;
 };
 
 export type CreateNoteFields = UnifiedFieldSelection<NoteResourceSchema>[];
@@ -1980,74 +1982,6 @@ export async function validateCreateNote(
     action: "create_note",
     ...(config.tenant !== undefined && { tenant: config.tenant }),
     input: config.input
-  };
-
-  return executeValidationRpcRequest<ValidationResult>(
-    payload,
-    config
-  );
-}
-
-
-export type HideNoteFields = UnifiedFieldSelection<NoteResourceSchema>[];
-
-export type InferHideNoteResult<
-  Fields extends HideNoteFields | undefined,
-> = InferResult<NoteResourceSchema, Fields>;
-
-export type HideNoteResult<Fields extends HideNoteFields | undefined = undefined> = | { success: true; data: InferHideNoteResult<Fields>; }
-| { success: false; errors: AshRpcError[]; }
-
-;
-
-/**
- * Update an existing Note
- *
- * @ashActionType :update
- */
-export async function hideNote<Fields extends HideNoteFields | undefined = undefined>(
-  config: {
-  tenant?: string;
-  identity: UUID;
-  fields?: Fields;
-  headers?: Record<string, string>;
-  fetchOptions?: RequestInit;
-  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-}
-): Promise<HideNoteResult<Fields extends undefined ? [] : Fields>> {
-  const payload = {
-    action: "hide_note",
-    ...(config.tenant !== undefined && { tenant: config.tenant }),
-    identity: config.identity,
-    ...(config.fields !== undefined && { fields: config.fields })
-  };
-
-  return executeActionRpcRequest<HideNoteResult<Fields extends undefined ? [] : Fields>>(
-    payload,
-    config
-  );
-}
-
-
-/**
- * Validate: Update an existing Note
- *
- * @ashActionType :update
- * @validation true
- */
-export async function validateHideNote(
-  config: {
-  tenant?: string;
-  identity: UUID | string;
-  headers?: Record<string, string>;
-  fetchOptions?: RequestInit;
-  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-}
-): Promise<ValidationResult> {
-  const payload = {
-    action: "hide_note",
-    ...(config.tenant !== undefined && { tenant: config.tenant }),
-    identity: config.identity
   };
 
   return executeValidationRpcRequest<ValidationResult>(
@@ -2344,13 +2278,18 @@ export async function validateRestoreNote(
 }
 
 
-export type RevealNoteFields = UnifiedFieldSelection<NoteResourceSchema>[];
+export type SetNoteVisibilityInput = {
+  visibility?: "character" | "everyone" | "me_and_gm" | "only_me";
+  characterId?: UUID | null;
+};
 
-export type InferRevealNoteResult<
-  Fields extends RevealNoteFields | undefined,
+export type SetNoteVisibilityFields = UnifiedFieldSelection<NoteResourceSchema>[];
+
+export type InferSetNoteVisibilityResult<
+  Fields extends SetNoteVisibilityFields | undefined,
 > = InferResult<NoteResourceSchema, Fields>;
 
-export type RevealNoteResult<Fields extends RevealNoteFields | undefined = undefined> = | { success: true; data: InferRevealNoteResult<Fields>; }
+export type SetNoteVisibilityResult<Fields extends SetNoteVisibilityFields | undefined = undefined> = | { success: true; data: InferSetNoteVisibilityResult<Fields>; }
 | { success: false; errors: AshRpcError[]; }
 
 ;
@@ -2360,24 +2299,26 @@ export type RevealNoteResult<Fields extends RevealNoteFields | undefined = undef
  *
  * @ashActionType :update
  */
-export async function revealNote<Fields extends RevealNoteFields | undefined = undefined>(
+export async function setNoteVisibility<Fields extends SetNoteVisibilityFields | undefined = undefined>(
   config: {
   tenant?: string;
   identity: UUID;
+  input?: SetNoteVisibilityInput;
   fields?: Fields;
   headers?: Record<string, string>;
   fetchOptions?: RequestInit;
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
-): Promise<RevealNoteResult<Fields extends undefined ? [] : Fields>> {
+): Promise<SetNoteVisibilityResult<Fields extends undefined ? [] : Fields>> {
   const payload = {
-    action: "reveal_note",
+    action: "set_note_visibility",
     ...(config.tenant !== undefined && { tenant: config.tenant }),
     identity: config.identity,
+    input: config.input,
     ...(config.fields !== undefined && { fields: config.fields })
   };
 
-  return executeActionRpcRequest<RevealNoteResult<Fields extends undefined ? [] : Fields>>(
+  return executeActionRpcRequest<SetNoteVisibilityResult<Fields extends undefined ? [] : Fields>>(
     payload,
     config
   );
@@ -2390,19 +2331,21 @@ export async function revealNote<Fields extends RevealNoteFields | undefined = u
  * @ashActionType :update
  * @validation true
  */
-export async function validateRevealNote(
+export async function validateSetNoteVisibility(
   config: {
   tenant?: string;
   identity: UUID | string;
+  input?: SetNoteVisibilityInput;
   headers?: Record<string, string>;
   fetchOptions?: RequestInit;
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<ValidationResult> {
   const payload = {
-    action: "reveal_note",
+    action: "set_note_visibility",
     ...(config.tenant !== undefined && { tenant: config.tenant }),
-    identity: config.identity
+    identity: config.identity,
+    input: config.input
   };
 
   return executeValidationRpcRequest<ValidationResult>(

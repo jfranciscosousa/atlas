@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { LockIcon } from "lucide-react";
+import { ChevronRightIcon, LockIcon } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
+import { notesQueryOptions, useNotesList } from "../hooks/use-notes";
 import {
   characterQueryOptions,
   useCharacter,
@@ -19,6 +20,8 @@ import { buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { getEditor, loadEditor } from "../components/rich-text-editor-loader";
 import { PageHeader } from "../components/page-header";
+import { NoteVisibilityBadge } from "../components/note-visibility";
+import { NewNoteButton } from "../components/new-note-button";
 import { ClaimLink } from "../components/claim-link";
 
 export const Route = createFileRoute(
@@ -36,6 +39,10 @@ export const Route = createFileRoute(
         ),
         context.queryClient.fetchQuery({
           ...characterQueryOptions(params.characterId),
+          staleTime: 0,
+        }),
+        context.queryClient.fetchQuery({
+          ...notesQueryOptions(params.campaignId),
           staleTime: 0,
         }),
       ]);
@@ -66,6 +73,9 @@ function CharacterPage() {
   const campaign = useCampaign(campaignId).data;
   const character = useCharacter(characterId).data;
   const rename = useCharacterRename(campaignId, characterId);
+  const notes = useNotesList(campaignId, false).data.filter(
+    note => note.characterId === characterId
+  );
   const [name, setName] = useState(character.name ?? "");
   const RichTextEditor = getEditor();
   const title = character.name ?? "Unnamed character";
@@ -125,6 +135,7 @@ function CharacterPage() {
               Secret notes
             </TabsTrigger>
           )}
+          <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
         <TabsContent value="description" keepMounted>
           <RichTextEditor
@@ -141,6 +152,46 @@ function CharacterPage() {
             initial={character.descriptionJson}
             readOnly={!character.isMine && !campaign.isGm}
           />
+        </TabsContent>
+        <TabsContent value="notes">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                Notes linked to {title}. Only the people each note is shared
+                with can read it.
+              </p>
+              {(campaign.isGm || character.isMine) && (
+                <NewNoteButton
+                  campaignId={campaignId}
+                  characterId={characterId}
+                />
+              )}
+            </div>
+            <ul id="character-note-list" className="grid gap-3">
+              {notes.map(note => (
+                <li key={note.id}>
+                  <Link
+                    id={`character-note-${note.id}`}
+                    to="/campaigns/$campaignId/notes/$noteId"
+                    params={{ campaignId, noteId: note.id }}
+                    className="group flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+                  >
+                    <span className="min-w-0 flex-1 truncate font-heading text-lg font-semibold">
+                      {note.title}
+                    </span>
+                    <NoteVisibilityBadge
+                      visibility={note.visibility}
+                      characterName={note.characterName}
+                    />
+                    <ChevronRightIcon
+                      aria-hidden="true"
+                      className="size-5 text-muted-foreground"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </TabsContent>
         {campaign.isGm && (
           <TabsContent value="secret-notes" keepMounted>

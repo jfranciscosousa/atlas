@@ -28,10 +28,10 @@ defmodule Atlas.RichText.MentionsTest do
 
     hidden = Ash.create!(Note, %{campaign_id: campaign.id, title: "Secret plot"}, actor: gm)
     shown = Ash.create!(Note, %{campaign_id: campaign.id, title: "Handout"}, actor: gm)
-    Ash.update!(shown, %{}, action: :reveal, actor: gm)
+    Ash.update!(shown, %{visibility: :everyone}, action: :set_visibility, actor: gm)
 
     archived = Ash.create!(Note, %{campaign_id: campaign.id, title: "Old idea"}, actor: gm)
-    archived = Ash.update!(archived, %{}, action: :reveal, actor: gm)
+    archived = Ash.update!(archived, %{visibility: :everyone}, action: :set_visibility, actor: gm)
     Ash.update!(archived, %{}, action: :archive, actor: gm)
 
     # The GM may read this note, but it belongs to another campaign. The editor lists one

@@ -24,7 +24,7 @@ Domain terms for Atlas. Use these words in code and tests.
 - **NPC**: a unique individual. Not the same as a creature.
 - **Creature**: a reusable monster description. The bestiary is a set of creatures.
 - **Faction**: an organization. It has a GM-only reputation toward the whole party.
-- **Note**: free-form text. Guides, handouts, and plots are notes.
+- **Note**: free-form text. Guides, handouts, and plots are notes. A note has a visibility and may link to a character.
 - **Session**: one play session of a campaign, numbered from 1. Only the GM manages it.
 - **Session status**: *In prep* or *Done*. A session starts in prep. The GM marks it done after play and may move it back. Every member sees the status.
 - **Log**: the final record of a session. Members read it. Only the GM edits it.
@@ -48,13 +48,15 @@ Domain terms for Atlas. Use these words in code and tests.
 
 ## Access
 
-- **Shared**: readable by all members. Editable by all members once the entry is revealed.
+- **Shared**: readable by all members. Editable by all members once the note has visibility Everyone.
 - **GM-only**: readable and editable only by the GM.
-- **Player-private**: readable and editable by one player and the GM.
-- **Hidden**: an entry not yet revealed to other players. Every entry starts hidden.
-- **Revealed**: an entry its owner or the GM made readable by all members. The owner or the GM can hide it again.
-- **Owner**: the member who created an entry. The owner and the GM read a hidden entry and manage it.
-- **Archived**: removed from active lists, never deleted. The owner or the GM can restore it.
+- **Visibility**: who reads a note. The owner or the GM sets it. Levels: Private, Owner and GM, Character, Everyone. A new note starts at Owner and GM.
+- **Private**: only the owner reads the note. The GM does not read a player's private note.
+- **Owner and GM**: the owner and the GM read the note.
+- **Character note**: a note with visibility Character. The owner, the GM, and the player of the linked character read it. That player also edits the body. A player links only their own character. Until a player claims the character, only the owner and the GM read it. After the claim, the player reads it. Only the owner and the GM rename, share, or archive it.
+- **Everyone**: all members read the note and edit its body.
+- **Owner**: the member who created an entry. The owner manages it. The GM also manages it, except a player's private note.
+- **Archived**: removed from active lists, never deleted. The owner or the GM can restore it. Other members never see an archived note.
 - **Restricted entry**: the label a reader sees for a link to an entry they cannot access.
 - **Deleted entry**: the label an authorized reader sees for a link to an archived entry.
 - **Preview as player**: a read-only page that shows a campaign the way a player sees it.

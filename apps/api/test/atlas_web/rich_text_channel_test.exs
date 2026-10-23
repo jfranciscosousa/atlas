@@ -144,13 +144,22 @@ defmodule AtlasWeb.RichTextChannelTest do
     do:
       assert(
         %{"success" => true} =
-          rpc(ctx.ann, "reveal_note", %{identity: ctx.note_id, fields: ["id"]})
+          rpc(ctx.ann, "set_note_visibility", %{
+            identity: ctx.note_id,
+            input: %{visibility: "everyone"},
+            fields: ["id"]
+          })
       )
 
   defp hide(ctx),
     do:
       assert(
-        %{"success" => true} = rpc(ctx.ann, "hide_note", %{identity: ctx.note_id, fields: ["id"]})
+        %{"success" => true} =
+          rpc(ctx.ann, "set_note_visibility", %{
+            identity: ctx.note_id,
+            input: %{visibility: "me_and_gm"},
+            fields: ["id"]
+          })
       )
 
   describe "editing together" do

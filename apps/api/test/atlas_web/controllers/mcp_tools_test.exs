@@ -130,7 +130,7 @@ defmodule AtlasWeb.McpToolsTest do
     assert text(Atlas.Campaigns.Campaign, ctx.campaign.id, :description, ctx.gm) == "A keep."
   end
 
-  test "notes: create, write, reveal, rename, archive and restore", ctx do
+  test "notes: create, write, set visibility, rename, archive and restore", ctx do
     note =
       ok!(ctx.token, "create_note", %{input: %{campaign_id: ctx.campaign.id, title: "Plot"}})
 
@@ -138,7 +138,7 @@ defmodule AtlasWeb.McpToolsTest do
     assert text(Atlas.Content.Note, note["id"], :body, ctx.gm) == "- a\n- b"
 
     for {tool, input} <- [
-          reveal_note: %{},
+          set_note_visibility: %{visibility: "everyone"},
           rename_note: %{title: "Plot 2"},
           archive_note: %{},
           restore_note: %{}
@@ -146,7 +146,7 @@ defmodule AtlasWeb.McpToolsTest do
       assert {false, _} = call(ctx.token, Atom.to_string(tool), %{id: note["id"], input: input})
     end
 
-    assert %{title: "Plot 2", revealed: true, archived_at: nil} =
+    assert %{title: "Plot 2", visibility: :everyone, archived_at: nil} =
              Ash.get!(Atlas.Content.Note, note["id"], actor: ctx.gm)
   end
 
@@ -230,6 +230,66 @@ defmodule AtlasWeb.McpToolsTest do
 
     assert %{"player_name" => "Ana", "claimed" => false, "claim_path" => nil} =
              ok!(token_for(player), "get_character", %{input: %{id: unclaimed.id}})
+  end
+
+  test "MCP and the app show a character note the same way", ctx do
+    player = Fixtures.user()
+
+    invitation =
+      Ash.create!(Atlas.Campaigns.Invitation, %{campaign_id: ctx.campaign.id}, actor: ctx.gm)
+
+    character =
+      Ash.create!(Atlas.Campaigns.Character, %{token: invitation.token},
+        action: :join,
+        actor: player
+      )
+
+    note =
+      Ash.create!(
+        Atlas.Content.Note,
+        %{
+          campaign_id: ctx.campaign.id,
+          title: "Visions",
+          visibility: :character,
+          character_id: character.id
+        },
+        actor: ctx.gm
+      )
+
+    private =
+      Ash.create!(
+        Atlas.Content.Note,
+        %{campaign_id: ctx.campaign.id, title: "Dreams", visibility: :only_me},
+        actor: player
+      )
+
+    for {who, token} <- [{ctx.gm, ctx.token}, {player, token_for(player)}] do
+      app = Ash.get!(Atlas.Content.Note, note.id, actor: who, load: [:character_name])
+
+      assert %{"visibility" => "character", "character_name" => name} =
+               ok!(token, "get_note", %{input: %{id: note.id}})
+
+      assert name == app.character_name
+
+      listed =
+        token
+        |> ok!("list_notes", %{input: %{campaign_id: ctx.campaign.id}})
+        |> Enum.map(& &1["id"])
+        |> Enum.sort()
+
+      expected =
+        Atlas.Content.Note
+        |> Ash.Query.for_read(:list, %{campaign_id: ctx.campaign.id}, actor: who)
+        |> Ash.read!()
+        |> Enum.map(& &1.id)
+        |> Enum.sort()
+
+      assert listed == expected
+    end
+
+    # The GM reads neither surface's view of a player's only-me note.
+    assert {true, _} = call(ctx.token, "get_note", %{input: %{id: private.id}})
+    assert {:error, _} = Ash.get(Atlas.Content.Note, private.id, actor: ctx.gm)
   end
 
   test "upload_image refuses an address inside the server's network", ctx do

@@ -9,13 +9,16 @@ import { useNoteCreate } from "../hooks/use-notes";
 // There is no creation form: the note exists at once and opens for editing in place.
 export function NewNoteButton({
   campaignId,
+  characterId,
   children = "New note",
 }: {
   campaignId: string;
+  /** Links the new note to a character and shares it with that character's player. */
+  characterId?: string;
   children?: string;
 }) {
   const navigate = useNavigate();
-  const create = useNoteCreate(campaignId);
+  const create = useNoteCreate(campaignId, characterId);
   // Stays set until the note page is open, so the list never shows between create and navigate.
   const [busy, setBusy] = useState(false);
 
@@ -37,7 +40,7 @@ export function NewNoteButton({
   return (
     <div className="flex flex-col items-end gap-2">
       <Button
-        id="note-new"
+        id={characterId ? `note-new-${characterId}` : "note-new"}
         isLoading={busy}
         disabled={busy}
         onClick={() => void createAndOpen()}

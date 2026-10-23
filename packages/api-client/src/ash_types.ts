@@ -196,33 +196,37 @@ export type SessionAttributesOnlySchema = {
 // Note Schema
 export type NoteResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "id" | "isOwner" | "ownerName" | "revealed" | "title";
+  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "characterId" | "characterName" | "id" | "isOwner" | "ownerName" | "title" | "visibility";
   archivedAt: UtcDateTimeUsec | null;
   bodyJson: Array<Record<string, unknown>>;
   bodyRevision: number;
   bodySchemaVersion: number;
   campaignId: UUID;
+  characterId: UUID | null;
+  characterName: string | null;
   id: UUID;
   isOwner: boolean | null;
   ownerName: string | null;
-  revealed: boolean;
   title: string;
+  visibility: "character" | "everyone" | "me_and_gm" | "only_me";
   campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
+  character: { __type: "Relationship"; __resource: CharacterResourceSchema | null; };
 };
 
 
 
 export type NoteAttributesOnlySchema = {
   __type: "Resource";
-  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "id" | "revealed" | "title";
+  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "campaignId" | "characterId" | "id" | "title" | "visibility";
   archivedAt: UtcDateTimeUsec | null;
   bodyJson: Array<Record<string, unknown>>;
   bodyRevision: number;
   bodySchemaVersion: number;
   campaignId: UUID;
+  characterId: UUID | null;
   id: UUID;
-  revealed: boolean;
   title: string;
+  visibility: "character" | "everyone" | "me_and_gm" | "only_me";
 };
 
 
@@ -983,6 +987,31 @@ export type NoteFilterInput = {
     greaterThanOrEqual?: UUID;
   };
 
+  characterId?: {
+    isNil?: boolean;
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  characterName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
   id?: {
     eq?: UUID;
     notEq?: UUID;
@@ -1014,12 +1043,6 @@ export type NoteFilterInput = {
     stringStartsWith?: string;
   };
 
-  revealed?: {
-    eq?: boolean;
-    notEq?: boolean;
-    in?: Array<boolean>;
-  };
-
   title?: {
     eq?: string;
     notEq?: string;
@@ -1033,7 +1056,19 @@ export type NoteFilterInput = {
     stringStartsWith?: string;
   };
 
+  visibility?: {
+    eq?: "character" | "everyone" | "me_and_gm" | "only_me";
+    notEq?: "character" | "everyone" | "me_and_gm" | "only_me";
+    in?: Array<"character" | "everyone" | "me_and_gm" | "only_me">;
+    lessThan?: "character" | "everyone" | "me_and_gm" | "only_me";
+    greaterThan?: "character" | "everyone" | "me_and_gm" | "only_me";
+    lessThanOrEqual?: "character" | "everyone" | "me_and_gm" | "only_me";
+    greaterThanOrEqual?: "character" | "everyone" | "me_and_gm" | "only_me";
+  };
+
   campaign?: CampaignFilterInput;
+
+  character?: CharacterFilterInput;
 
 };
 export type ImageFilterInput = {
@@ -1155,7 +1190,7 @@ export type PlayerLogFilterField = (typeof playerLogFilterFields)[number];
 export const sessionFilterFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title", "campaign"] as const;
 export type SessionFilterField = (typeof sessionFilterFields)[number];
 
-export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title", "campaign"] as const;
+export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "characterId", "characterName", "id", "isOwner", "ownerName", "title", "visibility", "campaign", "character"] as const;
 export type NoteFilterField = (typeof noteFilterFields)[number];
 
 export const imageFilterFields = ["id"] as const;
@@ -1186,7 +1221,7 @@ export type PlayerLogSortField = (typeof playerLogSortFields)[number];
 export const sessionSortFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title"] as const;
 export type SessionSortField = (typeof sessionSortFields)[number];
 
-export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "id", "isOwner", "ownerName", "revealed", "title"] as const;
+export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "characterId", "characterName", "id", "isOwner", "ownerName", "title", "visibility"] as const;
 export type NoteSortField = (typeof noteSortFields)[number];
 
 export const imageSortFields = ["id"] as const;
