@@ -10,7 +10,9 @@ defmodule Atlas.Documents do
       character (description, secret_notes), note (body), player_log (body).
       id is the id of that record. mode replace (default) replaces the section, append adds to it.
       Markdown supports headings, lists, check lists, quotes, code, dividers, bold, italic,
-      strike, links and images (![](atlas-image:ID) on its own line). Tables are not supported.
+      strike, links and images (![](atlas-image:ID) on its own line). To link a character, session
+      or note, write [@Name](atlas-entry:KIND:ID) with KIND character, session or note; the editor
+      shows the current name. get_* texts show existing links in this form. Tables are not supported.
       """
   end
 
