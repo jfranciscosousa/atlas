@@ -133,6 +133,12 @@
   }
   html {
     font-family: var(--font-sans);
+    scrollbar-gutter: stable;
+  }
+  @supports not (scrollbar-gutter: stable) {
+    html {
+      overflow-y: scroll;
+    }
   }
   h1,
   h2,
