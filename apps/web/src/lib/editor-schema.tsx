@@ -1,7 +1,7 @@
 import { createReactInlineContentSpec } from "@blocknote/react";
 import { BlockNoteSchema, defaultInlineContentSpecs } from "@blocknote/core";
 
-import { blockSpecs, mentionConfig } from "./blocknote-schema";
+import { blockSpecs, mentionConfig, parseMention } from "./blocknote-schema";
 import { MentionChip } from "../components/mention-chip";
 
 export const schema = BlockNoteSchema.create({
@@ -9,6 +9,7 @@ export const schema = BlockNoteSchema.create({
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,
     mention: createReactInlineContentSpec(mentionConfig, {
+      parse: parseMention,
       render: ({ inlineContent }) => (
         <MentionChip
           kind={inlineContent.props.kind}

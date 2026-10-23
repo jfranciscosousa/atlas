@@ -23,5 +23,17 @@ export const mentionConfig = {
   content: "none",
 } as const;
 
+// Markdown imports and HTML pastes must keep Atlas links as mentions, not web links.
+export function parseMention(element: HTMLElement) {
+  if (element.tagName !== "A") return undefined;
+  const match = element
+    .getAttribute("href")
+    ?.match(
+      /^atlas-entry:(character|session|note):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/
+    );
+  if (!match) return undefined;
+  return { kind: match[1] as MentionKind, id: match[2]! };
+}
+
 /** The native BlockNote block array, as the API sends and stores it. */
 export type BlockNoteDocument = Array<Record<string, unknown>>;
