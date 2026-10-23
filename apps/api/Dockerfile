@@ -14,15 +14,22 @@ RUN mix local.hex --force && mix local.rebar --force
 COPY mix.exs mix.lock ./
 RUN mix deps.get --only prod
 
-# rustler_precompiled downloads the y_ex NIF with Erlang's httpc, which rejects GitHub's large
-# redirect headers. Pre-seed its cache with curl; it still checks the file against y_ex's checksum.
-# The NIF version is 2.15 because y_ex does not override rustler_precompiled's default.
-ENV RUSTLER_PRECOMPILED_GLOBAL_CACHE_PATH=/opt/rustler_precompiled
-RUN version=$(sed -n 's/.*:y_ex, "\([^"]*\)".*/\1/p' mix.lock) \
+# Erlang's httpc rejects GitHub's large redirect headers, so rustler_precompiled (y_ex) and
+# elixir_make (vix) cannot download their precompiled NIFs. Pre-seed their caches with curl.
+# Both still check each file against the checksum shipped in the Hex package.
+# The NIF versions (y_ex 2.15, vix 2.17) are the newest each package publishes for OTP 29.
+ENV RUSTLER_PRECOMPILED_GLOBAL_CACHE_PATH=/opt/rustler_precompiled \
+  ELIXIR_MAKE_CACHE_DIR=/opt/elixir_make
+RUN version=$(sed -n 's/^  "y_ex": {:hex, :y_ex, "\([^"]*\)".*/\1/p' mix.lock) \
   && file=libyex-v${version}-nif-2.15-$(uname -m)-unknown-linux-gnu.so.tar.gz \
   && mkdir -p "$RUSTLER_PRECOMPILED_GLOBAL_CACHE_PATH" \
   && curl -fsSL --retry 3 -o "$RUSTLER_PRECOMPILED_GLOBAL_CACHE_PATH/$file" \
     "https://github.com/satoren/y_ex/releases/download/v${version}/$file"
+RUN version=$(sed -n 's/^  "vix": {:hex, :vix, "\([^"]*\)".*/\1/p' mix.lock) \
+  && file=vix-nif-2.17-$(uname -m)-linux-gnu-${version}.tar.gz \
+  && mkdir -p "$ELIXIR_MAKE_CACHE_DIR" \
+  && curl -fsSL --retry 3 -o "$ELIXIR_MAKE_CACHE_DIR/$file" \
+    "https://github.com/akash-akya/vix/releases/download/v${version}/$file"
 
 RUN mkdir config
 COPY config/config.exs config/prod.exs config/
