@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# agent-browser with one browser session per worktree, so agents in different worktrees do not
+# share tabs or cookies. Use it instead of agent-browser: scripts/browser open <url>
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+exec agent-browser --session "$(agent-browser session id --scope worktree --prefix atlas)" "$@"
