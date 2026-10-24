@@ -376,6 +376,26 @@ defmodule Atlas.RichText.Collab.Blocks do
     :ok = Yex.XmlFragment.push(fragment, group_prelim(blocks))
   end
 
+  @doc """
+  Replaces the top-level block at `index` with `blocks`, as an edit that other editors of the
+  document merge. All other blocks stay as they are.
+  """
+  @spec replace_at(Yex.Doc.t(), non_neg_integer(), [map()]) :: :ok
+  def replace_at(%Yex.Doc{} = doc, index, blocks) do
+    group = doc |> Yex.Doc.get_xml_fragment(@fragment) |> Yex.XmlFragment.first_child()
+
+    blocks =
+      if blocks == [] and Yex.XmlElement.length(group) == 1, do: [empty_paragraph()], else: blocks
+
+    :ok = Yex.XmlElement.delete(group, index, 1)
+
+    blocks
+    |> Enum.with_index(index)
+    |> Enum.each(fn {block, at} ->
+      :ok = Yex.XmlElement.insert(group, at, container_prelim(block))
+    end)
+  end
+
   @doc "Adds `blocks` after the last block of a Yjs document that `seed/1` or an editor made."
   @spec append(Yex.Doc.t(), [map()]) :: :ok
   def append(%Yex.Doc{} = doc, blocks) do

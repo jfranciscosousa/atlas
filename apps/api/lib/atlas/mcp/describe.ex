@@ -1,12 +1,14 @@
 defmodule Atlas.Mcp.Describe do
   @moduledoc """
   Generic-action implementation that reads one record as the actor and returns the listed fields
-  and the plain text of the listed rich-text sections. The normal read policies and field policies
-  apply, so a hidden section comes back as `nil`.
+  and the Markdown of the listed rich-text sections, which `write_text` reads back without loss
+  (see `Atlas.RichText.Markdown`). Each section also has a `<section>_revision`, for the
+  `expected_revision` of a write. The normal read policies and field policies apply, so a hidden
+  section and its revision come back as `nil`.
   """
   use Ash.Resource.Actions.Implementation
 
-  alias Atlas.RichText.{Mentions, PlainText}
+  alias Atlas.RichText.{Markdown, Mentions}
 
   @impl true
   def run(input, opts, context) do
@@ -31,7 +33,13 @@ defmodule Atlas.Mcp.Describe do
 
       sections = Map.new(documents, fn {section, blocks} -> {section, text(blocks, labels)} end)
 
-      {:ok, Map.merge(fields, sections)}
+      revisions =
+        Map.new(opts[:sections], fn section ->
+          {:"#{section}_revision",
+           field(Map.fetch!(record, Atlas.RichText.revision_attribute(section)))}
+        end)
+
+      {:ok, fields |> Map.merge(sections) |> Map.merge(revisions)}
     end
   end
 
@@ -46,6 +54,6 @@ defmodule Atlas.Mcp.Describe do
   defp field(value), do: value
 
   # A field policy replaces a hidden section with a `%Ash.ForbiddenField{}`.
-  defp text(blocks, labels) when is_list(blocks), do: PlainText.render(blocks, labels: labels)
+  defp text(blocks, labels) when is_list(blocks), do: Markdown.render(blocks, labels: labels)
   defp text(_hidden, _labels), do: nil
 end

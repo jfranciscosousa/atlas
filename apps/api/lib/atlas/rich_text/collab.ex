@@ -41,6 +41,7 @@ defmodule Atlas.RichText.Collab do
   @type t :: %__MODULE__{}
   @type error ::
           :forbidden
+          | :stale
           | :update_too_large
           | :document_too_large
           | {:rejected, term()}
@@ -108,22 +109,36 @@ defmodule Atlas.RichText.Collab do
   @doc """
   Applies a client update. Returns `:unchanged` when it adds nothing, or `:changed` once the new
   state and the JSON are stored.
+
+  With `expected_revision`, the update is refused with `:stale` unless the section still has that
+  revision: the writer must have read the latest text.
   """
-  @spec apply_update(t(), struct(), binary()) ::
+  @spec apply_update(t(), struct(), binary(), keyword()) ::
           {:ok, :unchanged | :changed | :reset} | {:error, error()}
-  def apply_update(%__MODULE__{}, _actor, update) when byte_size(update) > @max_update,
+  def apply_update(target, actor, update, opts \\ [])
+
+  def apply_update(%__MODULE__{}, _actor, update, _opts) when byte_size(update) > @max_update,
     do: {:error, :update_too_large}
 
-  def apply_update(%__MODULE__{} = target, actor, update) when is_binary(update) do
+  def apply_update(%__MODULE__{} = target, actor, update, opts) when is_binary(update) do
     locked(target, fn ->
       with {:ok, record} <- fetch(target, actor),
            true <- can_write?(target, record, actor) || {:error, :forbidden},
+           :ok <- current?(target, record, opts[:expected_revision]),
            {:ok, row} <- row(target, record) do
         if row.reset?,
           do: {:ok, :reset},
           else: merge_and_store(target, record, actor, row, update)
       end
     end)
+  end
+
+  defp current?(_target, _record, nil), do: :ok
+
+  defp current?(%__MODULE__{section: section}, record, expected) do
+    if Map.fetch!(record, RichText.revision_attribute(section)) == expected,
+      do: :ok,
+      else: {:error, :stale}
   end
 
   defp merge_and_store(target, record, actor, row, update) do

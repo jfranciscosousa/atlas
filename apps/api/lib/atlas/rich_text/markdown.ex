@@ -1,6 +1,7 @@
 defmodule Atlas.RichText.Markdown do
   @moduledoc """
-  Reads Markdown as a BlockNote block array, for text that a language model writes.
+  Reads Markdown as a BlockNote block array, for text that a language model writes, and writes a
+  block array as the same Markdown (`render/2`), so a model can read, change and write it back.
 
   Supported: headings, paragraphs, bullet, numbered and check lists (nested by two-space
   indentation), quotes, fenced code, dividers, images (`![alt](atlas-image:<id>)` on its own
@@ -9,7 +10,12 @@ defmodule Atlas.RichText.Markdown do
   `code` and [links](https://example.com).
   Tables and raw HTML are not supported and stay plain text. The result still goes through
   `Atlas.RichText.Document`, which has the final say.
+
+  `render/2` loses what Markdown cannot say: underline, colors, alignment, image width, tables
+  (written as rows of cells), and Markdown characters inside text (there is no escaping).
   """
+
+  alias Atlas.RichText.PlainText
 
   @link_schemes ~w(http https mailto)
   @list ~r/^(\s*)([-*+]|\d+[.)])\s+(?:\[([ xX])\]\s+)?(.*)$/
@@ -26,6 +32,106 @@ defmodule Atlas.RichText.Markdown do
   @spec parse(String.t()) :: [map()]
   def parse(markdown) when is_binary(markdown) do
     markdown |> String.split(~r/\R/) |> blocks([])
+  end
+
+  @list_types ~w(bulletListItem numberedListItem checkListItem toggleListItem)
+
+  @doc """
+  Writes a validated block array as Markdown that `parse/1` reads back. Options are the
+  `:labels` of `Atlas.RichText.PlainText`.
+  """
+  @spec render([map()] | nil, keyword()) :: String.t()
+  def render(blocks, opts \\ [])
+  def render(nil, _opts), do: ""
+
+  def render(blocks, opts) do
+    blocks
+    |> Enum.zip(render_each(blocks, opts))
+    |> Enum.reject(fn {_block, markdown} -> markdown == "" end)
+    |> Enum.reduce({nil, []}, fn {%{"type" => type}, markdown}, {previous, acc} ->
+      # Items of one list stay together. Anything else needs a blank line to stay a block.
+      separator =
+        cond do
+          acc == [] -> ""
+          previous in @list_types and type in @list_types -> "\n"
+          true -> "\n\n"
+        end
+
+      {type, [acc, separator, markdown]}
+    end)
+    |> elem(1)
+    |> IO.iodata_to_binary()
+  end
+
+  @doc "The Markdown of each top-level block, with its children. An empty block gives `\"\"`."
+  @spec render_each([map()], keyword()) :: [String.t()]
+  def render_each(blocks, opts \\ []),
+    do: Enum.map(blocks, &(&1 |> lines("", opts) |> Enum.join("\n")))
+
+  defp lines(block, indent, opts) do
+    own =
+      case block do
+        %{"type" => "divider"} -> ["---"]
+        %{"type" => "image", "props" => props} -> ["![#{caption(props)}](#{props["url"]})"]
+        %{"type" => "codeBlock"} -> code(block)
+        %{"type" => "table", "content" => %{"rows" => rows}} -> Enum.map(rows, &row(&1, opts))
+        %{"type" => type} -> text_line(type, block, opts)
+      end
+
+    children = Enum.flat_map(block["children"] || [], &lines(&1, indent <> "  ", opts))
+    Enum.map(own, &(indent <> &1)) ++ children
+  end
+
+  defp caption(props), do: String.replace(props["caption"] || "", ~r/[\[\]\r\n]/, " ")
+
+  defp code(block) do
+    language = get_in(block, ["props", "language"]) || ""
+    text = for %{"text" => text} <- List.wrap(block["content"]), into: "", do: text
+    ["```" <> language] ++ String.split(text, "\n") ++ ["```"]
+  end
+
+  defp row(%{"cells" => cells}, opts), do: Enum.map_join(cells, " | ", &inline_text(&1, opts))
+
+  defp text_line(type, block, opts) do
+    case inline_text(block["content"], opts) do
+      "" -> []
+      text -> [prefix(type, block["props"] || %{}) <> text]
+    end
+  end
+
+  defp prefix("heading", props), do: String.duplicate("#", props["level"] || 1) <> " "
+  defp prefix("quote", _), do: "> "
+  defp prefix("numberedListItem", _), do: "1. "
+  defp prefix("checkListItem", %{"checked" => true}), do: "- [x] "
+  defp prefix("checkListItem", _), do: "- [ ] "
+  defp prefix(type, _) when type in @list_types, do: "- "
+  defp prefix(_, _), do: ""
+
+  defp inline_text(nil, _), do: ""
+  defp inline_text(%{"content" => content}, opts), do: inline_text(content, opts)
+  defp inline_text(nodes, opts), do: Enum.map_join(nodes, &node_text(&1, opts))
+
+  defp node_text(%{"type" => "mention"} = mention, opts),
+    do: PlainText.mention_text(mention, opts)
+
+  defp node_text(%{"type" => "link", "href" => href, "content" => content}, opts),
+    do: "[#{inline_text(content, opts)}](#{href})"
+
+  defp node_text(%{"type" => "text", "text" => text, "styles" => styles}, _opts) do
+    [_, before, core, trailing] = Regex.run(~r/\A(\s*)(.*?)(\s*)\z/s, text)
+
+    # Whitespace stays outside the marks: `** a**` does not read back as bold.
+    if core == "", do: text, else: before <> style(core, styles) <> trailing
+  end
+
+  defp node_text(_other, _opts), do: ""
+
+  defp style(text, %{"code" => true}), do: "`#{text}`"
+
+  defp style(text, styles) do
+    Enum.reduce([{"strike", "~~"}, {"italic", "*"}, {"bold", "**"}], text, fn {name, mark}, acc ->
+      if styles[name], do: mark <> acc <> mark, else: acc
+    end)
   end
 
   defp blocks([], acc), do: Enum.reverse(acc)

@@ -353,4 +353,131 @@ defmodule AtlasWeb.McpToolsTest do
     assert {true, _} =
              call(token_for(outsider), "upload_image_data", %{input: %{data: Base.encode64(png)}})
   end
+
+  describe "read, change and write back" do
+    setup ctx do
+      %{"id" => image} =
+        ok!(ctx.token, "upload_image_data", %{
+          input: %{data: Base.encode64(Atlas.ImageFixtures.png())}
+        })
+
+      markdown = """
+      # Act one
+
+      The party met **Ann** and read [the map](https://example.com/map).
+
+      ![The keep](atlas-image:#{image})
+
+      - [x] Found the key
+      - [ ] Opened the door
+
+      ---
+
+      Last words.\
+      """
+
+      assert {false, _} = write(ctx.token, "session", ctx.session.id, "log", markdown)
+      {:ok, image: image, markdown: String.trim(markdown)}
+    end
+
+    defp read(ctx), do: ok!(ctx.token, "get_session", %{input: %{id: ctx.session.id}})
+
+    test "get_session returns Markdown that keeps images, links and styles", ctx do
+      session = read(ctx)
+      assert session["log"] == ctx.markdown
+      assert session["log_revision"] > 0
+
+      # What the editor stores and what the model reads parse to the same blocks.
+      stored = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm).log_json
+      assert Atlas.RichText.Document.image_ids(stored) == [ctx.image]
+      assert Atlas.RichText.Markdown.render(stored) == ctx.markdown
+    end
+
+    test "writing back what get_session returned loses nothing", ctx do
+      markdown = String.replace(read(ctx)["log"], "Last words.", "Final words.")
+      assert {false, _} = write(ctx.token, "session", ctx.session.id, "log", markdown)
+
+      assert read(ctx)["log"] == String.replace(ctx.markdown, "Last words.", "Final words.")
+    end
+
+    test "a replace that drops an image is refused unless remove_images is set", ctx do
+      assert {true, message} = write(ctx.token, "session", ctx.session.id, "log", "Only text")
+      assert message =~ ctx.image
+      assert read(ctx)["log"] == ctx.markdown
+
+      assert {false, _} =
+               call(ctx.token, "write_text", %{
+                 input: %{
+                   kind: "session",
+                   id: ctx.session.id,
+                   section: "log",
+                   markdown: "Only text",
+                   remove_images: true
+                 }
+               })
+
+      assert read(ctx)["log"] == "Only text"
+    end
+
+    test "a write with an old revision is refused", ctx do
+      old = read(ctx)["log_revision"]
+      assert {false, _} = write(ctx.token, "session", ctx.session.id, "log", "Newer", "append")
+
+      assert {true, message} =
+               call(ctx.token, "write_text", %{
+                 input: %{
+                   kind: "session",
+                   id: ctx.session.id,
+                   section: "log",
+                   markdown: "Stale",
+                   mode: "append",
+                   expected_revision: old
+                 }
+               })
+
+      assert message =~ "changed since you read it"
+      refute read(ctx)["log"] =~ "Stale"
+    end
+
+    defp edit(ctx, find, replace, extra \\ %{}) do
+      call(ctx.token, "edit_text", %{
+        input:
+          Map.merge(
+            %{
+              kind: "session",
+              id: ctx.session.id,
+              section: "log",
+              find: find,
+              replace: replace
+            },
+            extra
+          )
+      })
+    end
+
+    test "edit_text changes one block and keeps the others", ctx do
+      before = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm).log_json
+      revision = read(ctx)["log_revision"]
+
+      assert {false, _} =
+               edit(ctx, "Last words.", "Final **words**.", %{expected_revision: revision})
+
+      assert read(ctx)["log"] == String.replace(ctx.markdown, "Last words.", "Final **words**.")
+
+      after_edit = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm).log_json
+      assert Enum.drop(after_edit, -1) == Enum.drop(before, -1)
+    end
+
+    test "edit_text needs one match, and honors the revision", ctx do
+      assert {true, none} = edit(ctx, "Nobody said this", "x")
+      assert none =~ "no block"
+
+      assert {true, many} = edit(ctx, "e", "x")
+      assert many =~ "more than once"
+
+      assert {true, stale} = edit(ctx, "Last words.", "x", %{expected_revision: 0})
+      assert stale =~ "changed since you read it"
+      assert read(ctx)["log"] == ctx.markdown
+    end
+  end
 end

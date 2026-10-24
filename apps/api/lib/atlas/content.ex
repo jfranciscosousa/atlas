@@ -38,7 +38,8 @@ defmodule Atlas.Content do
         "List the active notes of a campaign that you can read, who may read each, and the linked character."
 
     tool :get_note, Atlas.Content.Note, :describe,
-      description: "Read a note: its title, state and body as text."
+      description:
+        "Read a note: its title, state and body as Markdown, with the revision of the body."
   end
 
   resources do

@@ -1,7 +1,8 @@
 defmodule Atlas.RichText.PlainText do
   @moduledoc """
   Reads a validated BlockNote document as Markdown-like text, for a language model.
-  Styles and images are dropped. A mention stays as `[@Name](atlas-entry:kind:id)`, so a model
+  Styles, links and images are dropped: it is not safe to write this text back. Use
+  `Atlas.RichText.Markdown.render/2` for that. A mention stays as `[@Name](atlas-entry:kind:id)`, so a model
   that writes the text back keeps it. Headings, lists, quotes and nesting are kept.
 
   Options:
@@ -45,7 +46,12 @@ defmodule Atlas.RichText.PlainText do
   defp inline_node(%{"type" => "text", "text" => text}, _), do: text
   defp inline_node(%{"type" => "link", "content" => content}, opts), do: inline(content, opts)
 
-  defp inline_node(%{"type" => "mention", "props" => %{"kind" => kind, "id" => id}}, opts) do
+  defp inline_node(%{"type" => "mention"} = mention, opts), do: mention_text(mention, opts)
+
+  defp inline_node(cell, opts), do: inline(cell, opts)
+
+  @doc false
+  def mention_text(%{"props" => %{"kind" => kind, "id" => id}}, opts) do
     name =
       case Keyword.fetch(opts, :labels) do
         {:ok, labels} -> Map.get(labels, {kind, id}, "Restricted entry")
@@ -56,6 +62,4 @@ defmodule Atlas.RichText.PlainText do
       do: "[@#{name}](atlas-entry:#{kind}:#{id})",
       else: "@#{name}"
   end
-
-  defp inline_node(cell, opts), do: inline(cell, opts)
 end

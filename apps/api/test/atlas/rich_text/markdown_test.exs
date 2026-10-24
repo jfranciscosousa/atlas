@@ -108,4 +108,52 @@ defmodule Atlas.RichText.MarkdownTest do
       assert {:ok, _} = Document.cast_input([paragraph], [])
     end
   end
+
+  describe "render/2" do
+    @markdown """
+    # Title
+
+    Some **bold**, *italic*, ~~gone~~ and `code` with [a link](https://a.example) and a
+    [@Mira](atlas-entry:character:0b8f7d6e-1c2a-4f3b-9d4e-5a6b7c8d9e0f).
+
+    > A quote
+
+    ![A keep](atlas-image:0b8f7d6e-1c2a-4f3b-9d4e-5a6b7c8d9e0f)
+
+    - one
+      - nested
+    - [x] done
+    1. first
+
+    ```elixir
+    IO.puts(1)
+    ```
+
+    ---
+
+    The end
+    """
+
+    test "writes Markdown that parse/1 reads back to the same blocks" do
+      markdown = String.replace(@markdown, "a\n[@Mira]", "a [@Mira]") |> String.trim()
+      blocks = Markdown.parse(markdown)
+
+      assert Markdown.render(blocks) =~ "![A keep](atlas-image:"
+      assert strip_ids(Markdown.parse(Markdown.render(blocks))) == strip_ids(blocks)
+    end
+
+    test "keeps whitespace outside the marks" do
+      [paragraph] = Markdown.parse("a **b** c")
+
+      assert Markdown.render([put_in(paragraph, ["content", Access.at(1), "text"], " b ")]) ==
+               "a  **b**  c"
+    end
+
+    defp strip_ids(blocks) do
+      Enum.map(
+        blocks,
+        &(&1 |> Map.delete("id") |> Map.update!("children", fn c -> strip_ids(c) end))
+      )
+    end
+  end
 end

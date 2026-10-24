@@ -50,6 +50,34 @@ defmodule Atlas.Documents.Doc do
         constraints one_of: [:replace, :append]
       end
 
+      argument :expected_revision, :integer, constraints: [min: 0]
+      argument :remove_images, :boolean, allow_nil?: false, default: false
+
+      run Atlas.Mcp.WriteText
+    end
+
+    # Changes the one block that holds `find`. Used by the MCP tools.
+    action :edit_text, :map do
+      argument :kind, :atom do
+        allow_nil? false
+        constraints one_of: [:campaign, :session, :character, :note, :player_log]
+      end
+
+      argument :id, :uuid, allow_nil?: false
+
+      argument :section, :atom do
+        allow_nil? false
+        constraints one_of: [:description, :progress_rewards, :log, :prep, :secret_notes, :body]
+      end
+
+      argument :find, :string, allow_nil?: false
+
+      argument :replace, :string,
+        allow_nil?: false,
+        constraints: [allow_empty?: true, trim?: false]
+
+      argument :expected_revision, :integer, constraints: [min: 0]
+
       run Atlas.Mcp.WriteText
     end
   end
@@ -60,7 +88,7 @@ defmodule Atlas.Documents.Doc do
       forbid_if always()
     end
 
-    policy action(:write_text) do
+    policy action([:write_text, :edit_text]) do
       authorize_if always()
     end
   end

@@ -66,21 +66,23 @@ defmodule Atlas.Campaigns do
       description: "List the player logs of a session and who wrote each one."
 
     tool :get_player_log, Atlas.Campaigns.PlayerLog, :describe,
-      description: "Read one player log as text."
+      description: "Read one player log as Markdown, with its revision."
 
     tool :list_campaigns, Atlas.Campaigns.Campaign, :list_as_gm,
       select: [:id, :name],
       description: "List the campaigns you run as GM."
 
     tool :get_campaign, Atlas.Campaigns.Campaign, :describe,
-      description: "Read a campaign: its name, description and progress/rewards as text."
+      description:
+        "Read a campaign: its name, description and progress/rewards as Markdown, with their revisions."
 
     tool :list_sessions, Atlas.Campaigns.Session, :list,
       select: [:id, :number, :title, :played_on, :status],
       description: "List the sessions of a campaign, newest first."
 
     tool :get_session, Atlas.Campaigns.Session, :describe,
-      description: "Read a session: its details, the log and the GM-only prep as text."
+      description:
+        "Read a session: its details, the log and the GM-only prep as Markdown, with their revisions."
 
     tool :list_characters, Atlas.Campaigns.Character, :list,
       select: [:id, :name],
@@ -90,7 +92,7 @@ defmodule Atlas.Campaigns do
 
     tool :get_character, Atlas.Campaigns.Character, :describe,
       description:
-        "Read a character: its name, player, description and GM-only secret notes as text. The GM also gets the path of the claim link of an unclaimed character."
+        "Read a character: its name, player, description and GM-only secret notes as Markdown, with their revisions. The GM also gets the path of the claim link of an unclaimed character."
   end
 
   resources do
