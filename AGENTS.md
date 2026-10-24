@@ -19,7 +19,7 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 - Apply every new migration to the development database yourself. Do not ask. Find the database
   the running dev server uses first: its `PGPORT` is not always the default.
 - A worktree has its own databases, `atlas_dev_<slug>` and `atlas_test_<slug>`. `scripts/worktree-setup`
-  creates them and copies built dependencies from the main checkout. T3 Code runs it on worktree creation.
+  creates them and copies built dependencies from the main checkout. T3 Code runs it on worktree creation (`t3.json`).
   Run it yourself when `deps` is missing or a mix task fails on an unknown dependency. It is safe: it calls
   `scripts/refresh-main`, which fast-forwards the main checkout only when it is clean and on `master`, and
   builds its dependencies. `scripts/refresh-main` is also safe to run alone. `--skip-refresh` skips it.
