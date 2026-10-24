@@ -64,11 +64,16 @@ defmodule AtlasWeb.McpToolsTest do
     {:ok, gm: gm, token: token_for(gm), campaign: campaign, session: session}
   end
 
-  defp write(token, kind, id, section, markdown, mode \\ "replace") do
-    call(token, "write_text", %{
-      input: %{kind: kind, id: id, section: section, markdown: markdown, mode: mode}
+  defp edit(token, kind, id, section, operations, extra \\ %{}) do
+    call(token, "edit_blocks", %{
+      input: Map.merge(%{kind: kind, id: id, section: section, operations: operations}, extra)
     })
   end
+
+  defp insert(token, kind, id, section, blocks, extra \\ %{}),
+    do: edit(token, kind, id, section, [Map.merge(%{op: "insert", blocks: blocks}, extra)])
+
+  defp paragraph(text), do: %{type: "paragraph", content: text}
 
   defp text(resource, id, section, actor) do
     resource
@@ -77,56 +82,101 @@ defmodule AtlasWeb.McpToolsTest do
     |> PlainText.render()
   end
 
-  test "write_text writes Markdown as a live edit that open editors receive", ctx do
+  defp stored(ctx, section \\ :log) do
+    ctx.session.id
+    |> then(&Ash.get!(Atlas.Campaigns.Session, &1, actor: ctx.gm))
+    |> Map.fetch!(Atlas.RichText.json_attribute(section))
+  end
+
+  defp join_player(ctx) do
+    player = Fixtures.user()
+
+    invitation =
+      Ash.create!(Atlas.Campaigns.Invitation, %{campaign_id: ctx.campaign.id}, actor: ctx.gm)
+
+    character =
+      Ash.create!(Atlas.Campaigns.Character, %{token: invitation.token},
+        action: :join,
+        actor: player
+      )
+
+    {player, character}
+  end
+
+  test "edit_blocks inserts blocks as a live edit that open editors receive", ctx do
     {:ok, target} = Collab.parse("session:#{ctx.session.id}:prep")
     Phoenix.PubSub.subscribe(Atlas.PubSub, Collab.topic(target))
 
-    assert {false, saved} =
-             write(ctx.token, "session", ctx.session.id, "prep", "# Plan\n\nThe **twist**.")
+    blocks = [
+      %{type: "heading", props: %{level: 1}, content: "Plan"},
+      %{
+        type: "paragraph",
+        content: [
+          %{type: "text", text: "The "},
+          %{type: "text", text: "twist", styles: %{bold: true}},
+          %{type: "text", text: "."}
+        ]
+      }
+    ]
 
-    assert Jason.decode!(saved)["saved"] == true
+    assert {false, saved} = insert(ctx.token, "session", ctx.session.id, "prep", blocks)
+
+    assert %{"saved" => true, "revision" => 1, "inserted" => [first, second]} =
+             Jason.decode!(saved)
+
+    assert first != second
     assert_receive {:collab_update, update} when is_binary(update)
 
     assert text(Atlas.Campaigns.Session, ctx.session.id, :prep, ctx.gm) == "# Plan\nThe twist."
     assert Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm).prep_revision == 1
   end
 
-  test "append adds to the section and replace overwrites it", ctx do
-    write(ctx.token, "session", ctx.session.id, "log", "First")
-    write(ctx.token, "session", ctx.session.id, "log", "Second", "append")
+  test "insert adds to the section, and delete with insert replaces it", ctx do
+    insert(ctx.token, "session", ctx.session.id, "log", [paragraph("First")])
+    insert(ctx.token, "session", ctx.session.id, "log", [paragraph("Second")])
     assert text(Atlas.Campaigns.Session, ctx.session.id, :log, ctx.gm) == "First\nSecond"
 
-    write(ctx.token, "session", ctx.session.id, "log", "Only this")
+    operations =
+      Enum.map(stored(ctx), &%{op: "delete", id: &1["id"]}) ++
+        [%{op: "insert", blocks: [paragraph("Only this")]}]
+
+    assert {false, _} = edit(ctx.token, "session", ctx.session.id, "log", operations)
     assert text(Atlas.Campaigns.Session, ctx.session.id, :log, ctx.gm) == "Only this"
+    assert [%{"type" => "paragraph"}] = stored(ctx)
   end
 
-  test "an append to an empty section does not keep the empty paragraph", ctx do
-    write(ctx.token, "session", ctx.session.id, "log", "Hello", "append")
-    session = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm)
-    assert [%{"type" => "paragraph"}] = session.log_json
+  test "an insert into an empty section does not keep the empty paragraph", ctx do
+    insert(ctx.token, "session", ctx.session.id, "log", [paragraph("Hello")])
+    assert [%{"type" => "paragraph", "content" => [%{"text" => "Hello"}]}] = stored(ctx)
   end
 
-  test "a writer who is not the GM cannot write the section", ctx do
+  test "a writer who is not the GM cannot edit the section", ctx do
     stranger_token = token_for(Fixtures.user())
 
-    assert {true, message} = write(stranger_token, "session", ctx.session.id, "prep", "Hi")
+    assert {true, message} =
+             insert(stranger_token, "session", ctx.session.id, "prep", [paragraph("Hi")])
+
     assert message =~ "may write"
     assert text(Atlas.Campaigns.Session, ctx.session.id, :prep, ctx.gm) == ""
   end
 
   test "a section that the record does not have is refused", ctx do
-    assert {true, message} = write(ctx.token, "session", ctx.session.id, "description", "Hi")
+    assert {true, message} =
+             insert(ctx.token, "session", ctx.session.id, "description", [paragraph("Hi")])
+
     assert message =~ "no such section"
   end
 
   test "an image that does not exist is refused", ctx do
-    markdown = "![](atlas-image:#{Ecto.UUID.generate()})"
-    assert {true, message} = write(ctx.token, "session", ctx.session.id, "log", markdown)
+    image = %{type: "image", props: %{url: "atlas-image:#{Ecto.UUID.generate()}"}}
+    assert {true, message} = insert(ctx.token, "session", ctx.session.id, "log", [image])
     assert message =~ "image"
   end
 
   test "campaign and character text follow the same rules", ctx do
-    assert {false, _} = write(ctx.token, "campaign", ctx.campaign.id, "description", "A keep.")
+    assert {false, _} =
+             insert(ctx.token, "campaign", ctx.campaign.id, "description", [paragraph("A keep.")])
+
     assert text(Atlas.Campaigns.Campaign, ctx.campaign.id, :description, ctx.gm) == "A keep."
   end
 
@@ -134,7 +184,8 @@ defmodule AtlasWeb.McpToolsTest do
     note =
       ok!(ctx.token, "create_note", %{input: %{campaign_id: ctx.campaign.id, title: "Plot"}})
 
-    assert {false, _} = write(ctx.token, "note", note["id"], "body", "- a\n- b")
+    list = for item <- ["a", "b"], do: %{type: "bulletListItem", content: item}
+    assert {false, _} = insert(ctx.token, "note", note["id"], "body", list)
     assert text(Atlas.Content.Note, note["id"], :body, ctx.gm) == "- a\n- b"
 
     for {tool, input} <- [
@@ -190,7 +241,9 @@ defmodule AtlasWeb.McpToolsTest do
 
     listed = ok!(ctx.token, "list_player_logs", %{input: %{session_id: ctx.session.id}})
     assert [%{"id" => id, "author_name" => "Test User"}] = listed
-    assert %{"body" => "I saw a ghost"} = ok!(ctx.token, "get_player_log", %{input: %{id: id}})
+
+    assert %{"body" => [%{"type" => "paragraph", "content" => [%{"text" => "I saw a ghost"}]}]} =
+             ok!(ctx.token, "get_player_log", %{input: %{id: id}})
   end
 
   test "the GM prepares an unclaimed character through MCP and gets the claim link", ctx do
@@ -333,8 +386,10 @@ defmodule AtlasWeb.McpToolsTest do
     png = Atlas.ImageFixtures.png()
 
     for data <- [Base.encode64(png), "data:image/png;base64," <> Base.encode64(png)] do
-      assert %{"id" => id, "markdown" => "![](atlas-image:" <> _} =
+      assert %{"id" => id, "block" => %{"type" => "image", "props" => %{"url" => url}}} =
                ok!(ctx.token, "upload_image_data", %{input: %{data: data}})
+
+      assert url == "atlas-image:#{id}"
 
       assert Ash.get!(Atlas.Images.Image, id, authorize?: false).content_type == "image/webp"
     end
@@ -361,172 +416,759 @@ defmodule AtlasWeb.McpToolsTest do
           input: %{data: Base.encode64(Atlas.ImageFixtures.png())}
         })
 
-      markdown = """
-      # Act one
+      blocks = [
+        %{id: "h1", type: "heading", props: %{level: 1}, content: "Act one"},
+        %{
+          id: "p1",
+          type: "paragraph",
+          content: [
+            %{type: "text", text: "The party met "},
+            %{type: "text", text: "Ann", styles: %{bold: true}},
+            %{type: "text", text: " and read "},
+            %{
+              type: "link",
+              href: "https://example.com/map",
+              content: [%{type: "text", text: "the map"}]
+            },
+            %{type: "text", text: " in "},
+            %{type: "mention", props: %{kind: "session", id: ctx.session.id}}
+          ]
+        },
+        %{
+          id: "img",
+          type: "image",
+          props: %{url: "atlas-image:#{image}", name: "keep.png", caption: "The keep"}
+        },
+        %{
+          id: "l1",
+          type: "checkListItem",
+          props: %{checked: true},
+          content: "Found the key",
+          children: [%{id: "l1a", type: "paragraph", content: "Nested"}]
+        },
+        %{
+          id: "u1",
+          type: "paragraph",
+          props: %{textAlignment: "center"},
+          content: [
+            %{
+              type: "text",
+              text: "Underlined words",
+              styles: %{underline: true, textColor: "red"}
+            }
+          ]
+        },
+        %{id: "d1", type: "divider"},
+        %{id: "last", type: "paragraph", content: "Last words."}
+      ]
 
-      The party met **Ann** and read [the map](https://example.com/map).
-
-      ![The keep](atlas-image:#{image})
-
-      - [x] Found the key
-      - [ ] Opened the door
-
-      ---
-
-      Last words.\
-      """
-
-      assert {false, _} = write(ctx.token, "session", ctx.session.id, "log", markdown)
-      {:ok, image: image, markdown: String.trim(markdown)}
+      assert {false, _} = insert(ctx.token, "session", ctx.session.id, "log", blocks)
+      {:ok, image: image}
     end
 
     defp read(ctx), do: ok!(ctx.token, "get_session", %{input: %{id: ctx.session.id}})
 
-    test "get_session returns Markdown that keeps images, links and styles", ctx do
-      session = read(ctx)
-      assert session["log"] == ctx.markdown
-      assert session["log_revision"] > 0
+    defp block(blocks, id) do
+      Enum.find_value(blocks, fn block ->
+        if block["id"] == id, do: block, else: block(block["children"] || [], id)
+      end)
+    end
 
-      # What the editor stores and what the model reads parse to the same blocks.
-      stored = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm).log_json
-      assert Atlas.RichText.Document.image_ids(stored) == [ctx.image]
-      assert Atlas.RichText.Markdown.render(stored) == ctx.markdown
+    test "get_session returns the blocks of the editor, without defaults", ctx do
+      session = read(ctx)
+      assert session["log_revision"] > 0
+      assert ~w(h1 p1 img l1 u1 d1 last) == Enum.map(session["log"], & &1["id"])
+
+      # Default props, empty styles and empty children are left out.
+      assert %{"type" => "heading", "props" => %{"level" => 1}} = block(session["log"], "h1")
+      refute Map.has_key?(block(session["log"], "p1"), "props")
+      refute Map.has_key?(block(session["log"], "p1"), "children")
+      assert [%{"text" => "The party met "} = first | _] = block(session["log"], "p1")["content"]
+      refute Map.has_key?(first, "styles")
+
+      # Formatting that Markdown could not carry comes back whole.
+      assert %{"props" => %{"textAlignment" => "center"}, "content" => [underlined]} =
+               block(session["log"], "u1")
+
+      assert underlined["styles"] == %{"underline" => true, "textColor" => "red"}
+
+      assert %{"props" => %{"name" => "keep.png", "caption" => "The keep"}} =
+               block(session["log"], "img")
+
+      assert %{"props" => %{"checked" => true}, "children" => [%{"id" => "l1a"}]} =
+               block(session["log"], "l1")
+    end
+
+    test "a mention has the name that the reader may see", ctx do
+      mention = fn session ->
+        session["log"] |> block("p1") |> Map.fetch!("content") |> List.last()
+      end
+
+      assert %{"props" => %{"label" => "Session 1", "kind" => "session"}} = mention.(read(ctx))
+
+      # A name that a player may not read stays hidden, as in the app.
+      {player, _character} = join_player(ctx)
+
+      note =
+        Ash.create!(
+          Atlas.Content.Note,
+          %{campaign_id: ctx.campaign.id, title: "GM secret", visibility: :only_me},
+          actor: ctx.gm
+        )
+
+      assert {false, _} =
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{
+                   op: "update",
+                   id: "last",
+                   content: [%{type: "mention", props: %{kind: "note", id: note.id}}]
+                 }
+               ])
+
+      label = fn session ->
+        session["log"] |> block("last") |> get_in(["content", Access.at(0), "props", "label"])
+      end
+
+      assert label.(read(ctx)) == "GM secret"
+
+      player_session = ok!(token_for(player), "get_session", %{input: %{id: ctx.session.id}})
+      assert label.(player_session) == "Restricted entry"
+      assert player_session["prep"] == nil
     end
 
     test "writing back what get_session returned loses nothing", ctx do
-      markdown = String.replace(read(ctx)["log"], "Last words.", "Final words.")
-      assert {false, _} = write(ctx.token, "session", ctx.session.id, "log", markdown)
-
-      assert read(ctx)["log"] == String.replace(ctx.markdown, "Last words.", "Final words.")
+      session = read(ctx)
+      assert {false, _} = insert(ctx.token, "session", ctx.session.id, "prep", session["log"])
+      assert stored(ctx, :prep) == stored(ctx, :log)
     end
 
-    test "a replace that drops an image is refused unless remove_images is set", ctx do
-      assert {true, message} = write(ctx.token, "session", ctx.session.id, "log", "Only text")
-      assert message =~ ctx.image
-      assert read(ctx)["log"] == ctx.markdown
+    test "update changes one block, keeps its id and nested blocks, and leaves the others", ctx do
+      before = stored(ctx)
+      %{"log" => log, "log_revision" => revision} = read(ctx)
+
+      operation = %{
+        op: "update",
+        id: "l1",
+        content: "Found the silver key",
+        hash: block(log, "l1")["hash"]
+      }
+
+      assert {false, result} =
+               edit(ctx.token, "session", ctx.session.id, "log", [operation], %{
+                 expected_revision: revision
+               })
+
+      assert Jason.decode!(result)["revision"] > revision
+
+      after_edit = stored(ctx)
+
+      assert block(after_edit, "l1")["content"] |> hd() |> Map.fetch!("text") ==
+               "Found the silver key"
+
+      assert [%{"id" => "l1a"}] = block(after_edit, "l1")["children"]
+      assert block(after_edit, "l1")["props"]["checked"] == true
+
+      assert Enum.reject(after_edit, &(&1["id"] == "l1")) ==
+               Enum.reject(before, &(&1["id"] == "l1"))
+    end
+
+    test "update can change the type and merge props", ctx do
+      assert {false, _} =
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{op: "update", id: "last", type: "heading", props: %{level: 3}}
+               ])
+
+      assert %{
+               "type" => "heading",
+               "props" => %{"level" => 3},
+               "content" => [%{"text" => "Last words."}]
+             } =
+               block(stored(ctx), "last")
+    end
+
+    test "an update with an old hash is refused", ctx do
+      hash = block(read(ctx)["log"], "last")["hash"]
 
       assert {false, _} =
-               call(ctx.token, "write_text", %{
-                 input: %{
-                   kind: "session",
-                   id: ctx.session.id,
-                   section: "log",
-                   markdown: "Only text",
-                   remove_images: true
-                 }
-               })
-
-      assert read(ctx)["log"] == "Only text"
-    end
-
-    test "a write with an old revision is refused", ctx do
-      old = read(ctx)["log_revision"]
-      assert {false, _} = write(ctx.token, "session", ctx.session.id, "log", "Newer", "append")
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{op: "update", id: "last", content: "Changed by someone"}
+               ])
 
       assert {true, message} =
-               call(ctx.token, "write_text", %{
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{op: "update", id: "last", content: "Stale", hash: hash}
+               ])
+
+      assert message =~ "was edited by someone since you read it"
+
+      assert block(stored(ctx), "last")["content"] |> hd() |> Map.fetch!("text") ==
+               "Changed by someone"
+    end
+
+    test "insert puts blocks after, before or into a block and returns their ids", ctx do
+      operations = [
+        %{op: "insert", after: "h1", blocks: [Map.put(paragraph("after"), :id, "n1")]},
+        %{op: "insert", before: "h1", blocks: [paragraph("before")]},
+        %{op: "insert", parent: "last", blocks: [Map.put(paragraph("child"), :id, "n3")]}
+      ]
+
+      assert {false, result} = edit(ctx.token, "session", ctx.session.id, "log", operations)
+      assert %{"inserted" => ["n1", _generated, "n3"]} = Jason.decode!(result)
+
+      log = stored(ctx)
+      assert PlainText.render(log) =~ "before\n# Act one\nafter\nThe party met"
+      assert [%{"id" => "n3"}] = block(log, "last")["children"]
+    end
+
+    test "delete removes a block with its nested blocks, and move keeps them", ctx do
+      operations = [%{op: "delete", id: "img"}, %{op: "move", id: "l1", after: "last"}]
+
+      assert {false, _} =
+               edit(ctx.token, "session", ctx.session.id, "log", operations, %{
+                 remove_images: true
+               })
+
+      log = stored(ctx)
+      assert ~w(h1 p1 u1 d1 last l1) == Enum.map(log, & &1["id"])
+      assert [%{"id" => "l1a"}] = block(log, "l1")["children"]
+    end
+
+    test "one failing operation changes nothing", ctx do
+      before = stored(ctx)
+
+      operations = [
+        %{op: "delete", id: "h1"},
+        %{op: "update", id: "does-not-exist", content: "x"}
+      ]
+
+      assert {true, message} = edit(ctx.token, "session", ctx.session.id, "log", operations)
+      assert message =~ "operations[1]"
+      assert message =~ "does-not-exist"
+      assert stored(ctx) == before
+    end
+
+    test "a block that is not valid names the place and the allowed values", ctx do
+      bad_style = %{
+        type: "paragraph",
+        content: [%{type: "text", text: "x"}, %{type: "text", text: "y", styles: %{shiny: true}}]
+      }
+
+      assert {true, message} = insert(ctx.token, "session", ctx.session.id, "log", [bad_style])
+      assert message =~ "operations[0]: blocks[0].content[1]"
+      assert message =~ ~s(text style "shiny" is not allowed; use bold, italic)
+
+      assert {true, message} =
+               insert(ctx.token, "session", ctx.session.id, "log", [%{type: "video"}])
+
+      assert message =~ ~s(block type "video" is not allowed; use paragraph, heading)
+
+      assert {true, message} =
+               insert(ctx.token, "session", ctx.session.id, "log", [
+                 %{type: "divider", content: "text"}
+               ])
+
+      assert message =~ "divider block has no content"
+
+      assert {true, message} =
+               edit(ctx.token, "session", ctx.session.id, "log", [%{op: "shuffle"}])
+
+      assert message =~ "not known; use insert, update, delete or move"
+
+      assert {true, message} =
+               insert(ctx.token, "session", ctx.session.id, "log", [paragraph("x")], %{
+                 after: "h1",
+                 before: "h1"
+               })
+
+      assert message =~ "only one of after, before and parent"
+    end
+
+    test "an edit that removes an image is refused unless remove_images is set", ctx do
+      before = stored(ctx)
+
+      for operations <- [
+            [%{op: "delete", id: "img"}],
+            [%{op: "update", id: "img", type: "paragraph", props: %{url: ""}}]
+          ] do
+        assert {true, message} = edit(ctx.token, "session", ctx.session.id, "log", operations)
+        assert message =~ ctx.image
+        assert message =~ "remove_images"
+        assert stored(ctx) == before
+      end
+
+      # Deleting a block that holds the image counts too.
+      nest = %{op: "move", id: "img", parent: "l1"}
+      assert {false, _} = edit(ctx.token, "session", ctx.session.id, "log", [nest])
+
+      assert {true, message} =
+               edit(ctx.token, "session", ctx.session.id, "log", [%{op: "delete", id: "l1"}])
+
+      assert message =~ "remove_images"
+    end
+
+    test "moving an image, or deleting and inserting it again, is not removing it", ctx do
+      image = block(stored(ctx), "img")
+
+      operations = [
+        %{op: "move", id: "img", after: "last"},
+        %{op: "delete", id: "img"},
+        %{op: "insert", blocks: [Map.take(image, ["type", "props"])]}
+      ]
+
+      assert {false, _} = edit(ctx.token, "session", ctx.session.id, "log", operations)
+      assert Atlas.RichText.Document.image_ids(stored(ctx)) == [ctx.image]
+    end
+
+    test "an edit that deletes many blocks is refused unless delete_many is set", ctx do
+      many = for n <- 1..11, do: %{id: "x#{n}", type: "paragraph", content: "x#{n}"}
+      assert {false, _} = insert(ctx.token, "session", ctx.session.id, "log", many)
+      before = stored(ctx)
+
+      operations = Enum.map(1..11, &%{op: "delete", id: "x#{&1}"})
+      assert {true, message} = edit(ctx.token, "session", ctx.session.id, "log", operations)
+      assert message =~ "delete_many"
+      assert stored(ctx) == before
+
+      assert {false, _} =
+               edit(ctx.token, "session", ctx.session.id, "log", operations, %{delete_many: true})
+
+      assert length(stored(ctx)) == length(before) - 11
+    end
+
+    test "an update that drops bold, links or mentions warns and still applies", ctx do
+      %{"log" => log} = read(ctx)
+      hash = block(log, "p1")["hash"]
+
+      assert {false, result} =
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{op: "update", id: "p1", content: "Plain now", hash: hash}
+               ])
+
+      assert %{"warnings" => [warning]} = Jason.decode!(result)
+      assert warning =~ ~s(operations[0]: block "p1" lost bold, link, mention)
+      assert PlainText.render(stored(ctx)) =~ "Plain now"
+    end
+
+    test "an update that keeps its styles and sends the hash has no warning", ctx do
+      hash = block(read(ctx)["log"], "u1")["hash"]
+      styles = %{underline: true, textColor: "red"}
+
+      assert {false, result} =
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{
+                   op: "update",
+                   id: "u1",
+                   content: [%{type: "text", text: "Still underlined", styles: styles}],
+                   hash: hash
+                 }
+               ])
+
+      assert %{"warnings" => []} = Jason.decode!(result)
+    end
+
+    test "an update without a hash warns that an edit of someone could be lost", ctx do
+      assert {false, result} =
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{op: "update", id: "last", content: "No hash"}
+               ])
+
+      assert %{"warnings" => [warning]} = Jason.decode!(result)
+      assert warning =~ "no hash"
+    end
+
+    test "a new block cannot reuse the id of a block", ctx do
+      assert {true, message} =
+               insert(ctx.token, "session", ctx.session.id, "log", [
+                 Map.put(paragraph("x"), :id, "h1")
+               ])
+
+      assert message =~ ~s(block id "h1" exists)
+    end
+
+    test "an edit with an old revision is refused", ctx do
+      old = read(ctx)["log_revision"]
+
+      assert {false, _} =
+               insert(ctx.token, "session", ctx.session.id, "log", [paragraph("Newer")])
+
+      assert {true, message} =
+               edit(
+                 ctx.token,
+                 "session",
+                 ctx.session.id,
+                 "log",
+                 [%{op: "insert", blocks: [paragraph("Stale")]}],
+                 %{expected_revision: old}
+               )
+
+      assert message =~ "changed since you read it"
+      refute PlainText.render(stored(ctx)) =~ "Stale"
+    end
+
+    test "deleting every block leaves an empty paragraph that the next insert replaces", ctx do
+      operations = Enum.map(~w(h1 p1 img l1 u1 d1 last), &%{op: "delete", id: &1})
+
+      assert {false, _} =
+               edit(ctx.token, "session", ctx.session.id, "log", operations, %{
+                 remove_images: true
+               })
+
+      assert [%{"type" => "paragraph", "content" => []}] = stored(ctx)
+
+      assert {false, _} =
+               insert(ctx.token, "session", ctx.session.id, "log", [paragraph("Fresh")])
+
+      assert [%{"content" => [%{"text" => "Fresh"}]}] = stored(ctx)
+    end
+
+    test "read_blocks reads some blocks with their nested blocks", ctx do
+      assert %{"blocks" => [%{"id" => "l1", "children" => [_]}, %{"id" => "last"}]} =
+               ok!(ctx.token, "read_blocks", %{
                  input: %{
                    kind: "session",
                    id: ctx.session.id,
                    section: "log",
-                   markdown: "Stale",
-                   mode: "append",
-                   expected_revision: old
+                   ids: ["l1", "last"]
                  }
                })
 
-      assert message =~ "changed since you read it"
-      refute read(ctx)["log"] =~ "Stale"
+      assert {true, message} =
+               call(ctx.token, "read_blocks", %{
+                 input: %{kind: "session", id: ctx.session.id, section: "log", ids: ["nope"]}
+               })
+
+      assert message =~ "nope"
     end
 
-    defp edit(ctx, find, replace, extra \\ %{}) do
-      call(ctx.token, "edit_text", %{
-        input:
-          Map.merge(
-            %{
-              kind: "session",
-              id: ctx.session.id,
-              section: "log",
-              find: find,
-              replace: replace
-            },
-            extra
-          )
+    test "read_blocks gives an outline in plain text", ctx do
+      assert %{"outline" => outline, "revision" => revision} =
+               ok!(ctx.token, "read_blocks", %{
+                 input: %{kind: "session", id: ctx.session.id, section: "log", outline: true}
+               })
+
+      assert revision == read(ctx)["log_revision"]
+      assert Enum.map(outline, & &1["id"]) == ~w(h1 p1 img l1 l1a u1 d1 last)
+
+      assert %{"text" => "The party met Ann and read the map in Session 1", "depth" => 0} =
+               Enum.find(outline, &(&1["id"] == "p1"))
+
+      assert %{"text" => "[image: keep.png - The keep]"} =
+               Enum.find(outline, &(&1["id"] == "img"))
+
+      assert %{"depth" => 1} = Enum.find(outline, &(&1["id"] == "l1a"))
+    end
+
+    test "read_blocks follows the read rules of the section", ctx do
+      {player, _character} = join_player(ctx)
+
+      assert {true, message} =
+               call(token_for(player), "read_blocks", %{
+                 input: %{kind: "session", id: ctx.session.id, section: "prep"}
+               })
+
+      assert message =~ "may read"
+    end
+  end
+
+  describe "tables and image layout" do
+    setup ctx do
+      %{"id" => image} =
+        ok!(ctx.token, "upload_image_data", %{
+          input: %{data: Base.encode64(Atlas.ImageFixtures.png())}
+        })
+
+      cell = fn text, styles -> [%{type: "text", text: text, styles: styles}] end
+
+      table = %{
+        id: "t1",
+        type: "table",
+        props: %{textColor: "red"},
+        content: %{
+          type: "tableContent",
+          columnWidths: [120, nil],
+          headerRows: 1,
+          rows: [
+            %{cells: [cell.("Name", %{bold: true}), cell.("Role", %{bold: true})]},
+            %{cells: [cell.("Ann", %{}), cell.("Thief\nwith a limp", %{italic: true})]}
+          ]
+        }
+      }
+
+      picture = %{
+        id: "img",
+        type: "image",
+        props: %{
+          url: "atlas-image:#{image}",
+          name: "keep.png",
+          caption: "The keep",
+          previewWidth: 320,
+          textAlignment: "center",
+          showPreview: false
+        }
+      }
+
+      blocks = [table, picture, %{id: "after", type: "paragraph", content: "After"}]
+      assert {false, _} = insert(ctx.token, "session", ctx.session.id, "log", blocks)
+      {:ok, image: image}
+    end
+
+    defp layout(ctx, id), do: ctx |> stored() |> block(id)
+
+    test "a table keeps its header, widths, styles and line breaks", ctx do
+      table = layout(ctx, "t1")
+      assert table["props"] == %{"textColor" => "red"}
+
+      assert %{"headerRows" => 1, "columnWidths" => [120, nil], "rows" => [_, row]} =
+               table["content"]
+
+      assert [%{"content" => [%{"text" => "Ann"}]}, %{"content" => limp}] = row["cells"]
+      # A line break in a cell is a run of its own, between the styled runs.
+      assert [
+               %{"text" => "Thief", "styles" => %{"italic" => true}},
+               %{"text" => "\n"},
+               %{"text" => "with a limp", "styles" => %{"italic" => true}}
+             ] = limp
+
+      assert {:ok, _} = Atlas.RichText.Document.cast_input(stored(ctx), [])
+    end
+
+    test "writing back a table that get_session returned loses nothing", ctx do
+      %{"log" => log} = read(ctx)
+      assert {false, _} = insert(ctx.token, "session", ctx.session.id, "prep", log)
+      assert stored(ctx, :prep) == stored(ctx, :log)
+    end
+
+    test "a table can be updated, moved and read as an outline", ctx do
+      %{"log" => log} = read(ctx)
+      hash = block(log, "t1")["hash"]
+
+      row = fn a, b -> %{cells: [[%{type: "text", text: a}], [%{type: "text", text: b}]]} end
+
+      operations = [
+        %{
+          op: "update",
+          id: "t1",
+          hash: hash,
+          content: %{
+            type: "tableContent",
+            headerRows: 1,
+            rows: [row.("Who", "What"), row.("Bo", "Bard")]
+          }
+        },
+        %{op: "move", id: "t1", after: "after"}
+      ]
+
+      assert {false, result} = edit(ctx.token, "session", ctx.session.id, "log", operations)
+      assert %{"warnings" => []} = Jason.decode!(result)
+
+      assert ~w(img after t1) == Enum.map(stored(ctx), & &1["id"])
+
+      assert %{"props" => %{"textColor" => "red"}, "content" => %{"rows" => [_, second]}} =
+               layout(ctx, "t1")
+
+      assert [%{"content" => [%{"text" => "Bo"}]}, %{"content" => [%{"text" => "Bard"}]}] =
+               second["cells"]
+
+      assert %{"outline" => outline} =
+               ok!(ctx.token, "read_blocks", %{
+                 input: %{kind: "session", id: ctx.session.id, section: "log", outline: true}
+               })
+
+      assert %{"text" => "Who | What\nBo | Bard"} = Enum.find(outline, &(&1["id"] == "t1"))
+    end
+
+    test "a table with cells that are not valid names the place", ctx do
+      bad = %{
+        type: "table",
+        content: %{type: "tableContent", rows: [%{cells: [[%{type: "gif"}]]}]}
+      }
+
+      assert {true, message} = insert(ctx.token, "session", ctx.session.id, "log", [bad])
+
+      assert message =~ "blocks[0].content.rows[0].cells[0].content[0]" or
+               message =~ "rows[0].cells[0]"
+    end
+
+    test "an image keeps its width, alignment and preview setting", ctx do
+      assert %{"props" => props} = layout(ctx, "img")
+
+      assert %{
+               "previewWidth" => 320,
+               "textAlignment" => "center",
+               "showPreview" => false,
+               "name" => "keep.png",
+               "caption" => "The keep"
+             } = props
+
+      # What the agent reads has all of it, so it can send all of it back.
+      assert %{"props" => ^props} = block(read(ctx)["log"], "img")
+    end
+
+    test "changing the caption of an image leaves its width and alignment", ctx do
+      assert {false, _} =
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{op: "update", id: "img", props: %{caption: "A new caption"}}
+               ])
+
+      assert %{"previewWidth" => 320, "textAlignment" => "center", "showPreview" => false} =
+               layout(ctx, "img")["props"]
+
+      assert layout(ctx, "img")["props"]["caption"] == "A new caption"
+    end
+
+    test "moving an image keeps its layout and needs no flag", ctx do
+      before = layout(ctx, "img")
+
+      assert {false, _} =
+               edit(ctx.token, "session", ctx.session.id, "log", [
+                 %{op: "move", id: "img", after: "after"}
+               ])
+
+      assert ~w(t1 after img) == Enum.map(stored(ctx), & &1["id"])
+      assert layout(ctx, "img") == before
+    end
+
+    test "an image with a width that is not a number is refused", ctx do
+      bad = %{type: "image", props: %{url: "atlas-image:#{ctx.image}", previewWidth: %{a: 1}}}
+      assert {true, message} = insert(ctx.token, "session", ctx.session.id, "log", [bad])
+      assert message =~ "scalar"
+    end
+  end
+
+  describe "search" do
+    setup ctx do
+      {player, character} = join_player(ctx)
+
+      %{"id" => image} =
+        ok!(ctx.token, "upload_image_data", %{
+          input: %{data: Base.encode64(Atlas.ImageFixtures.png())}
+        })
+
+      vault =
+        Ash.create!(
+          Atlas.Content.Note,
+          %{campaign_id: ctx.campaign.id, title: "Zephyr's Vault", visibility: :everyone},
+          actor: ctx.gm
+        )
+
+      assert {false, _} =
+               insert(ctx.token, "note", vault.id, "body", [
+                 paragraph("Behind the waterfall lies a hoard.")
+               ])
+
+      assert {false, _} =
+               insert(ctx.token, "session", ctx.session.id, "log", [
+                 %{
+                   id: "m1",
+                   type: "paragraph",
+                   content: [
+                     %{type: "text", text: "The party entered "},
+                     %{type: "mention", props: %{kind: "note", id: vault.id}},
+                     %{type: "text", text: " at dawn."}
+                   ]
+                 },
+                 %{
+                   id: "i1",
+                   type: "image",
+                   props: %{
+                     url: "atlas-image:#{image}",
+                     name: "map.png",
+                     caption: "Waterfall map"
+                   }
+                 }
+               ])
+
+      assert {false, _} =
+               insert(ctx.token, "session", ctx.session.id, "prep", [
+                 paragraph("The dragon sleeps under the waterfall.")
+               ])
+
+      assert {false, _} =
+               insert(ctx.token, "character", character.id, "secret_notes", [
+                 paragraph("Secretly a dragon in disguise.")
+               ])
+
+      {:ok, player: player, vault: vault}
+    end
+
+    defp search(token, ctx, query, extra \\ %{}) do
+      ok!(token, "search", %{
+        input: Map.merge(%{campaign_id: ctx.campaign.id, query: query}, extra)
       })
     end
 
-    test "edit_text changes one block and keeps the others", ctx do
-      before = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm).log_json
-      revision = read(ctx)["log_revision"]
+    test "finds blocks by their words, with plain text for mentions and images", ctx do
+      %{"hits" => hits, "more" => false} = search(ctx.token, ctx, "waterfall")
 
-      assert {false, _} =
-               edit(ctx, "Last words.", "Final **words**.", %{expected_revision: revision})
+      session = Enum.find(hits, &(&1["kind"] == "session"))
+      assert session["title"] == "Session 1"
+      assert session["id"] == ctx.session.id
 
-      assert read(ctx)["log"] == String.replace(ctx.markdown, "Last words.", "Final **words**.")
+      log = Enum.find(session["sections"], &(&1["section"] == "log"))
+      assert [%{"id" => "i1", "text" => "[image: map.png - Waterfall map]"}] = log["blocks"]
 
-      after_edit = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm).log_json
-      assert Enum.drop(after_edit, -1) == Enum.drop(before, -1)
+      assert Enum.any?(session["sections"], &(&1["section"] == "prep"))
     end
 
-    test "edit_text returns the revision, and the next edit can use it", ctx do
-      assert {false, first} =
-               edit(ctx, "Last words.", "Final words.", %{
-                 expected_revision: read(ctx)["log_revision"]
-               })
+    test "a mention reads as its name, and the name finds the blocks that mention it", ctx do
+      %{"hits" => hits} = search(ctx.token, ctx, "zephyr")
 
-      revision = Jason.decode!(first)["revision"]
-      assert revision == read(ctx)["log_revision"]
+      session = Enum.find(hits, &(&1["kind"] == "session"))
+      assert [%{"section" => "log", "blocks" => [block]}] = session["sections"]
+      assert block == %{"id" => "m1", "text" => "The party entered Zephyr's Vault at dawn."}
 
-      assert {false, second} =
-               edit(ctx, "Final words.", "Last, last words.", %{expected_revision: revision})
-
-      assert Jason.decode!(second)["revision"] > revision
-      assert {true, stale} = edit(ctx, "Last, last", "x", %{expected_revision: revision})
-      assert stale =~ "changed since you read it"
+      # The note itself matches by its title.
+      assert Enum.any?(hits, &(&1["kind"] == "note" and &1["id"] == ctx.vault.id))
     end
 
-    test "edit_text refuses a block with formatting that Markdown cannot keep", ctx do
-      underlined = %{
-        "id" => "u1",
-        "type" => "paragraph",
-        "props" => %{},
-        "content" => [
-          %{"type" => "text", "text" => "Underlined words", "styles" => %{"underline" => true}}
-        ],
-        "children" => []
-      }
-
-      stored = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm)
-
-      stored
-      |> Ash.Changeset.for_update(
-        :save_log,
-        %{
-          json: stored.log_json ++ [underlined],
-          schema_version: Atlas.RichText.Document.schema_version(),
-          expected_revision: stored.log_revision
-        },
-        actor: ctx.gm
-      )
-      |> Ash.update!()
-
-      assert {true, message} = edit(ctx, "Underlined", "Plain")
-      assert message =~ "Markdown cannot keep"
-      assert read(ctx)["log"] =~ "Underlined words"
-
-      assert {false, _} = edit(ctx, "Last words.", "Final words.")
+    test "every word must occur, in any order, and case does not matter", ctx do
+      assert %{"hits" => [_ | _]} = search(ctx.token, ctx, "HOARD   behind")
+      assert %{"hits" => []} = search(ctx.token, ctx, "hoard dragon")
     end
 
-    test "edit_text needs one match, and honors the revision", ctx do
-      assert {true, none} = edit(ctx, "Nobody said this", "x")
-      assert none =~ "no block"
+    test "the name of the entry counts together with its text", ctx do
+      assert %{"hits" => hits} = search(ctx.token, ctx, "vault hoard")
+      assert [%{"kind" => "note", "sections" => [%{"section" => "body"}]}] = hits
+    end
 
-      assert {true, many} = edit(ctx, "e", "x")
-      assert many =~ "more than once"
+    test "a player does not find what the GM alone reads", ctx do
+      assert %{"hits" => hits} = search(ctx.token, ctx, "dragon")
+      assert Enum.map(hits, & &1["kind"]) |> Enum.sort() == ["character", "session"]
 
-      assert {true, stale} = edit(ctx, "Last words.", "x", %{expected_revision: 0})
-      assert stale =~ "changed since you read it"
-      assert read(ctx)["log"] == ctx.markdown
+      player_token = token_for(ctx.player)
+      assert %{"hits" => []} = search(player_token, ctx, "dragon")
+      assert %{"hits" => [_ | _]} = search(player_token, ctx, "waterfall")
+    end
+
+    test "kinds and limit narrow the result", ctx do
+      assert %{"hits" => [%{"kind" => "note"}]} =
+               search(ctx.token, ctx, "waterfall", %{kinds: ["note"]})
+
+      assert %{"hits" => [_], "more" => true} = search(ctx.token, ctx, "waterfall", %{limit: 1})
+    end
+
+    test "an empty query and a campaign that is not yours are refused", ctx do
+      assert {true, message} =
+               call(ctx.token, "search", %{input: %{campaign_id: ctx.campaign.id, query: "  "}})
+
+      assert message =~ "query"
+
+      stranger = token_for(Fixtures.user())
+
+      assert {true, message} =
+               call(stranger, "search", %{input: %{campaign_id: ctx.campaign.id, query: "dragon"}})
+
+      assert message =~ "not a campaign that you can read"
+    end
+  end
+
+  test "the tool descriptions name every block type, style and prop of the schema" do
+    for text <- [Atlas.Mcp.Guide.edit_blocks(), Atlas.Mcp.Guide.read_blocks()] do
+      for type <- Atlas.RichText.Document.block_types(), do: assert(text =~ type)
+      for style <- Atlas.RichText.Document.styles(), do: assert(text =~ style)
+
+      for prop <- Atlas.RichText.Collab.Blocks.props() |> Map.values() |> List.flatten(),
+          do: assert(text =~ prop)
     end
   end
 end

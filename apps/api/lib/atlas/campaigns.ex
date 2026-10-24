@@ -50,7 +50,7 @@ defmodule Atlas.Campaigns do
 
     tool :update_session, Atlas.Campaigns.Session, :update_details,
       description:
-        "Change the title, the played date or the status (in_prep or done) of a session. Use write_text for the log and the prep."
+        "Change the title, the played date or the status (in_prep or done) of a session. Use edit_blocks for the log and the prep."
 
     tool :rename_character, Atlas.Campaigns.Character, :rename,
       description: "Change the name of a character."
@@ -66,7 +66,7 @@ defmodule Atlas.Campaigns do
       description: "List the player logs of a session and who wrote each one."
 
     tool :get_player_log, Atlas.Campaigns.PlayerLog, :describe,
-      description: "Read one player log as Markdown, with its revision."
+      description: "Read one player log: its text as blocks (see edit_blocks), with its revision."
 
     tool :list_campaigns, Atlas.Campaigns.Campaign, :list_as_gm,
       select: [:id, :name],
@@ -74,7 +74,19 @@ defmodule Atlas.Campaigns do
 
     tool :get_campaign, Atlas.Campaigns.Campaign, :describe,
       description:
-        "Read a campaign: its name, description and progress/rewards as Markdown, with their revisions."
+        "Read a campaign: its name, description and progress/rewards as blocks (see edit_blocks), with their revisions."
+
+    tool :search, Atlas.Campaigns.Campaign, :search,
+      description: """
+      Find words in a campaign: the names and the text of its campaign pages, sessions (log and
+      prep), characters (description and secret notes), notes and player logs, as far as you may
+      read them. Every word of query must occur, in any order, in the name of an entry together
+      with one of its sections. The text is plain: a mention reads as the name you may see, and an
+      image as [image: name - caption]. Each hit has the kind and id of the entry, its title and,
+      for each matching section, the blocks that hold a word (with their block id and a snippet).
+      Use get_* or read_blocks with those ids for more. kinds limits the search (campaign,
+      session, character, note, player_log). more is true when limit cut the list.
+      """
 
     tool :list_sessions, Atlas.Campaigns.Session, :list,
       select: [:id, :number, :title, :played_on, :status],
@@ -82,7 +94,7 @@ defmodule Atlas.Campaigns do
 
     tool :get_session, Atlas.Campaigns.Session, :describe,
       description:
-        "Read a session: its details, the log and the GM-only prep as Markdown, with their revisions."
+        "Read a session: its details, the log and the GM-only prep as blocks (see edit_blocks), with their revisions."
 
     tool :list_characters, Atlas.Campaigns.Character, :list,
       select: [:id, :name],
@@ -92,7 +104,7 @@ defmodule Atlas.Campaigns do
 
     tool :get_character, Atlas.Campaigns.Character, :describe,
       description:
-        "Read a character: its name, player, description and GM-only secret notes as Markdown, with their revisions. The GM also gets the path of the claim link of an unclaimed character."
+        "Read a character: its name, player, description and GM-only secret notes as blocks (see edit_blocks), with their revisions. The GM also gets the path of the claim link of an unclaimed character."
   end
 
   resources do

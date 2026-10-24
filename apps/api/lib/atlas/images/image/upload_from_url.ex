@@ -26,7 +26,7 @@ defmodule Atlas.Images.Image.UploadFromUrl do
            id: image.id,
            width: image.width,
            height: image.height,
-           markdown: "![](atlas-image:#{image.id})"
+           block: %{type: "image", props: %{url: "atlas-image:#{image.id}"}}
          }}
 
       {:error, reason} ->

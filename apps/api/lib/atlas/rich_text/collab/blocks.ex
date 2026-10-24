@@ -376,19 +376,133 @@ defmodule Atlas.RichText.Collab.Blocks do
     :ok = Yex.XmlFragment.push(fragment, group_prelim(blocks))
   end
 
+  @type position :: :end | {:after, String.t()} | {:before, String.t()} | {:into, String.t()}
+
   @doc """
-  Replaces the top-level block at `index` with `blocks`, as an edit that other editors of the
-  document merge. All other blocks stay as they are.
+  Adds `blocks` at `position` as an edit that other editors merge: `:end` of the document, or
+  `:after` or `:before` the block with that ID, or as the last children `:into` that block.
   """
-  @spec replace_at(Yex.Doc.t(), non_neg_integer(), [map()]) :: :ok
-  def replace_at(%Yex.Doc{} = doc, index, blocks) do
-    group = doc |> Yex.Doc.get_xml_fragment(@fragment) |> Yex.XmlFragment.first_child()
+  @spec insert(Yex.Doc.t(), position(), [map()]) :: :ok | {:error, String.t()}
+  def insert(%Yex.Doc{} = doc, position, blocks) do
+    with {:ok, place} <- place(doc, position), do: put(place, blocks)
+  end
 
-    blocks =
-      if blocks == [] and Yex.XmlElement.length(group) == 1, do: [empty_paragraph()], else: blocks
+  @doc """
+  Replaces the own content of the block with the ID of `block` (its type, props and content).
+  The nested blocks and the ID stay as they are, so edits to them still merge.
+  """
+  @spec set_content(Yex.Doc.t(), map()) :: :ok | {:error, String.t()}
+  def set_content(%Yex.Doc{} = doc, %{"id" => id} = block) do
+    with {:ok, %{container: container}} <- locate(doc, id) do
+      :ok = Yex.XmlElement.delete(container, 0, 1)
+      :ok = Yex.XmlElement.insert(container, 0, content_prelim(block))
+    end
+  end
 
-    :ok = Yex.XmlElement.delete(group, index, 1)
+  @doc "Deletes the block with this ID and its nested blocks. A document is never left empty."
+  @spec delete(Yex.Doc.t(), String.t()) :: :ok | {:error, String.t()}
+  def delete(%Yex.Doc{} = doc, id) do
+    with :ok <- remove(doc, id), do: keep_one(doc)
+  end
 
+  @doc "Moves the block with this ID and its nested blocks to `position`, keeping the IDs."
+  @spec move(Yex.Doc.t(), String.t(), position()) :: :ok | {:error, String.t()}
+  def move(%Yex.Doc{} = doc, id, position) do
+    {:ok, blocks} = project(doc)
+
+    with {:ok, block} <- find(blocks, id),
+         :ok <- not_inside(position, block),
+         :ok <- remove(doc, id),
+         :ok <- insert(doc, position, [block]) do
+      keep_one(doc)
+    end
+  end
+
+  @doc "The IDs of the blocks and of all blocks nested in them."
+  @spec ids([map()]) :: [String.t()]
+  def ids(blocks),
+    do: Enum.flat_map(blocks, &[&1["id"] | ids(&1["children"] || [])])
+
+  @doc "The block with this ID, wherever it is nested."
+  @spec find([map()], String.t()) :: {:ok, map()} | {:error, String.t()}
+  def find(blocks, id) do
+    case find_block(blocks, id) do
+      nil -> {:error, missing(id)}
+      block -> {:ok, block}
+    end
+  end
+
+  defp find_block(blocks, id) do
+    Enum.find_value(blocks, fn block ->
+      if block["id"] == id, do: block, else: find_block(block["children"] || [], id)
+    end)
+  end
+
+  defp missing(id), do: "no block has id #{inspect(id)}: read the blocks again"
+
+  defp not_inside({kind, target}, block) when kind in [:after, :before, :into] do
+    if target in ids([block]),
+      do: {:error, "cannot move block #{inspect(block["id"])} next to or into itself"},
+      else: :ok
+  end
+
+  defp not_inside(:end, _block), do: :ok
+
+  defp root_group(doc),
+    do: doc |> Yex.Doc.get_xml_fragment(@fragment) |> Yex.XmlFragment.first_child()
+
+  defp nested_group(container), do: container |> Yex.XmlElement.children() |> Enum.at(1)
+
+  # Finds the container of a block, the group that holds it, its index there and the container
+  # that holds the group (nil for the top level).
+  defp locate(doc, id) do
+    case locate(root_group(doc), nil, id) do
+      nil -> {:error, missing(id)}
+      found -> {:ok, found}
+    end
+  end
+
+  defp locate(group, parent, id) do
+    group
+    |> Yex.XmlElement.children()
+    |> Enum.with_index()
+    |> Enum.find_value(fn {container, index} ->
+      if Yex.XmlElement.get_attributes(container)["id"] == id do
+        %{container: container, group: group, index: index, parent: parent}
+      else
+        case nested_group(container) do
+          nil -> nil
+          nested -> locate(nested, container, id)
+        end
+      end
+    end)
+  end
+
+  defp place(doc, :end) do
+    group = root_group(doc)
+    {:ok, {:group, group, Yex.XmlElement.length(group)}}
+  end
+
+  defp place(doc, {:after, id}) do
+    with {:ok, found} <- locate(doc, id), do: {:ok, {:group, found.group, found.index + 1}}
+  end
+
+  defp place(doc, {:before, id}) do
+    with {:ok, found} <- locate(doc, id), do: {:ok, {:group, found.group, found.index}}
+  end
+
+  defp place(doc, {:into, id}) do
+    with {:ok, %{container: container}} <- locate(doc, id) do
+      case nested_group(container) do
+        nil -> {:ok, {:new_group, container}}
+        group -> {:ok, {:group, group, Yex.XmlElement.length(group)}}
+      end
+    end
+  end
+
+  defp put(_place, []), do: :ok
+
+  defp put({:group, group, index}, blocks) do
     blocks
     |> Enum.with_index(index)
     |> Enum.each(fn {block, at} ->
@@ -396,12 +510,26 @@ defmodule Atlas.RichText.Collab.Blocks do
     end)
   end
 
-  @doc "Adds `blocks` after the last block of a Yjs document that `seed/1` or an editor made."
-  @spec append(Yex.Doc.t(), [map()]) :: :ok
-  def append(%Yex.Doc{} = doc, blocks) do
-    fragment = Yex.Doc.get_xml_fragment(doc, @fragment)
-    group = Yex.XmlFragment.first_child(fragment)
-    Enum.each(blocks, &(:ok = Yex.XmlElement.push(group, container_prelim(&1))))
+  defp put({:new_group, container}, blocks),
+    do: Yex.XmlElement.push(container, group_prelim(blocks))
+
+  # A group with no block is not valid for the editor, so an emptied nested group goes too.
+  defp remove(doc, id) do
+    with {:ok, found} <- locate(doc, id) do
+      :ok = Yex.XmlElement.delete(found.group, found.index, 1)
+
+      if found.parent && Yex.XmlElement.length(found.group) == 0,
+        do: Yex.XmlElement.delete(found.parent, 1, 1),
+        else: :ok
+    end
+  end
+
+  defp keep_one(doc) do
+    group = root_group(doc)
+
+    if Yex.XmlElement.length(group) == 0,
+      do: Yex.XmlElement.push(group, container_prelim(empty_paragraph())),
+      else: :ok
   end
 
   defp empty_paragraph do

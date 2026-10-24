@@ -20,6 +20,12 @@ defmodule Atlas.RichText.Document do
 
   def schema_version, do: @schema_version
 
+  @doc "Block types a document accepts."
+  def block_types, do: @block_types
+
+  @doc "Text styles a document accepts."
+  def styles, do: @styles
+
   @doc "Image IDs referenced by a validated document."
   def image_ids(blocks) do
     blocks
@@ -77,10 +83,14 @@ defmodule Atlas.RichText.Document do
   @impl true
   def dump_to_native(value, _), do: {:ok, value}
 
+  # Errors name the place of the fault, such as `blocks[2].children[0].content[1]: ...`.
   defp validate(blocks) when is_list(blocks) do
     with :ok <- check_size(blocks),
-         :ok <- all(blocks, &block(&1, 1)) do
+         :ok <- all(blocks, "blocks", &block(&1, 1)) do
       {:ok, blocks}
+    else
+      {:error, {path, message}} -> {:error, "#{Enum.join(path, ".")}: #{message}"}
+      error -> error
     end
   end
 
@@ -94,11 +104,14 @@ defmodule Atlas.RichText.Document do
     end
   end
 
-  defp all(items, fun) do
-    Enum.reduce_while(items, :ok, fn item, :ok ->
+  defp all(items, key, fun) do
+    items
+    |> Enum.with_index()
+    |> Enum.reduce_while(:ok, fn {item, index}, :ok ->
       case fun.(item) do
         :ok -> {:cont, :ok}
-        error -> {:halt, error}
+        {:error, {path, message}} -> {:halt, {:error, {["#{key}[#{index}]" | path], message}}}
+        {:error, message} -> {:halt, {:error, {["#{key}[#{index}]"], message}}}
       end
     end)
   end
@@ -111,7 +124,7 @@ defmodule Atlas.RichText.Document do
          :ok <- props(type, block["props"] || %{}),
          :ok <- content(type, block["content"]),
          children when is_list(children) <- block["children"] || [] do
-      all(children, &block(&1, depth + 1))
+      all(children, "children", &block(&1, depth + 1))
     else
       {:error, _} = error -> error
       _ -> {:error, "block children must be a list"}
@@ -121,7 +134,10 @@ defmodule Atlas.RichText.Document do
   defp block(_, _), do: {:error, "block needs a string id and a type"}
 
   defp type(type) when type in @block_types, do: :ok
-  defp type(type), do: {:error, "block type #{inspect(type)} is not allowed"}
+
+  defp type(type),
+    do:
+      {:error, "block type #{inspect(type)} is not allowed; use #{Enum.join(@block_types, ", ")}"}
 
   defp props("image", %{"url" => url} = props) when is_binary(url) do
     if url == "" or Regex.match?(@image_ref, url),
@@ -145,18 +161,18 @@ defmodule Atlas.RichText.Document do
   defp content(_, nil), do: :ok
 
   defp content("table", %{"type" => "tableContent", "rows" => rows}) when is_list(rows) do
-    all(rows, fn
-      %{"cells" => cells} when is_list(cells) -> all(cells, &cell/1)
+    all(rows, "rows", fn
+      %{"cells" => cells} when is_list(cells) -> all(cells, "cells", &cell/1)
       _ -> {:error, "table rows need cells"}
     end)
   end
 
   defp content("table", _), do: {:error, "table content is invalid"}
-  defp content(_, content) when is_list(content), do: all(content, &inline/1)
+  defp content(_, content) when is_list(content), do: all(content, "content", &inline/1)
   defp content(_, _), do: {:error, "block content must be a list"}
 
-  defp cell(%{"content" => content}) when is_list(content), do: all(content, &inline/1)
-  defp cell(content) when is_list(content), do: all(content, &inline/1)
+  defp cell(%{"content" => content}) when is_list(content), do: all(content, "content", &inline/1)
+  defp cell(content) when is_list(content), do: all(content, "content", &inline/1)
   defp cell(_), do: {:error, "table cell is invalid"}
 
   defp inline(%{"type" => "text", "text" => text} = node) when is_binary(text) do
@@ -169,7 +185,7 @@ defmodule Atlas.RichText.Document do
        when is_binary(href) and is_list(content) do
     with :ok <- unknown_keys(node, ~w(type href content), "link"),
          :ok <- scheme(href) do
-      all(content, &inline/1)
+      all(content, "content", &inline/1)
     end
   end
 
@@ -182,12 +198,22 @@ defmodule Atlas.RichText.Document do
     end
   end
 
-  defp inline(_), do: {:error, "inline content is invalid or not allowed"}
+  defp inline(_), do: {:error, "inline content is invalid; use text, link or mention nodes"}
 
   defp styles(styles) when is_map(styles) do
-    if Enum.all?(styles, fn {k, v} -> k in @styles and (is_boolean(v) or is_binary(v)) end),
-      do: :ok,
-      else: {:error, "text style is not allowed"}
+    case Enum.find(styles, fn {k, v} ->
+           k not in @styles or not (is_boolean(v) or is_binary(v))
+         end) do
+      nil ->
+        :ok
+
+      {k, _} when k not in @styles ->
+        {:error, "text style #{inspect(k)} is not allowed; use #{Enum.join(@styles, ", ")}"}
+
+      {k, _} ->
+        {:error,
+         "text style #{inspect(k)} needs true, or a color name for textColor and backgroundColor"}
+    end
   end
 
   defp styles(_), do: {:error, "text styles must be a map"}
@@ -201,8 +227,11 @@ defmodule Atlas.RichText.Document do
 
   defp unknown_keys(map, allowed, what) do
     case Map.keys(map) -- allowed do
-      [] -> :ok
-      keys -> {:error, "#{what} has unknown keys #{inspect(keys)}"}
+      [] ->
+        :ok
+
+      keys ->
+        {:error, "#{what} has unknown keys #{inspect(keys)}; use #{Enum.join(allowed, ", ")}"}
     end
   end
 end

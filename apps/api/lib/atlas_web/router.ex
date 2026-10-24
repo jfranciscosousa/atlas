@@ -59,8 +59,9 @@ defmodule AtlasWeb.Router do
         :set_note_visibility,
         :upload_image,
         :upload_image_data,
-        :write_text,
-        :edit_text
+        :edit_blocks,
+        :read_blocks,
+        :search
       ]
   end
 

@@ -18,7 +18,7 @@ defmodule Atlas.Content do
   tools do
     tool :create_note, Atlas.Content.Note, :create,
       description:
-        "Create an empty note in a campaign. It starts visible to you and the GM. Use write_text for the body."
+        "Create an empty note in a campaign. It starts visible to you and the GM. Use edit_blocks for the body."
 
     tool :rename_note, Atlas.Content.Note, :rename, description: "Change the title of a note."
 
@@ -39,7 +39,7 @@ defmodule Atlas.Content do
 
     tool :get_note, Atlas.Content.Note, :describe,
       description:
-        "Read a note: its title, state and body as Markdown, with the revision of the body."
+        "Read a note: its title, state and body as blocks (see edit_blocks), with the revision of the body."
   end
 
   resources do

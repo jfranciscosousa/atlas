@@ -73,29 +73,41 @@ defmodule Atlas.RichText.MentionsTest do
     {:ok, gm: gm, player: player, campaign: campaign, session: session, hidden: hidden}
   end
 
-  test "the GM reads every name, and an archived note is a deleted entry", ctx do
-    %{description: text} = read_as(ctx.campaign, ctx.gm)
+  # The mentions of the first block, as `%{"kind", "id", "label"}`.
+  defp mentions(blocks) do
+    for %{"type" => "mention", "props" => props} <- hd(blocks)["content"], do: props
+  end
 
-    assert text =~ "[@Session 1: The Keep](atlas-entry:session:#{ctx.session.id})"
-    assert text =~ "[@Secret plot](atlas-entry:note:#{ctx.hidden.id})"
-    assert text =~ "[@Handout]("
-    assert text =~ "[@Deleted entry]("
-    assert text =~ "[@Unnamed character]("
-    refute text =~ "Other campaign"
+  test "the GM reads every name, and an archived note is a deleted entry", ctx do
+    %{description: blocks} = read_as(ctx.campaign, ctx.gm)
+    mentions = mentions(blocks)
+
+    assert %{"label" => "Session 1: The Keep"} =
+             Enum.find(mentions, &(&1["id"] == ctx.session.id))
+
+    assert %{"label" => "Secret plot"} = Enum.find(mentions, &(&1["id"] == ctx.hidden.id))
+
+    labels = Enum.map(mentions, & &1["label"])
+    assert "Handout" in labels
+    assert "Deleted entry" in labels
+    assert "Unnamed character" in labels
+    refute "Other campaign" in labels
   end
 
   test "a player gets no name for a hidden note, an archived note or an unknown entry", ctx do
-    %{description: text} = read_as(ctx.campaign, ctx.player)
+    %{description: blocks} = read_as(ctx.campaign, ctx.player)
+    mentions = mentions(blocks)
+    labels = Enum.map(mentions, & &1["label"])
 
-    assert text =~ "[@Session 1: The Keep]("
-    assert text =~ "[@Handout]("
-    assert text =~ "[@Unnamed character]("
-    refute text =~ "Secret plot"
-    refute text =~ "Old idea"
-    refute text =~ "Deleted entry"
+    assert "Session 1: The Keep" in labels
+    assert "Handout" in labels
+    assert "Unnamed character" in labels
+    refute "Secret plot" in labels
+    refute "Old idea" in labels
+    refute "Deleted entry" in labels
     # The hidden note, the archived note, the unknown ID and the other campaign's note.
-    assert length(String.split(text, "[@Restricted entry](")) == 5
-    # The ID stays, so a model that writes the text back keeps the mention.
-    assert text =~ "atlas-entry:note:#{ctx.hidden.id}"
+    assert Enum.count(labels, &(&1 == "Restricted entry")) == 4
+    # The ID stays, so a client that writes the block back keeps the mention.
+    assert Enum.any?(mentions, &(&1["id"] == ctx.hidden.id))
   end
 end

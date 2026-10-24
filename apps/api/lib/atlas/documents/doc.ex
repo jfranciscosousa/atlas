@@ -12,6 +12,9 @@ defmodule Atlas.Documents.Doc do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
+  @kinds [:campaign, :session, :character, :note, :player_log]
+  @sections [:description, :progress_rewards, :log, :prep, :secret_notes, :body]
+
   postgres do
     table "rich_text_docs"
     repo Atlas.Repo
@@ -28,57 +31,28 @@ defmodule Atlas.Documents.Doc do
       upsert_fields [:state, :revision, :epoch]
     end
 
-    # Writes Markdown into one rich-text section as a live edit. Used by the MCP tools.
-    action :write_text, :map do
-      argument :kind, :atom do
-        allow_nil? false
-        constraints one_of: [:campaign, :session, :character, :note, :player_log]
-      end
-
+    # Edits the blocks of one rich-text section as a live edit. Used by the MCP tools.
+    action :edit_blocks, :map do
+      argument :kind, :atom, allow_nil?: false, constraints: [one_of: @kinds]
       argument :id, :uuid, allow_nil?: false
-
-      argument :section, :atom do
-        allow_nil? false
-        constraints one_of: [:description, :progress_rewards, :log, :prep, :secret_notes, :body]
-      end
-
-      argument :markdown, :string, allow_nil?: false
-
-      argument :mode, :atom do
-        allow_nil? false
-        default :replace
-        constraints one_of: [:replace, :append]
-      end
-
+      argument :section, :atom, allow_nil?: false, constraints: [one_of: @sections]
+      argument :operations, {:array, :map}, allow_nil?: false
       argument :expected_revision, :integer, constraints: [min: 0]
       argument :remove_images, :boolean, allow_nil?: false, default: false
+      argument :delete_many, :boolean, allow_nil?: false, default: false
 
-      run Atlas.Mcp.WriteText
+      run Atlas.Mcp.EditBlocks
     end
 
-    # Changes the one block that holds `find`. Used by the MCP tools.
-    action :edit_text, :map do
-      argument :kind, :atom do
-        allow_nil? false
-        constraints one_of: [:campaign, :session, :character, :note, :player_log]
-      end
-
+    # Reads some blocks of one rich-text section, or its outline. Used by the MCP tools.
+    action :read_blocks, :map do
+      argument :kind, :atom, allow_nil?: false, constraints: [one_of: @kinds]
       argument :id, :uuid, allow_nil?: false
+      argument :section, :atom, allow_nil?: false, constraints: [one_of: @sections]
+      argument :ids, {:array, :string}
+      argument :outline, :boolean, allow_nil?: false, default: false
 
-      argument :section, :atom do
-        allow_nil? false
-        constraints one_of: [:description, :progress_rewards, :log, :prep, :secret_notes, :body]
-      end
-
-      argument :find, :string, allow_nil?: false
-
-      argument :replace, :string,
-        allow_nil?: false,
-        constraints: [allow_empty?: true, trim?: false]
-
-      argument :expected_revision, :integer, constraints: [min: 0]
-
-      run Atlas.Mcp.WriteText
+      run Atlas.Mcp.ReadBlocks
     end
   end
 
@@ -88,7 +62,7 @@ defmodule Atlas.Documents.Doc do
       forbid_if always()
     end
 
-    policy action([:write_text, :edit_text]) do
+    policy action([:edit_blocks, :read_blocks]) do
       authorize_if always()
     end
   end

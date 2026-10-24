@@ -76,6 +76,28 @@ defmodule Atlas.RichText.DocumentTest do
     end
   end
 
+  test "an error names the place of the fault and the allowed values" do
+    nested = %{
+      paragraph("outer")
+      | "children" => [
+          %{
+            paragraph("inner")
+            | "content" => [
+                %{"type" => "text", "text" => "a", "styles" => %{}},
+                %{"type" => "text", "text" => "b", "styles" => %{"shiny" => true}}
+              ]
+          }
+        ]
+    }
+
+    assert {:error, message} = cast([paragraph("fine"), nested])
+    assert message =~ ~s(blocks[1].children[0].content[1]: text style "shiny" is not allowed)
+    assert message =~ "use bold, italic"
+
+    assert {:error, message} = cast([%{paragraph("x") | "type" => "video"}])
+    assert message =~ ~s(blocks[0]: block type "video" is not allowed; use paragraph, heading)
+  end
+
   test "rejects documents that are too deep or too large" do
     deep = Enum.reduce(1..9, paragraph("leaf"), &%{paragraph("n#{&1}") | "children" => [&2]})
     assert {:error, _} = cast([deep])

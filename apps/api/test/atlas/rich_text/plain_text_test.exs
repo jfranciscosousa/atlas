@@ -69,4 +69,63 @@ defmodule Atlas.RichText.PlainTextTest do
                "[@session](atlas-entry:session:#{@id}) and [@note](atlas-entry:note:#{@other})"
     end
   end
+
+  describe "for search" do
+    test "a mention reads as its bare name" do
+      assert PlainText.render(mentions(),
+               labels: %{{"session", @id} => "Session 22"},
+               links: false,
+               at: false
+             ) == "Session 22 and Restricted entry"
+    end
+
+    test "an image reads as its name and caption only when asked" do
+      image = fn props ->
+        %{"id" => "i", "type" => "image", "props" => props, "children" => []}
+      end
+
+      assert PlainText.render([image.(%{"url" => "atlas-image:x"})]) == ""
+      assert PlainText.render([image.(%{})], images: true) == "[image]"
+
+      assert PlainText.render([image.(%{"name" => "keep.png", "caption" => "The keep"})],
+               images: true
+             ) == "[image: keep.png - The keep]"
+
+      assert PlainText.render([image.(%{"caption" => "The keep"})], images: true) ==
+               "[image: The keep]"
+    end
+
+    test "a table reads one row per line, with the cells apart" do
+      cell = fn text -> [%{"type" => "text", "text" => text, "styles" => %{}}] end
+
+      table = %{
+        "id" => "t",
+        "type" => "table",
+        "props" => %{},
+        "content" => %{
+          "type" => "tableContent",
+          "rows" => [
+            %{"cells" => [cell.("Name"), cell.("Role")]},
+            %{"cells" => [%{"type" => "tableCell", "content" => cell.("Ann")}, cell.("Thief")]}
+          ]
+        },
+        "children" => []
+      }
+
+      assert PlainText.render([table]) == "Name | Role\nAnn | Thief"
+    end
+
+    test "flat lists every block with its depth and own text" do
+      blocks = [
+        %{block("paragraph", "One", %{}, [block("paragraph", "Two")]) | "id" => "a"},
+        %{"id" => "d", "type" => "divider", "props" => %{}, "children" => []}
+      ]
+
+      assert [
+               %{id: "a", type: "paragraph", depth: 0, text: "One"},
+               %{id: "b", type: "paragraph", depth: 1, text: "Two"},
+               %{id: "d", type: "divider", depth: 0, text: ""}
+             ] = PlainText.flat(blocks)
+    end
+  end
 end

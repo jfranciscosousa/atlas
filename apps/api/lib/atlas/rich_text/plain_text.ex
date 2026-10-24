@@ -1,9 +1,8 @@
 defmodule Atlas.RichText.PlainText do
   @moduledoc """
-  Reads a validated BlockNote document as Markdown-like text, for a language model.
-  Styles, links and images are dropped: it is not safe to write this text back. Use
-  `Atlas.RichText.Markdown.render/2` for that. A mention stays as `[@Name](atlas-entry:kind:id)`, so a model
-  that writes the text back keeps it. Headings, lists, quotes and nesting are kept.
+  Reads a validated BlockNote document as plain text, for a language model.
+  Styles and links are dropped: it is not safe to write this text back. A mention reads as
+  `[@Name](atlas-entry:kind:id)`. Headings, lists, quotes and nesting are kept.
 
   Options:
 
@@ -12,6 +11,9 @@ defmodule Atlas.RichText.PlainText do
       is the kind of the entry.
     * `:links` - set to `false` to write `@Name` only, for text that a model reads and never
       writes back.
+    * `:at` - set to `false` (with `links: false`) to write `Name` without the `@`.
+    * `:images` - set to `true` to write an image as `[image: name - caption]`. Without it an
+      image has no text.
   """
 
   @spec render([map()] | nil, keyword()) :: String.t()
@@ -24,10 +26,39 @@ defmodule Atlas.RichText.PlainText do
   defp block(%{"type" => "divider"}, _, _), do: []
 
   defp block(%{"type" => type} = block, indent, opts) do
-    text = inline(block["content"], opts)
+    text = text(block, opts)
     children = lines(block["children"] || [], indent <> "  ", opts)
     own = if text == "", do: [], else: [indent <> prefix(type, block["props"] || %{}) <> text]
     own ++ children
+  end
+
+  @doc """
+  One entry per block, nested blocks included: its ID, type, depth and own text (without the
+  text of its nested blocks). Takes the same options as `render/2`.
+  """
+  @spec flat([map()] | nil, keyword()) :: [
+          %{id: String.t(), type: String.t(), depth: non_neg_integer(), text: String.t()}
+        ]
+  def flat(blocks, opts \\ []), do: flat(blocks || [], 0, opts)
+
+  defp flat(blocks, depth, opts) do
+    Enum.flat_map(blocks, fn block ->
+      own = %{id: block["id"], type: block["type"], depth: depth, text: text(block, opts)}
+      [own | flat(block["children"] || [], depth + 1, opts)]
+    end)
+  end
+
+  defp text(%{"type" => "image", "props" => props}, opts) do
+    if Keyword.get(opts, :images, false), do: image(props), else: ""
+  end
+
+  defp text(block, opts), do: inline(block["content"], opts)
+
+  defp image(props) do
+    case Enum.reject([props["name"], props["caption"]], &(&1 in [nil, ""])) do
+      [] -> "[image]"
+      parts -> "[image: " <> Enum.join(parts, " - ") <> "]"
+    end
   end
 
   defp prefix("heading", props), do: String.duplicate("#", props["level"] || 1) <> " "
@@ -39,7 +70,13 @@ defmodule Atlas.RichText.PlainText do
   defp prefix(_, _), do: ""
 
   defp inline(nil, _), do: ""
-  defp inline(%{"rows" => rows}, opts), do: Enum.map_join(rows, " | ", &inline(&1["cells"], opts))
+
+  defp inline(%{"rows" => rows}, opts) do
+    Enum.map_join(rows, "\n", fn row ->
+      Enum.map_join(row["cells"], " | ", &inline(&1, opts))
+    end)
+  end
+
   defp inline(%{"content" => content}, opts), do: inline(content, opts)
   defp inline(nodes, opts) when is_list(nodes), do: Enum.map_join(nodes, &inline_node(&1, opts))
 
@@ -58,8 +95,10 @@ defmodule Atlas.RichText.PlainText do
         :error -> kind
       end
 
-    if Keyword.get(opts, :links, true),
-      do: "[@#{name}](atlas-entry:#{kind}:#{id})",
-      else: "@#{name}"
+    cond do
+      Keyword.get(opts, :links, true) -> "[@#{name}](atlas-entry:#{kind}:#{id})"
+      Keyword.get(opts, :at, true) -> "@#{name}"
+      true -> name
+    end
   end
 end

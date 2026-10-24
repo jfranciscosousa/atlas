@@ -47,6 +47,19 @@ defmodule Atlas.Campaigns.Campaign do
       argument :id, :uuid, allow_nil?: false
       run {Atlas.Mcp.Describe, fields: [:id, :name], sections: [:description, :progress_rewards]}
     end
+
+    # Finds words in the names and the text of the campaign, as the actor may read them. Used by
+    # the MCP tools.
+    action :search, :map do
+      argument :campaign_id, :uuid, allow_nil?: false
+      argument :query, :string, allow_nil?: false
+
+      argument :kinds, {:array, :atom},
+        constraints: [items: [one_of: [:campaign, :session, :character, :note, :player_log]]]
+
+      argument :limit, :integer, allow_nil?: false, default: 20, constraints: [min: 1, max: 50]
+      run Atlas.Mcp.Search
+    end
   end
 
   # The GM and the players (the accounts with a character) can read a campaign. Only the GM can change it.
@@ -57,7 +70,7 @@ defmodule Atlas.Campaigns.Campaign do
       authorize_if always()
     end
 
-    policy action(:describe) do
+    policy action([:describe, :search]) do
       authorize_if always()
     end
 
