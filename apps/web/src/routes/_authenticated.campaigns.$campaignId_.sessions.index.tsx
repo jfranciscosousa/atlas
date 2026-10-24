@@ -98,12 +98,12 @@ function SessionsPage() {
                 <span className="min-w-0 flex-1 truncate font-heading text-lg font-semibold">
                   {sessionLabel(session)}
                 </span>
-                <SessionStatusBadge status={session.status} />
                 {session.playedOn && (
                   <span className="hidden text-sm text-muted-foreground sm:inline">
                     {formatPlayedOn(session.playedOn)}
                   </span>
                 )}
+                <SessionStatusBadge status={session.status} />
                 <ChevronRightIcon
                   aria-hidden="true"
                   className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
