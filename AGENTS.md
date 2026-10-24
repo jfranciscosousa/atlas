@@ -28,6 +28,11 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 - To sign in during manual or browser checks, use `agent@example.com` / `dev-password-123`. Setup creates
   it in every worktree database. `mix atlas.dev_user [EMAIL]` creates or confirms any account without the
   confirmation email. It does not run in production.
+- To sign in with agent-browser, use its auth profile. Save it once, then log in with the URL of the
+  dev server you started:
+  `printf %s dev-password-123 | agent-browser auth save atlas-dev --url http://localhost:3000/sign-in --username agent@example.com --password-stdin`
+  `agent-browser auth login atlas-dev --url <web URL from pnpm run dev>/sign-in`
+  Browsers share `localhost` cookies between ports. Sign in again after you switch to another worktree's server.
 
 ## Git
 
