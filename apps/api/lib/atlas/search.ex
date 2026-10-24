@@ -15,7 +15,7 @@ defmodule Atlas.Search do
   @impl true
   def run(input, _opts, %{actor: actor}) do
     args = input.arguments
-    terms = Atlas.Search.Match.terms(args.query)
+    terms = Atlas.Search.Match.query_terms(args.query)
 
     with :ok <- query_terms(terms) do
       {all_entries, campaigns} = Reader.entries(actor, args[:campaign_id])
@@ -58,7 +58,9 @@ defmodule Atlas.Search do
         hits =
           hits
           |> List.flatten()
-          |> Enum.sort_by(&{-&1.exact_match, not &1.title_match, -&1.score, &1.title, &1.id})
+          |> Enum.sort_by(
+            &{&1.tier, &1.title_rank, -&1.score, String.length(&1.title), &1.title, &1.id}
+          )
 
         {:ok,
          %{
@@ -105,6 +107,9 @@ defmodule Atlas.Search do
 
     title_match = missing == []
 
+    sections_exact? =
+      Enum.any?(documents, fn {_section, flat} -> covers?(flat, missing_exact, :exact) end)
+
     if title_match or sections != [] do
       {[
          %{
@@ -115,16 +120,8 @@ defmodule Atlas.Search do
            campaign_name: entry.campaign_name,
            session_id: Map.get(entry, :session_id),
            sections: Enum.map(sections, &Map.delete(&1, :count)),
-           title_match: title_match,
-           exact_match:
-             if(
-               missing_exact == [] or
-                 Enum.any?(documents, fn {_section, flat} ->
-                   covers?(flat, missing_exact, :exact)
-                 end),
-               do: 1,
-               else: 0
-             ),
+           tier: tier(missing_exact == [], title_match, sections_exact?),
+           title_rank: title_rank(title, terms),
            score: Enum.sum(Enum.map(sections, & &1.count))
          }
        ], cache}
@@ -133,9 +130,27 @@ defmodule Atlas.Search do
     end
   end
 
+  # Titles outrank text. An exact title word beats a near one, and an exact word in the text
+  # beats a near one.
+  defp tier(true, _title_match, _sections_exact?), do: 0
+  defp tier(false, true, _sections_exact?), do: 1
+  defp tier(false, false, true), do: 2
+  defp tier(false, false, false), do: 3
+
+  # A title that is the query ranks before one that starts with it, and that before any other.
+  defp title_rank(title, terms) do
+    words = Atlas.Search.Match.query_terms(title)
+
+    cond do
+      Enum.sort(words) == Enum.sort(terms) -> 0
+      String.starts_with?(Enum.join(words, " "), Enum.join(terms, " ")) -> 1
+      true -> 2
+    end
+  end
+
   defp finish_hit(hit, cache) do
     hit
-    |> Map.drop([:exact_match, :title_match, :score])
+    |> Map.drop([:tier, :title_rank, :score])
     |> Map.update!(:sections, fn sections ->
       Enum.map(sections, fn section ->
         Map.update!(section, :blocks, fn blocks ->
@@ -178,7 +193,7 @@ defmodule Atlas.Search do
   defp snippet(text, cache) do
     # Use original-text offsets: accent normalization can change the text length.
     start =
-      Regex.scan(~r/[^\s\p{P}]+/u, text, return: :index)
+      Regex.scan(~r/[^\s\p{P}]+(?:\p{P}+[^\s\p{P}]+)*/u, text, return: :index)
       |> Enum.find_value(0, fn [{offset, length}] ->
         word = binary_part(text, offset, length)
 

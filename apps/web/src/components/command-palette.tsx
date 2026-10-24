@@ -29,8 +29,7 @@ import {
 } from "./ui/dialog";
 import { CampaignAvatar } from "./campaign-avatar";
 import {
-  KIND_LABELS,
-  groupHits,
+  KIND_NAMES,
   highlight,
   hitPath,
   queryTerms,
@@ -178,9 +177,11 @@ function ResultRow({
           <span className="truncate font-medium">
             <Marked text={item.title} terms={terms} />
           </span>
-          {hit && hit.kind !== "campaign" && (
-            <span className="ml-auto max-w-[40%] shrink-0 truncate text-xs text-muted-foreground">
-              {hit.campaign_name}
+          {hit && (
+            <span className="ml-auto max-w-[50%] shrink-0 truncate text-xs text-muted-foreground">
+              {hit.kind === "campaign"
+                ? KIND_NAMES.campaign
+                : `${KIND_NAMES[hit.kind]} · ${hit.campaign_name}`}
             </span>
           )}
         </span>
@@ -226,11 +227,10 @@ function PaletteBody({
 
   const groups: Group[] = [];
   if (searching) {
-    for (const group of groupHits(search.data?.hits ?? []))
-      groups.push({
-        label: KIND_LABELS[group.kind],
-        items: group.hits.map(hitItem),
-      });
+    // The API ranks the hits: a name that matches comes before text that matches.
+    const hits = search.data?.hits ?? [];
+    if (hits.length > 0)
+      groups.push({ label: "Best matches", items: hits.map(hitItem) });
     const pages = PAGES.filter(page =>
       terms.every(term => page.label.toLowerCase().includes(term))
     );

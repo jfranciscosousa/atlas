@@ -1215,7 +1215,7 @@ defmodule AtlasWeb.McpToolsTest do
       assert %{"hits" => []} = search(ctx.token, ctx, "zzzzzzzz")
     end
 
-    test "normalized exact matches rank before fuzzy title matches", ctx do
+    test "a near title match ranks before an exact match in the text", ctx do
       note =
         Ash.create!(
           Atlas.Content.Note,
@@ -1227,7 +1227,7 @@ defmodule AtlasWeb.McpToolsTest do
         )
 
       %{"hits" => hits} = search(ctx.token, ctx, "waterfall")
-      assert List.last(hits)["id"] == note.id
+      assert hd(hits)["id"] == note.id
     end
 
     test "global fuzzy search excludes private notes, archived notes and restricted mention names",

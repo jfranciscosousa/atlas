@@ -1,23 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-  groupHits,
-  highlight,
-  hitPath,
-  queryTerms,
-  type SearchHit,
-} from "./search.ts";
-
-const hit = (kind: SearchHit["kind"], id: string): SearchHit => ({
-  kind,
-  id,
-  title: id,
-  campaign_id: "c1",
-  campaign_name: "Keep",
-  session_id: null,
-  sections: [],
-});
+import { highlight, hitPath, queryTerms } from "./search.ts";
 
 test("every kind opens its own page", () => {
   const base = { campaign_id: "c1", session_id: "s1" };
@@ -51,39 +35,39 @@ test("a player log opens the page of its session", () => {
   );
 });
 
-test("groups follow the fixed kind order and keep the rank inside a group", () => {
-  const groups = groupHits([
-    hit("note", "n1"),
-    hit("session", "s1"),
-    hit("note", "n2"),
-    hit("campaign", "c1"),
-  ]);
-  assert.deepEqual(
-    groups.map(({ kind, hits }) => [kind, hits.map(h => h.id)]),
-    [
-      ["campaign", ["c1"]],
-      ["session", ["s1"]],
-      ["note", ["n1", "n2"]],
-    ]
-  );
-});
-
 test("query terms ignore case, accents and punctuation", () => {
   assert.deepEqual(queryTerms("  Dragón, dragón! Keep "), ["dragon", "keep"]);
   assert.deepEqual(queryTerms("?!"), []);
 });
 
-test("highlight marks whole words that contain a term", () => {
+test("punctuation inside a query word joins it, as the API does", () => {
+  assert.deepEqual(queryTerms("M.A.77"), ["ma77"]);
+  assert.deepEqual(queryTerms("MA77 m.a.77 In-world"), ["ma77", "inworld"]);
+});
+
+test("highlight marks whole chunks that contain a term", () => {
   assert.deepEqual(
     highlight("The Dragons' hoard, in Dragón-keep", ["dragon"]),
     [
       { text: "The ", match: false },
       { text: "Dragons", match: true },
       { text: "' hoard, in ", match: false },
-      { text: "Dragón", match: true },
-      { text: "-keep", match: false },
+      { text: "Dragón-keep", match: true },
     ]
   );
+});
+
+test("highlight finds a joined query word in a punctuated chunk", () => {
+  assert.deepEqual(highlight("Meet at M.A.77 or MA77.", ["ma77"]), [
+    { text: "Meet at ", match: false },
+    { text: "M.A.77", match: true },
+    { text: " or ", match: false },
+    { text: "MA77", match: true },
+    { text: ".", match: false },
+  ]);
+  assert.deepEqual(highlight("A man paid 77 coins", ["ma77"]), [
+    { text: "A man paid 77 coins", match: false },
+  ]);
 });
 
 test("highlight returns the text whole when no word matches", () => {

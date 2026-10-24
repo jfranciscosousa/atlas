@@ -10,7 +10,45 @@ defmodule Atlas.Search.Match do
     |> String.trim()
   end
 
-  def terms(text), do: text |> normalize() |> String.split() |> Enum.uniq()
+  # A chunk is a run of letters and digits that punctuation joins without a space: M.A.77, in-world.
+  @chunk ~r/[\p{L}\p{N}]+(?:[^\s\p{L}\p{N}]+[\p{L}\p{N}]+)*/u
+  @word ~r/[\p{L}\p{N}]+/u
+
+  @doc """
+  The words that an indexed text can answer. Punctuation splits a chunk into words, and the chunk
+  also counts as one joined word, so the text "M.A.77" answers "m", "a", "77" and "ma77".
+  """
+  def terms(text) do
+    text
+    |> chunks()
+    |> Enum.flat_map(fn chunk ->
+      parts = words(chunk)
+      if match?([_, _ | _], parts), do: parts ++ [Enum.join(parts)], else: parts
+    end)
+    |> Enum.uniq()
+  end
+
+  @doc """
+  The words that a query asks for. A chunk is one word with its punctuation removed, so the query
+  "M.A.77" asks for "ma77" and never for the letters "m" and "a" alone.
+  """
+  def query_terms(text) do
+    text
+    |> chunks()
+    |> Enum.map(&(&1 |> words() |> Enum.join()))
+    |> Enum.uniq()
+  end
+
+  defp chunks(text) do
+    text
+    |> String.normalize(:nfkd)
+    |> String.downcase()
+    |> String.replace(~r/\p{M}/u, "")
+    |> then(&Regex.scan(@chunk, &1))
+    |> List.flatten()
+  end
+
+  defp words(chunk), do: @word |> Regex.scan(chunk) |> List.flatten()
 
   def matches?(text, term) do
     normalized = normalize(text)

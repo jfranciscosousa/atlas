@@ -19,20 +19,12 @@ export type SearchHit = {
 
 export type SearchResponse = { hits: SearchHit[]; more: boolean };
 
-export const KIND_ORDER: SearchKind[] = [
-  "campaign",
-  "session",
-  "character",
-  "note",
-  "player_log",
-];
-
-export const KIND_LABELS: Record<SearchKind, string> = {
-  campaign: "Campaigns",
-  session: "Sessions",
-  character: "Characters",
-  note: "Notes",
-  player_log: "Player logs",
+export const KIND_NAMES: Record<SearchKind, string> = {
+  campaign: "Campaign",
+  session: "Session",
+  character: "Character",
+  note: "Note",
+  player_log: "Player log",
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -67,40 +59,39 @@ export function hitPath(
   }
 }
 
-/** Hits grouped by kind, in `KIND_ORDER`. The order inside a group is the rank of the API. */
-export function groupHits(hits: SearchHit[]) {
-  return KIND_ORDER.map(kind => ({
-    kind,
-    hits: hits.filter(hit => hit.kind === kind),
-  })).filter(group => group.hits.length > 0);
-}
-
 // Same folding as the API: accents and case never matter.
 const fold = (text: string) =>
   text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
+// A chunk is letters and digits that punctuation joins without a space: M.A.77, in-world.
+const CHUNK = /[\p{L}\p{N}]+(?:[^\s\p{L}\p{N}]+[\p{L}\p{N}]+)*/gu;
 const WORD = /[\p{L}\p{N}]+/gu;
 
+// Same rule as the API: a chunk is one word with its punctuation removed.
+const joined = (chunk: string) => (fold(chunk).match(WORD) ?? []).join("");
+
 export const queryTerms = (query: string) => [
-  ...new Set(fold(query).match(WORD) ?? []),
+  ...new Set((fold(query).match(CHUNK) ?? []).map(joined)),
 ];
 
 /**
- * Splits `text` so that the words which contain a query term can be marked. The API also
- * accepts near matches; those words stay unmarked.
+ * Splits `text` so that the chunks which contain a query term can be marked. The API also
+ * accepts near matches; those chunks stay unmarked.
  */
-export function highlight(text: string, terms: string[]) {
+export function highlight(source: string, terms: string[]) {
+  // Composed letters only: a loose accent mark would split its chunk.
+  const text = source.normalize("NFC");
   const parts: { text: string; match: boolean }[] = [];
   let last = 0;
-  for (const found of text.matchAll(WORD)) {
-    const word = found[0];
+  for (const found of text.matchAll(CHUNK)) {
+    const chunk = found[0];
     const start = found.index;
-    const folded = fold(word);
-    if (!terms.some(term => folded.includes(term))) continue;
+    const word = joined(chunk);
+    if (!terms.some(term => word.includes(term))) continue;
     if (start > last)
       parts.push({ text: text.slice(last, start), match: false });
-    parts.push({ text: word, match: true });
-    last = start + word.length;
+    parts.push({ text: chunk, match: true });
+    last = start + chunk.length;
   }
   if (last < text.length) parts.push({ text: text.slice(last), match: false });
   return parts;

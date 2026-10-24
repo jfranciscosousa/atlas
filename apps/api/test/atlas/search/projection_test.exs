@@ -77,6 +77,43 @@ defmodule Atlas.Search.ProjectionTest do
     assert %{session_id: nil} = Enum.find(hits, &(&1.id == note.id))
   end
 
+  test "punctuation inside a query word never splits it into loose letters", ctx do
+    dotted = Ash.create!(Session, %{campaign_id: ctx.campaign.id}, actor: ctx.gm)
+    joined = Ash.create!(Session, %{campaign_id: ctx.campaign.id}, actor: ctx.gm)
+    loose = Ash.create!(Session, %{campaign_id: ctx.campaign.id}, actor: ctx.gm)
+    save_section!(Session, dotted.id, :log, [paragraph("Meet at M.A.77 harbor")], ctx.gm)
+    save_section!(Session, joined.id, :log, [paragraph("The ship MA77 sailed")], ctx.gm)
+    save_section!(Session, loose.id, :log, [paragraph("A man with a map paid 77 coins")], ctx.gm)
+
+    for query <- ["M.A.77", "MA77", "m.a.77"] do
+      assert Enum.sort(ids(ctx.gm, query)) == Enum.sort([dotted.id, joined.id]), query
+    end
+
+    assert ids(ctx.gm, "harbor") == [dotted.id]
+    assert ids(ctx.gm, "77 coins") == [loose.id]
+  end
+
+  test "titles outrank text, and a title that is the query comes first", ctx do
+    note = fn title ->
+      Ash.create!(Note, %{campaign_id: ctx.campaign.id, title: title}, actor: ctx.gm)
+    end
+
+    longer = note.("Moonwell Ruins")
+    near = note.("Moonwel")
+    exact = note.("Moonwell")
+    session = Ash.create!(Session, %{campaign_id: ctx.campaign.id}, actor: ctx.gm)
+
+    save_section!(
+      Session,
+      session.id,
+      :log,
+      [paragraph("Moonwell moonwell moonwell moonwell moonwell")],
+      ctx.gm
+    )
+
+    assert ids(ctx.gm, "moonwell") == [exact.id, longer.id, near.id, session.id]
+  end
+
   test "failed and stale saves leave the projection unchanged", ctx do
     save_section!(Session, ctx.session.id, :log, [paragraph("Sapphire")], ctx.gm)
     before = section(ctx.session.id, :log)
