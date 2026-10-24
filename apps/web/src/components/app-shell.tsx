@@ -3,7 +3,7 @@ import {
   ChevronsUpDownIcon,
   CompassIcon,
   LogOutIcon,
-  ScrollTextIcon,
+  LayoutGridIcon,
   SettingsIcon,
   UserIcon,
 } from "lucide-react";
@@ -37,7 +37,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { NewCampaignButton } from "./new-campaign-button";
-import { CampaignAvatar } from "./campaign-avatar";
+import { CampaignNav } from "./campaign-nav";
 import { sessionRequest } from "../lib/auth";
 import { useProfile } from "../hooks/use-profile";
 import { useCampaignsList } from "../hooks/use-campaigns";
@@ -178,7 +178,7 @@ function AppSidebar({ user }: { user: ShellUser }) {
                   isActive={pathname === "/campaigns"}
                   render={<Link to="/campaigns" onClick={closeOnMobile} />}
                 >
-                  <ScrollTextIcon aria-hidden="true" />
+                  <LayoutGridIcon aria-hidden="true" />
                   All campaigns
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -195,25 +195,12 @@ function AppSidebar({ user }: { user: ShellUser }) {
                 </li>
               )}
               {campaigns.map(campaign => (
-                <SidebarMenuItem key={campaign.id}>
-                  <SidebarMenuButton
-                    isActive={pathname === `/campaigns/${campaign.id}`}
-                    render={
-                      <Link
-                        to="/campaigns/$campaignId"
-                        params={{ campaignId: campaign.id }}
-                        onClick={closeOnMobile}
-                      />
-                    }
-                  >
-                    <CampaignAvatar
-                      id={campaign.id}
-                      name={campaign.name}
-                      className="size-5 rounded-md text-[0.65rem]"
-                    />
-                    <span className="truncate">{campaign.name}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <CampaignNav
+                  key={campaign.id}
+                  campaign={campaign}
+                  pathname={pathname}
+                  onNavigate={closeOnMobile}
+                />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
