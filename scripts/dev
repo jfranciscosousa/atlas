@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Start both dev servers. A worktree gets its own ports, so it can run beside other checkouts.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+web=3000 api=4000
+# A linked worktree has a .git file. The ports come from its directory name and stay the same.
+if [[ -f .git ]]; then
+  offset=$(($(printf %s "$(basename "$PWD")" | cksum | cut -d' ' -f1) % 400))
+  web=$((3100 + offset)) api=$((4100 + offset))
+fi
+
+export WEB_PORT=${WEB_PORT:-$web} PORT=${PORT:-$api}
+export API_URL=${API_URL:-http://127.0.0.1:$PORT} FRONTEND_URL=${FRONTEND_URL:-http://localhost:$WEB_PORT}
+
+echo "dev: web $FRONTEND_URL, api $API_URL"
+exec pnpm exec concurrently --kill-others --names web,api "pnpm run web:dev" "pnpm run api:dev"

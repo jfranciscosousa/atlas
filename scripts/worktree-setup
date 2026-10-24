@@ -55,6 +55,7 @@ cd "$worktree"
 pnpm install --frozen-lockfile --prefer-offline
 cd apps/api
 mix setup
+mix atlas.dev_user
 mix compile
 
 db=$(elixir -e 'IO.puts(elem(Code.eval_file("config/worktree.exs"), 0))')

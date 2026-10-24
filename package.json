@@ -6,7 +6,7 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "dev": "concurrently --kill-others --names web,api \"pnpm run web:dev\" \"pnpm run api:dev\"",
+    "dev": "scripts/dev",
     "web:dev": "pnpm --filter @atlas/web run dev",
     "web:build": "pnpm --filter @atlas/web run build",
     "web:check": "pnpm --filter @atlas/web run check",
