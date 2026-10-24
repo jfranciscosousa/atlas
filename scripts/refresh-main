@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Bring the main checkout up to date and build its dependencies. worktree-setup copies them into new
+# worktrees. Safe to run at any time, also from an agent. It fast-forwards the main checkout only
+# when it is clean and on master. It never discards changes. It changes nothing else.
+set -euo pipefail
+
+main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+here=$(cd "$(dirname "$0")" && pwd)
+
+warn() { echo "refresh-main: $*" >&2; }
+
+# worktree-setup already holds the lock when it calls this script.
+if [[ -z ${ATLAS_MAIN_LOCKED:-} ]]; then
+  # shellcheck source=lib/main-lock
+  source "$here/lib/main-lock"
+  acquire_lock || { warn "main is locked by another script"; exit 1; }
+fi
+
+cd "$main"
+[[ $(git branch --show-current) == master ]] && git diff --quiet HEAD \
+  && GIT_TERMINAL_PROMPT=0 timeout 60 git fetch --quiet origin master \
+  && git merge --ff-only --quiet origin/master \
+  || warn "main not updated, using what it has"
+# These commands do nothing when main is already current.
+pnpm install --frozen-lockfile --prefer-offline \
+  && cd apps/api && mix deps.get && mix deps.compile && MIX_ENV=test mix deps.compile \
+  || warn "main dependencies not refreshed"

@@ -1,36 +1,16 @@
 #!/usr/bin/env bash
-# Prepare a new git worktree: copy built dependencies from the main checkout, install, and create
-# the worktree's own database. T3 Code runs this on worktree creation. Safe to run again.
+# Prepare a new git worktree: refresh the main checkout (scripts/refresh-main), copy its built
+# dependencies, install, and create the worktree's own database. T3 Code runs this on worktree
+# creation. Safe to run again, also from an agent.
 set -euo pipefail
 
 worktree=$(git rev-parse --show-toplevel)
 main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
-lock="$main/.git/worktree-setup.lock"
+here=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=lib/main-lock
+source "$here/lib/main-lock"
 
 warn() { echo "worktree-setup: $*" >&2; }
-
-# mkdir is the portable lock. shortcut: a killed script leaves a stale lock, delete $lock by hand.
-acquire_lock() {
-  local waited=0
-  until mkdir "$lock" 2>/dev/null; do
-    waited=$((waited + 1))
-    ((waited > 300)) && return 1
-    sleep 1
-  done
-  trap 'rmdir "$lock"' EXIT
-}
-
-refresh_main() {
-  cd "$main"
-  [[ $(git branch --show-current) == master ]] && git diff --quiet HEAD \
-    && GIT_TERMINAL_PROMPT=0 timeout 60 git fetch --quiet origin master \
-    && git merge --ff-only --quiet origin/master \
-    || warn "main not updated, using what it has"
-  # These commands do nothing when main is already current.
-  pnpm install --frozen-lockfile --prefer-offline \
-    && cd apps/api && mix deps.get && mix deps.compile && MIX_ENV=test mix deps.compile \
-    || warn "main dependencies not refreshed"
-}
 
 copy_from_main() {
   local dir
@@ -43,9 +23,10 @@ copy_from_main() {
 
 if [[ "$main" != "$worktree" ]]; then
   if acquire_lock; then
-    (refresh_main) || true
+    # Refresh first, so the copy holds current builds. --skip-refresh copies what main has.
+    [[ ${1:-} == --skip-refresh ]] || (ATLAS_MAIN_LOCKED=1 "$here/refresh-main") || true
     copy_from_main
-    rmdir "$lock" && trap - EXIT
+    release_lock
   else
     warn "main is locked by another setup, skipping the copy"
   fi
