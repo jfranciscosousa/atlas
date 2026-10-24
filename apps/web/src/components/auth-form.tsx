@@ -43,6 +43,29 @@ type AuthFormProps =
   | { mode: "reset-request" }
   | { mode: "reset-password"; token: string };
 
+function validateField(
+  name: string,
+  label: string,
+  value: string,
+  settingPassword: boolean,
+  form: { getFieldValue: (name: "password") => string }
+) {
+  if (name === "display_name" ? !value.trim() : !value)
+    return `${label} is required.`;
+  if (name === "display_name" && value.trim().length > 100)
+    return "Use a name between 1 and 100 characters.";
+  if (name === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+    return "Enter a valid email address.";
+  if (name === "password" && settingPassword && value.length < 8)
+    return "Use at least 8 characters.";
+  if (
+    name === "password_confirmation" &&
+    value !== form.getFieldValue("password")
+  )
+    return "Passwords must match.";
+  return undefined;
+}
+
 export function AuthForm(props: AuthFormProps) {
   const { mode } = props;
   const queryClient = useQueryClient();
@@ -212,33 +235,41 @@ export function AuthForm(props: AuthFormProps) {
           <form.Field
             key={name}
             name={name as AuthField}
-            validators={{
-              onBlur: ({ value, fieldApi }) => {
-                if (name === "display_name" ? !value.trim() : !value)
-                  return `${label} is required.`;
-                if (name === "display_name" && value.trim().length > 100)
-                  return "Use a name between 1 and 100 characters.";
-                if (
-                  name === "email" &&
-                  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-                )
-                  return "Enter a valid email address.";
-                if (name === "password" && settingPassword && value.length < 8)
-                  return "Use at least 8 characters.";
-                if (
-                  name === "password_confirmation" &&
-                  value !== fieldApi.form.getFieldValue("password")
-                )
-                  return "Passwords must match.";
-                return undefined;
-              },
-            }}
+            validators={
+              name === "password_confirmation"
+                ? {
+                    // onBlur errors are kept apart from onChange errors and would go stale
+                    // when the password changes, leaving the button disabled.
+                    onChange: ({ value, fieldApi }) =>
+                      validateField(
+                        name,
+                        label,
+                        value,
+                        settingPassword,
+                        fieldApi.form
+                      ),
+                    onChangeListenTo: ["password"],
+                  }
+                : {
+                    onBlur: ({ value, fieldApi }) =>
+                      validateField(
+                        name,
+                        label,
+                        value,
+                        settingPassword,
+                        fieldApi.form
+                      ),
+                  }
+            }
           >
             {field => {
               const serverError = serverErrors[name as AuthField];
               const invalid =
                 !!serverError ||
-                (field.state.meta.isTouched && !field.state.meta.isValid);
+                ((name === "password_confirmation"
+                  ? field.state.meta.isBlurred
+                  : field.state.meta.isTouched) &&
+                  !field.state.meta.isValid);
               return (
                 <Field data-invalid={invalid}>
                   <FieldLabel htmlFor={name}>{label}</FieldLabel>
