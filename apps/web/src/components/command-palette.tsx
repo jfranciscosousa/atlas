@@ -42,6 +42,8 @@ import { useCampaignsList } from "../hooks/use-campaigns";
 
 const QUERY_MAX_LENGTH = 200;
 const DEBOUNCE_MS = 150;
+const PAGE_SIZE = 20;
+const MAX_HITS = 50;
 
 const KIND_ICONS: Record<Exclude<SearchKind, "campaign">, typeof UsersIcon> = {
   session: CalendarDaysIcon,
@@ -217,12 +219,13 @@ function PaletteBody({
   const campaigns = useCampaignsList(userId).data;
   const [input, setInput] = useState("");
   const [activeKey, setActiveKey] = useState<string>();
+  const [limit, setLimit] = useState(PAGE_SIZE);
 
   const query = input.trim().slice(0, QUERY_MAX_LENGTH);
   const debounced = useDebounced(query, DEBOUNCE_MS);
   const terms = queryTerms(query);
   const searching = terms.length > 0;
-  const search = useSearch(searching ? debounced : "");
+  const search = useSearch(searching ? debounced : "", limit);
   const waiting = searching && (debounced !== query || search.isFetching);
 
   const groups: Group[] = [];
@@ -292,6 +295,8 @@ function PaletteBody({
     else if (event.key === "End" && event.ctrlKey) move(items.length - 1);
     else if (event.key === "Enter" && active) {
       event.preventDefault();
+      // The list is out of date until the answer for this query arrives.
+      if (waiting) return;
       open(active, event.metaKey || event.ctrlKey);
     }
   }
@@ -320,7 +325,12 @@ function PaletteBody({
           maxLength={QUERY_MAX_LENGTH}
           placeholder="Search campaigns, sessions, characters, notes…"
           value={input}
-          onChange={event => setInput(event.target.value)}
+          onChange={event => {
+            setInput(event.target.value);
+            // A new query starts at its best match, with the first page.
+            setActiveKey(undefined);
+            setLimit(PAGE_SIZE);
+          }}
           onKeyDown={onKeyDown}
           className="h-13 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm"
         />
@@ -404,7 +414,19 @@ function PaletteBody({
         </span>
         {search.data?.more && searching && (
           <span className="ml-auto">
-            More matches exist. Add a word to narrow.
+            {limit < MAX_HITS ? (
+              <button
+                type="button"
+                // Keep the focus in the search box, so the arrow keys still work.
+                onMouseDown={event => event.preventDefault()}
+                onClick={() => setLimit(Math.min(limit + PAGE_SIZE, MAX_HITS))}
+                className="rounded-md px-1.5 py-0.5 font-medium text-foreground underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Show more
+              </button>
+            ) : (
+              "More matches exist. Add a word to narrow."
+            )}
           </span>
         )}
       </div>
