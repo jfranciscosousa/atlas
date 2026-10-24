@@ -24,8 +24,8 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
   `scripts/refresh-main`, which fast-forwards the main checkout only when it is clean and on `master`, and
   builds its dependencies. `scripts/refresh-main` is also safe to run alone. `--skip-refresh` skips it.
   `scripts/worktree-prune` lists the databases of deleted worktrees; `--force` drops them.
-  `scripts/worktree-cleanup` runs when a T3 thread settles. It removes old, clean, fully merged worktrees and
-  prunes; it only lists them unless you pass `--force`.
+  `scripts/worktree-cleanup` does not run by itself. Run it by hand. It removes old, clean, fully merged
+  worktrees and prunes; it only lists them unless you pass `--force`.
 - Start the dev servers with `pnpm run dev`. A worktree gets its own ports (web 3100-3499, API 4100-4499)
   from its directory name; the main checkout keeps 3000 and 4000. The script prints the URLs.
 - To sign in during manual or browser checks, use `agent@example.com` / `dev-password-123`. Setup creates
