@@ -7,6 +7,12 @@
       "icon": "configure",
       "runOnWorktreeCreate": true,
       "async": false
+    },
+    {
+      "name": "Clean Worktrees",
+      "command": "scripts/worktree-cleanup --force",
+      "icon": "configure",
+      "runOnSettle": true
     }
   ]
 }
