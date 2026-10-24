@@ -201,12 +201,29 @@ defmodule AtlasWeb.McpToolsTest do
              Ash.get!(Atlas.Content.Note, note["id"], actor: ctx.gm)
   end
 
+  test "session tools explain that titles are optional", ctx do
+    response =
+      build_conn()
+      |> put_req_header("authorization", "Bearer " <> ctx.token)
+      |> put_req_header("accept", "application/json, text/event-stream")
+      |> post("/mcp", %{jsonrpc: "2.0", id: 1, method: "tools/list"})
+      |> json_response(200)
+
+    for name <- ["create_session", "update_session"] do
+      tool = Enum.find(response["result"]["tools"], &(&1["name"] == name))
+      assert tool["description"] =~ "leave it unset"
+      assert tool["description"] =~ "Session <number>"
+      assert tool["description"] =~ "Do not invent a title."
+    end
+  end
+
   test "sessions and campaigns: create and update details", ctx do
     created = ok!(ctx.token, "create_campaign", %{input: %{name: "New Keep"}})
     assert Ash.get!(Atlas.Campaigns.Campaign, created["id"], actor: ctx.gm).name == "New Keep"
 
     next = ok!(ctx.token, "create_session", %{input: %{campaign_id: ctx.campaign.id}})
     assert next["number"] == 2
+    assert Ash.get!(Atlas.Campaigns.Session, next["id"], actor: ctx.gm).title == nil
 
     assert {false, _} =
              call(ctx.token, "update_session", %{

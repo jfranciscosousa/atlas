@@ -46,11 +46,12 @@ defmodule Atlas.Campaigns do
       description: "Create a campaign. You become its GM."
 
     tool :create_session, Atlas.Campaigns.Session, :create,
-      description: "Add the next session to a campaign you run as GM."
+      description:
+        "Add the next session to a campaign you run as GM. A title is optional: leave it unset unless you have one. The app shows Session <number> by default. Do not invent a title."
 
     tool :update_session, Atlas.Campaigns.Session, :update_details,
       description:
-        "Change the title, the played date or the status (in_prep or done) of a session. Use edit_blocks for the log and the prep."
+        "Change the title, the played date or the status (in_prep or done) of a session. Set a title only when you have one; otherwise leave it unset. The app shows Session <number> by default. Do not invent a title. Use edit_blocks for the log and the prep."
 
     tool :rename_character, Atlas.Campaigns.Character, :rename,
       description: "Change the name of a character."
