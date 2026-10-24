@@ -18,6 +18,8 @@ defmodule Atlas.RichText.Transformer do
 
   @impl true
   def transform(dsl_state) do
+    {:ok, dsl_state} = Builder.add_change(dsl_state, Atlas.Search.Sync)
+
     dsl_state
     |> Transformer.get_entities([:rich_text])
     |> Enum.reduce_while({:ok, dsl_state}, fn section, {:ok, dsl_state} ->

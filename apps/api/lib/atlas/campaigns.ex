@@ -77,18 +77,6 @@ defmodule Atlas.Campaigns do
       description:
         "Read a campaign: its name, description and progress/rewards as blocks (see edit_blocks), with their revisions."
 
-    tool :search, Atlas.Campaigns.Campaign, :search,
-      description: """
-      Find words in a campaign: the names and the text of its campaign pages, sessions (log and
-      prep), characters (description and secret notes), notes and player logs, as far as you may
-      read them. Every word of query must occur, in any order, in the name of an entry together
-      with one of its sections. The text is plain: a mention reads as the name you may see, and an
-      image as [image: name - caption]. Each hit has the kind and id of the entry, its title and,
-      for each matching section, the blocks that hold a word (with their block id and a snippet).
-      Use get_* or read_blocks with those ids for more. kinds limits the search (campaign,
-      session, character, note, player_log). more is true when limit cut the list.
-      """
-
     tool :list_sessions, Atlas.Campaigns.Session, :list,
       select: [:id, :number, :title, :played_on, :status],
       description: "List the sessions of a campaign, newest first."

@@ -1164,11 +1164,232 @@ defmodule AtlasWeb.McpToolsTest do
       assert %{"hits" => [_], "more" => true} = search(ctx.token, ctx, "waterfall", %{limit: 1})
     end
 
+    test "global search includes member campaigns and supports an optional campaign filter",
+         ctx do
+      second = Fixtures.campaign(ctx.player, "Waterfall shores")
+      Fixtures.campaign(Fixtures.user(), "Waterfall forbidden")
+      player_token = token_for(ctx.player)
+
+      %{"hits" => hits} = ok!(player_token, "search", %{input: %{query: "waterfall"}})
+
+      assert MapSet.new(Enum.map(hits, & &1["campaign_id"])) ==
+               MapSet.new([ctx.campaign.id, second.id])
+
+      assert Enum.all?(hits, &is_binary(&1["campaign_name"]))
+
+      assert %{"hits" => [%{"id" => id}]} =
+               ok!(player_token, "search", %{
+                 input: %{query: "waterfall", campaign_id: second.id}
+               })
+
+      assert id == second.id
+    end
+
+    test "normalization and typo tolerance apply to titles and snippets", ctx do
+      note =
+        Ash.create!(
+          Atlas.Content.Note,
+          %{
+            campaign_id: ctx.campaign.id,
+            title: "Café—São’s Ｖａｕｌｔ"
+          },
+          actor: ctx.gm
+        )
+
+      Fixtures.save_section!(
+        Atlas.Content.Note,
+        note.id,
+        :body,
+        [Fixtures.paragraph(String.duplicate("Before ", 90) <> "café waterfall after")],
+        ctx.gm
+      )
+
+      assert %{"hits" => [%{"id" => id}]} = search(ctx.token, ctx, "CAFE sao's vault")
+      assert id == note.id
+      %{"hits" => hits} = search(ctx.token, ctx, "waterfal")
+      hit = Enum.find(hits, &(&1["id"] == note.id))
+      assert [%{"blocks" => [%{"text" => snippet}]}] = hit["sections"]
+      assert snippet =~ "waterfall"
+      assert snippet =~ "café"
+      assert %{"hits" => [_ | _]} = search(ctx.token, ctx, "watrfall")
+      assert %{"hits" => []} = search(ctx.token, ctx, "zzzzzzzz")
+    end
+
+    test "normalized exact matches rank before fuzzy title matches", ctx do
+      note =
+        Ash.create!(
+          Atlas.Content.Note,
+          %{
+            campaign_id: ctx.campaign.id,
+            title: "Waterfal"
+          },
+          actor: ctx.gm
+        )
+
+      %{"hits" => hits} = search(ctx.token, ctx, "waterfall")
+      assert List.last(hits)["id"] == note.id
+    end
+
+    test "global fuzzy search excludes private notes, archived notes and restricted mention names",
+         ctx do
+      private =
+        Ash.create!(
+          Atlas.Content.Note,
+          %{
+            campaign_id: ctx.campaign.id,
+            title: "Obsidian sanctuary",
+            visibility: :only_me
+          },
+          actor: ctx.player
+        )
+
+      archived =
+        Ash.create!(
+          Atlas.Content.Note,
+          %{
+            campaign_id: ctx.campaign.id,
+            title: "Obsidian archive",
+            visibility: :everyone
+          },
+          actor: ctx.gm
+        )
+
+      Ash.update!(archived, %{}, action: :archive, actor: ctx.gm)
+
+      insert(ctx.token, "session", ctx.session.id, "log", [
+        %{
+          type: "paragraph",
+          content: [%{type: "mention", props: %{kind: "note", id: private.id}}]
+        }
+      ])
+
+      assert %{"hits" => [], "more" => false} =
+               ok!(ctx.token, "search", %{input: %{query: "obsidan", limit: 1}})
+
+      assert %{"hits" => player_hits} =
+               ok!(token_for(ctx.player), "search", %{input: %{query: "obsidan"}})
+
+      assert Enum.any?(player_hits, &(&1["id"] == private.id))
+      assert Enum.any?(player_hits, &(&1["id"] == ctx.session.id))
+
+      assert %{"hits" => [], "more" => false} =
+               ok!(token_for(ctx.player), "search", %{input: %{query: "dragn"}})
+    end
+
+    test "global search follows every note visibility level", ctx do
+      other = Fixtures.user()
+
+      invitation =
+        Atlas.Campaigns.Invitation
+        |> Ash.Query.for_read(:active, %{campaign_id: ctx.campaign.id}, actor: ctx.gm)
+        |> Ash.read_one!()
+
+      Ash.create!(Atlas.Campaigns.Character, %{token: invitation.token},
+        action: :join,
+        actor: other
+      )
+
+      character =
+        Atlas.Campaigns.Character
+        |> Ash.Query.for_read(:list, %{campaign_id: ctx.campaign.id}, actor: ctx.player)
+        |> Ash.read!()
+        |> Enum.find(&(&1.user_id == ctx.player.id))
+
+      notes =
+        for visibility <- [:only_me, :me_and_gm, :character, :everyone], into: %{} do
+          note =
+            Ash.create!(
+              Atlas.Content.Note,
+              %{
+                campaign_id: ctx.campaign.id,
+                title: "Sapphire #{visibility}",
+                visibility: if(visibility == :character, do: :me_and_gm, else: visibility)
+              },
+              actor: other
+            )
+
+          if visibility == :character do
+            Ash.update!(note, %{visibility: :character, character_id: character.id},
+              action: :set_visibility,
+              actor: ctx.gm
+            )
+          end
+
+          {visibility, note.id}
+        end
+
+      for {actor, visible} <- [
+            {other, [:only_me, :me_and_gm, :character, :everyone]},
+            {ctx.gm, [:me_and_gm, :character, :everyone]},
+            {ctx.player, [:character, :everyone]},
+            {Fixtures.user(), []}
+          ] do
+        %{"hits" => hits} = ok!(token_for(actor), "search", %{input: %{query: "sapphir"}})
+
+        assert MapSet.new(Enum.map(hits, & &1["id"])) ==
+                 MapSet.new(Enum.map(visible, &Map.fetch!(notes, &1)))
+      end
+    end
+
+    test "search requires an authenticated actor" do
+      assert {:error, _} =
+               Atlas.Search.Request
+               |> Ash.ActionInput.for_action(:search, %{query: "waterfall"})
+               |> Ash.run_action()
+    end
+
+    test "global search resolves mentions within their own campaign", ctx do
+      other = Fixtures.campaign(ctx.gm, "Other campaign")
+
+      note =
+        Ash.create!(
+          Atlas.Content.Note,
+          %{
+            campaign_id: other.id,
+            title: "Moonstone",
+            visibility: :everyone
+          },
+          actor: ctx.gm
+        )
+
+      insert(ctx.token, "session", ctx.session.id, "log", [
+        %{type: "paragraph", content: [%{type: "mention", props: %{kind: "note", id: note.id}}]}
+      ])
+
+      assert %{"hits" => [%{"id" => id}]} =
+               ok!(ctx.token, "search", %{input: %{query: "moonstone"}})
+
+      assert id == note.id
+    end
+
+    test "the app RPC and MCP return identical results", ctx do
+      conn = build_conn() |> put_req_header("accept", "application/json")
+      signed_in = AtlasWeb.RpcHelpers.confirm_email(conn)
+      actor = ctx.gm
+      campaign = Fixtures.campaign(actor, "Café waterfall")
+      token = token_for(actor)
+
+      for input <- [%{query: "cafe"}, %{query: "waterfal", campaignId: campaign.id}] do
+        assert %{"success" => true, "data" => data} =
+                 AtlasWeb.RpcHelpers.rpc(signed_in, "search", %{input: input})
+
+        mcp_input =
+          if input[:campaignId],
+            do: %{query: input.query, campaign_id: input.campaignId},
+            else: input
+
+        assert data == ok!(token, "search", %{input: mcp_input})
+      end
+    end
+
     test "an empty query and a campaign that is not yours are refused", ctx do
       assert {true, message} =
                call(ctx.token, "search", %{input: %{campaign_id: ctx.campaign.id, query: "  "}})
 
       assert message =~ "query"
+
+      assert {true, _} = call(ctx.token, "search", %{input: %{query: "✨ — !!!"}})
+      assert {true, _} = call(ctx.token, "search", %{input: %{query: String.duplicate("a", 201)}})
 
       stranger = token_for(Fixtures.user())
 

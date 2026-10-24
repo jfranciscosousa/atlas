@@ -285,6 +285,20 @@ export type McpConnectionAttributesOnlySchema = {
 };
 
 
+// SearchRequest Schema
+export type SearchRequestResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: never;
+};
+
+
+
+export type SearchRequestAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: never;
+};
+
+
 export type UserFilterInput = {
   and?: Array<UserFilterInput>;
   or?: Array<UserFilterInput>;
@@ -1170,6 +1184,14 @@ export type McpConnectionFilterInput = {
 
 
 };
+export type SearchRequestFilterInput = {
+  and?: Array<SearchRequestFilterInput>;
+  or?: Array<SearchRequestFilterInput>;
+  not?: Array<SearchRequestFilterInput>;
+
+
+
+};
 
 
 export const userFilterFields = ["avatar", "displayName", "email", "id"] as const;
@@ -1203,6 +1225,7 @@ export const mcpConnectionFilterFields = ["clientName", "id", "insertedAt", "las
 export type McpConnectionFilterField = (typeof mcpConnectionFilterFields)[number];
 
 
+
 export const userSortFields = ["avatar", "displayName", "email", "id"] as const;
 export type UserSortField = (typeof userSortFields)[number];
 
@@ -1232,6 +1255,7 @@ export type McpClientSortField = (typeof mcpClientSortFields)[number];
 
 export const mcpConnectionSortFields = ["clientName", "id", "insertedAt", "lastUsedAt"] as const;
 export type McpConnectionSortField = (typeof mcpConnectionSortFields)[number];
+
 
 
 // Utility Types

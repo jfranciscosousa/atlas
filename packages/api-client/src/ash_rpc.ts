@@ -2614,3 +2614,72 @@ export async function validateListMcpConnections(
   );
 }
 
+
+export type SearchInput = {
+  campaignId?: UUID | null;
+  query: string;
+  kinds?: Array<"campaign" | "character" | "note" | "player_log" | "session"> | null;
+  limit?: number;
+};
+
+export type InferSearchResult = Record<string, any>;
+
+export type SearchResult = | { success: true; data: InferSearchResult; }
+| { success: false; errors: AshRpcError[]; }
+
+;
+
+/**
+ * Execute generic action on Request
+ *
+ * @ashActionType :action
+ */
+export async function search(
+  config: {
+  tenant?: string;
+  input: SearchInput;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<SearchResult> {
+  const payload = {
+    action: "search",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input
+  };
+
+  return executeActionRpcRequest<SearchResult>(
+    payload,
+    config
+  );
+}
+
+
+/**
+ * Validate: Execute generic action on Request
+ *
+ * @ashActionType :action
+ * @validation true
+ */
+export async function validateSearch(
+  config: {
+  tenant?: string;
+  input: SearchInput;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<ValidationResult> {
+  const payload = {
+    action: "search",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    input: config.input
+  };
+
+  return executeValidationRpcRequest<ValidationResult>(
+    payload,
+    config
+  );
+}
+
