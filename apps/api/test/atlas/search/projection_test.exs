@@ -66,6 +66,17 @@ defmodule Atlas.Search.ProjectionTest do
     end
   end
 
+  test "a player log hit names its session so that clients can open it", ctx do
+    log = Ash.create!(PlayerLog, %{session_id: ctx.session.id}, actor: ctx.player)
+    save_section!(PlayerLog, log.id, :body, [paragraph("Gryphons")], ctx.player)
+    note = Ash.create!(Note, %{campaign_id: ctx.campaign.id, title: "Gryphons"}, actor: ctx.gm)
+
+    hits = search(ctx.gm, "gryphons", %{}).hits
+    assert %{session_id: session_id} = Enum.find(hits, &(&1.id == log.id))
+    assert session_id == ctx.session.id
+    assert %{session_id: nil} = Enum.find(hits, &(&1.id == note.id))
+  end
+
   test "failed and stale saves leave the projection unchanged", ctx do
     save_section!(Session, ctx.session.id, :log, [paragraph("Sapphire")], ctx.gm)
     before = section(ctx.session.id, :log)

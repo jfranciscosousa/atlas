@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ChevronsUpDownIcon,
   CompassIcon,
@@ -6,6 +6,7 @@ import {
   LayoutGridIcon,
   MonitorIcon,
   MoonIcon,
+  SearchIcon,
   SettingsIcon,
   SunIcon,
   SunMoonIcon,
@@ -44,8 +45,10 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { NewCampaignButton } from "./new-campaign-button";
+import { CommandPalette } from "./command-palette";
 import { CampaignNav } from "./campaign-nav";
 import { parseTheme, type Theme } from "../lib/theme";
 import { sessionRequest } from "../lib/auth";
@@ -72,6 +75,32 @@ function Brand() {
       </span>
       Atlas
     </Link>
+  );
+}
+
+function useShortcutLabel() {
+  const [label, setLabel] = useState("Ctrl K");
+  useEffect(() => {
+    if (/Mac|iPhone|iPad/.test(navigator.platform)) setLabel("⌘K");
+  }, []);
+  return label;
+}
+
+function SearchButton({ onClick }: { onClick: () => void }) {
+  const shortcut = useShortcutLabel();
+  return (
+    <button
+      type="button"
+      id="open-search"
+      onClick={onClick}
+      className="flex h-9 w-full items-center gap-2 rounded-lg bg-sidebar-accent/40 px-2.5 text-sm text-sidebar-foreground/70 transition-colors outline-none hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+    >
+      <SearchIcon aria-hidden="true" className="size-4" />
+      Search
+      <kbd className="ml-auto rounded-md border border-sidebar-border px-1.5 font-sans text-[0.6875rem] text-sidebar-foreground/60">
+        {shortcut}
+      </kbd>
+    </button>
   );
 }
 
@@ -194,7 +223,13 @@ function UserMenu({ user }: { user: ShellUser }) {
   );
 }
 
-function AppSidebar({ user }: { user: ShellUser }) {
+function AppSidebar({
+  user,
+  onSearch,
+}: {
+  user: ShellUser;
+  onSearch: () => void;
+}) {
   const campaigns = useCampaignsList(user.id).data;
   const pathname = useRouterState({ select: state => state.location.pathname });
   const { isMobile, setOpenMobile } = useSidebar();
@@ -204,6 +239,7 @@ function AppSidebar({ user }: { user: ShellUser }) {
     <Sidebar>
       <SidebarHeader className="gap-3 p-3">
         <Brand />
+        <SearchButton onClick={onSearch} />
         <NewCampaignButton
           userId={user.id}
           variant="secondary"
@@ -261,15 +297,31 @@ export function AppShell({
   user: ShellUser;
   children: ReactNode;
 }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+
   return (
     <SidebarProvider>
-      <AppSidebar user={user} />
+      <AppSidebar user={user} onSearch={() => setSearchOpen(true)} />
+      <CommandPalette
+        userId={user.id}
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+      />
       <SidebarInset>
         <div className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b bg-background/85 px-3 backdrop-blur">
           <SidebarTrigger aria-label="Toggle navigation" />
           <span className="font-heading text-base font-semibold md:hidden">
             Atlas
           </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto md:hidden"
+            aria-label="Search"
+            onClick={() => setSearchOpen(true)}
+          >
+            <SearchIcon aria-hidden="true" />
+          </Button>
         </div>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-8 lg:py-12">
           {children}

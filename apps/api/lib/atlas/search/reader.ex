@@ -48,6 +48,7 @@ defmodule Atlas.Search.Reader do
             session.campaign_id,
             "#{session_title(session)}: log of #{log.author_name}"
           )
+          |> Map.put(:session_id, log.session_id)
         end)
 
     names = Map.new(campaigns, &{&1.id, &1.name})

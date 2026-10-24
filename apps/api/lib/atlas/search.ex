@@ -113,6 +113,7 @@ defmodule Atlas.Search do
            title: title,
            campaign_id: entry.campaign_id,
            campaign_name: entry.campaign_name,
+           session_id: Map.get(entry, :session_id),
            sections: Enum.map(sections, &Map.delete(&1, :count)),
            title_match: title_match,
            exact_match:
