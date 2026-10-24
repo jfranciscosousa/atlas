@@ -142,6 +142,18 @@ defmodule Atlas.RichText.MarkdownTest do
       assert strip_ids(Markdown.parse(Markdown.render(blocks))) == strip_ids(blocks)
     end
 
+    test "bold plus italic reads back as both styles" do
+      [paragraph] = Markdown.parse("A ***both*** here")
+
+      assert Enum.any?(
+               paragraph["content"],
+               &(&1["text"] == "both" and &1["styles"] == %{"bold" => true, "italic" => true})
+             )
+
+      refute Enum.any?(paragraph["content"], &(&1["text"] =~ "*"))
+      assert strip_ids(Markdown.parse(Markdown.render([paragraph]))) == strip_ids([paragraph])
+    end
+
     test "keeps whitespace outside the marks" do
       [paragraph] = Markdown.parse("a **b** c")
 

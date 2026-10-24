@@ -12,7 +12,8 @@ defmodule Atlas.Documents do
       Read the section first with get_*: its Markdown is complete, so you can change it and write it
       back. Replace refuses to drop an image the section has now, unless remove_images is true.
       Pass the section's revision from get_* as expected_revision: the write fails if someone
-      changed the section since. To change one passage, prefer edit_text.
+      changed the section since. The result has the new revision: a second edit can use it.
+      To change one passage, prefer edit_text.
       Markdown supports headings, lists, check lists, quotes, code, dividers, bold, italic,
       strike, links and images (![](atlas-image:ID) on its own line). To link a character, session
       or note, write [@Name](atlas-entry:KIND:ID) with KIND character, session or note; the editor
@@ -25,8 +26,10 @@ defmodule Atlas.Documents do
       Change one passage of a rich-text section and leave every other block as it is, with its
       images and formatting. kind, section and id are as in write_text. find is text that occurs
       exactly once in the section, as get_* shows it (it may not span two blocks). replace is the
-      new text; it may hold Markdown. Only the block that holds find is rewritten, so underline and
-      colors in that block are lost. Pass the revision from get_* as expected_revision.
+      new text; it may hold Markdown. Only the block that holds find is rewritten. If that block has
+      underline, colors or alignment, which Markdown cannot keep, the edit is refused. Pass the
+      revision from get_* as expected_revision. The result has the new revision: a second edit can
+      use it.
       """
   end
 

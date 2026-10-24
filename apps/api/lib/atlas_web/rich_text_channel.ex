@@ -211,7 +211,7 @@ defmodule AtlasWeb.RichTextChannel do
         {:ok, :reset} ->
           reset(socket)
 
-        {:ok, :changed} ->
+        {:ok, {:changed, _revision}} ->
           Phoenix.PubSub.broadcast_from(
             Atlas.PubSub,
             self(),

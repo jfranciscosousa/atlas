@@ -25,10 +25,14 @@ defmodule Atlas.Mcp.WriteText do
            Collab.apply_update(target, actor, update,
              expected_revision: Map.get(args, :expected_revision)
            ) do
-      if result == :changed,
-        do: Phoenix.PubSub.broadcast(Atlas.PubSub, Collab.topic(target), {:collab_update, update})
+      case result do
+        {:changed, revision} ->
+          Phoenix.PubSub.broadcast(Atlas.PubSub, Collab.topic(target), {:collab_update, update})
+          {:ok, %{saved: true, revision: revision}}
 
-      {:ok, %{saved: result == :changed}}
+        :unchanged ->
+          {:ok, %{saved: false, revision: nil}}
+      end
     else
       {:error, reason} -> {:error, invalid(reason)}
     end
@@ -72,6 +76,7 @@ defmodule Atlas.Mcp.WriteText do
 
       with :ok <- single_match(matches),
            index = Enum.find_index(texts, &String.contains?(&1, find)),
+           :ok <- markdown_safe(Enum.at(current, index)),
            blocks = texts |> Enum.at(index) |> String.replace(find, replace) |> Markdown.parse(),
            {:ok, _} <- Document.cast_input(blocks, []) do
         Blocks.replace_at(doc, index, blocks)
@@ -108,6 +113,24 @@ defmodule Atlas.Mcp.WriteText do
            "Keep each as a ![](atlas-image:ID) line, or set remove_images to true"}
     end
   end
+
+  # Editing goes through Markdown, so a block that Markdown cannot carry would lose formatting.
+  defp markdown_safe(block) do
+    again = [block] |> Markdown.render_each() |> Enum.join("\n") |> Markdown.parse()
+
+    if strip_ids(again) == strip_ids([block]),
+      do: :ok,
+      else:
+        {:error,
+         "this block has formatting that Markdown cannot keep (underline, colors or alignment)"}
+  end
+
+  defp strip_ids(blocks),
+    do:
+      Enum.map(
+        blocks,
+        &(&1 |> Map.delete("id") |> Map.update("children", [], fn c -> strip_ids(c) end))
+      )
 
   defp unlabel(text), do: String.replace(text, ~r/\[@[^\]]*\]\(atlas-entry:/, "[@](atlas-entry:")
 

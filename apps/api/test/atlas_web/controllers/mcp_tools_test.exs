@@ -468,6 +468,55 @@ defmodule AtlasWeb.McpToolsTest do
       assert Enum.drop(after_edit, -1) == Enum.drop(before, -1)
     end
 
+    test "edit_text returns the revision, and the next edit can use it", ctx do
+      assert {false, first} =
+               edit(ctx, "Last words.", "Final words.", %{
+                 expected_revision: read(ctx)["log_revision"]
+               })
+
+      revision = Jason.decode!(first)["revision"]
+      assert revision == read(ctx)["log_revision"]
+
+      assert {false, second} =
+               edit(ctx, "Final words.", "Last, last words.", %{expected_revision: revision})
+
+      assert Jason.decode!(second)["revision"] > revision
+      assert {true, stale} = edit(ctx, "Last, last", "x", %{expected_revision: revision})
+      assert stale =~ "changed since you read it"
+    end
+
+    test "edit_text refuses a block with formatting that Markdown cannot keep", ctx do
+      underlined = %{
+        "id" => "u1",
+        "type" => "paragraph",
+        "props" => %{},
+        "content" => [
+          %{"type" => "text", "text" => "Underlined words", "styles" => %{"underline" => true}}
+        ],
+        "children" => []
+      }
+
+      stored = Ash.get!(Atlas.Campaigns.Session, ctx.session.id, actor: ctx.gm)
+
+      stored
+      |> Ash.Changeset.for_update(
+        :save_log,
+        %{
+          json: stored.log_json ++ [underlined],
+          schema_version: Atlas.RichText.Document.schema_version(),
+          expected_revision: stored.log_revision
+        },
+        actor: ctx.gm
+      )
+      |> Ash.update!()
+
+      assert {true, message} = edit(ctx, "Underlined", "Plain")
+      assert message =~ "Markdown cannot keep"
+      assert read(ctx)["log"] =~ "Underlined words"
+
+      assert {false, _} = edit(ctx, "Last words.", "Final words.")
+    end
+
     test "edit_text needs one match, and honors the revision", ctx do
       assert {true, none} = edit(ctx, "Nobody said this", "x")
       assert none =~ "no block"

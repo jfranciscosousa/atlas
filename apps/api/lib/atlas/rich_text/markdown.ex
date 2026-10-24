@@ -24,6 +24,7 @@ defmodule Atlas.RichText.Markdown do
   @inline [
     {:link, ~r/\[([^\]]+)\]\(([^)\s]+)\)/},
     {:code, ~r/`([^`]+)`/},
+    {:bold_italic, ~r/\*\*\*(.+?)\*\*\*/},
     {:bold, ~r/\*\*(.+?)\*\*/},
     {:strike, ~r/~~(.+?)~~/},
     {:italic, ~r/\*([^*\s][^*]*?)\*/}
@@ -255,6 +256,10 @@ defmodule Atlas.RichText.Markdown do
   end
 
   defp span(:code, _, [code], styles), do: [text(code, Map.put(styles, "code", true))]
+
+  defp span(:bold_italic, _, [inner], styles),
+    do: scan(inner, Map.merge(styles, %{"bold" => true, "italic" => true}))
+
   defp span(:bold, _, [inner], styles), do: scan(inner, Map.put(styles, "bold", true))
   defp span(:strike, _, [inner], styles), do: scan(inner, Map.put(styles, "strike", true))
   defp span(:italic, _, [inner], styles), do: scan(inner, Map.put(styles, "italic", true))

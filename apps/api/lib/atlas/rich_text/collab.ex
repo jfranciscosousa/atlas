@@ -107,14 +107,14 @@ defmodule Atlas.RichText.Collab do
   end
 
   @doc """
-  Applies a client update. Returns `:unchanged` when it adds nothing, or `:changed` once the new
-  state and the JSON are stored.
+  Applies a client update. Returns `:unchanged` when it adds nothing, or `{:changed, revision}` once the new
+  state and the JSON are stored. `revision` is the saved section revision.
 
   With `expected_revision`, the update is refused with `:stale` unless the section still has that
   revision: the writer must have read the latest text.
   """
   @spec apply_update(t(), struct(), binary(), keyword()) ::
-          {:ok, :unchanged | :changed | :reset} | {:error, error()}
+          {:ok, :unchanged | {:changed, integer()} | :reset} | {:error, error()}
   def apply_update(target, actor, update, opts \\ [])
 
   def apply_update(%__MODULE__{}, _actor, update, _opts) when byte_size(update) > @max_update,
@@ -285,8 +285,9 @@ defmodule Atlas.RichText.Collab do
 
     case result do
       {:ok, saved} ->
-        put(target, state, Map.fetch!(saved, RichText.revision_attribute(section)), row.epoch)
-        {:ok, :changed}
+        saved_revision = Map.fetch!(saved, RichText.revision_attribute(section))
+        put(target, state, saved_revision, row.epoch)
+        {:ok, {:changed, saved_revision}}
 
       {:error, %Ash.Error.Forbidden{}} ->
         {:error, :forbidden}
