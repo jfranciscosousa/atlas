@@ -12,9 +12,11 @@ import {
 } from "@tanstack/react-router";
 
 import styles from "../styles.css?url";
+import { THEME_INIT_SCRIPT } from "../lib/theme";
 import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { LoadingScreen } from "../components/loading-screen";
+import "../hooks/use-theme";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
@@ -35,6 +37,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: "stylesheet", href: styles },
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       ],
+      scripts: [{ children: THEME_INIT_SCRIPT }],
     }),
     component: Root,
     shellComponent: Document,
@@ -94,7 +97,7 @@ function Document({ children }: { children: ReactNode }) {
   const isLoading = !revealed;
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

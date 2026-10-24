@@ -89,37 +89,33 @@
 }
 
 .dark {
-  --background: oklch(0.148 0.004 228.8);
-  --foreground: oklch(0.987 0.002 197.1);
-  --card: oklch(0.218 0.008 223.9);
-  --card-foreground: oklch(0.987 0.002 197.1);
-  --popover: oklch(0.218 0.008 223.9);
-  --popover-foreground: oklch(0.987 0.002 197.1);
-  --primary: oklch(0.424 0.199 265.638);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.275 0.011 216.9);
-  --muted-foreground: oklch(0.723 0.014 214.4);
-  --accent: oklch(0.275 0.011 216.9);
-  --accent-foreground: oklch(0.987 0.002 197.1);
+  --background: oklch(0.17 0.02 275);
+  --foreground: oklch(0.94 0.008 85);
+  --card: oklch(0.21 0.025 275);
+  --card-foreground: oklch(0.94 0.008 85);
+  --popover: oklch(0.23 0.028 275);
+  --popover-foreground: oklch(0.94 0.008 85);
+  --primary: oklch(0.72 0.12 280);
+  --primary-foreground: oklch(0.18 0.03 275);
+  --secondary: oklch(0.27 0.03 275);
+  --secondary-foreground: oklch(0.94 0.008 85);
+  --muted: oklch(0.25 0.025 275);
+  --muted-foreground: oklch(0.7 0.02 270);
+  --accent: oklch(0.29 0.035 275);
+  --accent-foreground: oklch(0.96 0.008 85);
+  --gold: oklch(0.78 0.14 75);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.56 0.021 213.5);
-  --chart-1: oklch(0.865 0.127 207.078);
-  --chart-2: oklch(0.715 0.143 215.221);
-  --chart-3: oklch(0.609 0.126 221.723);
-  --chart-4: oklch(0.52 0.105 223.128);
-  --chart-5: oklch(0.45 0.085 224.283);
-  --sidebar: oklch(0.218 0.008 223.9);
-  --sidebar-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.275 0.011 216.9);
-  --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.56 0.021 213.5);
+  --ring: oklch(0.65 0.1 280);
+  --sidebar: oklch(0.14 0.025 275);
+  --sidebar-foreground: oklch(0.9 0.01 85);
+  --sidebar-primary: oklch(0.78 0.14 75);
+  --sidebar-primary-foreground: oklch(0.21 0.035 275);
+  --sidebar-accent: oklch(0.24 0.04 275);
+  --sidebar-accent-foreground: oklch(0.98 0.008 85);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.78 0.14 75);
 }
 
 @layer base {
@@ -158,8 +154,9 @@
   }
 }
 
-/* The editor sits on a cream card, so it must not paint its own white background. */
-.bn-container[data-color-scheme] {
+/* The editor sits on a card, so it must not paint its own background in either theme.
+   The root selector outranks BlockNote's own dark-scheme rule. */
+:root .bn-container[data-color-scheme] {
   --bn-colors-editor-background: transparent;
 }
 

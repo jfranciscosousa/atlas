@@ -36,6 +36,7 @@ import {
   mentionsToAtlasLinks,
   type BlockNoteDocument,
 } from "../lib/blocknote-schema";
+import { useTheme } from "../hooks/use-theme";
 import { useMentionEntries } from "../hooks/use-mentions";
 import { fetchImageUrl, type Section } from "../hooks/use-campaigns";
 
@@ -121,6 +122,7 @@ export default function RichTextEditor({
   const queryClient = useQueryClient();
   const { campaignId } = useParams({ strict: false });
   const { entries: mentionable } = useMentionEntries(campaignId);
+  const { resolvedTheme } = useTheme();
   const meta = () => queryClient.getDefaultOptions().mutations?.meta;
   const ref = `${KINDS[parent.kind]}:${parent.id}:${section}`;
 
@@ -340,7 +342,7 @@ export default function RichTextEditor({
         >
           <BlockNoteView
             editor={editor}
-            theme="light"
+            theme={resolvedTheme}
             editable={live && canWrite && !readOnly && !notice}
             filePanel={false}
           >

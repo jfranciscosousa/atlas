@@ -4,7 +4,11 @@ import {
   CompassIcon,
   LogOutIcon,
   LayoutGridIcon,
+  MonitorIcon,
+  MoonIcon,
   SettingsIcon,
+  SunIcon,
+  SunMoonIcon,
   UserIcon,
 } from "lucide-react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
@@ -32,17 +36,30 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { NewCampaignButton } from "./new-campaign-button";
 import { CampaignNav } from "./campaign-nav";
+import { parseTheme, type Theme } from "../lib/theme";
 import { sessionRequest } from "../lib/auth";
+import { useTheme } from "../hooks/use-theme";
 import { useProfile } from "../hooks/use-profile";
 import { useCampaignsList } from "../hooks/use-campaigns";
 
 type ShellUser = { id: string; email: string };
+
+const THEME_OPTIONS: { value: Theme; label: string; icon: typeof SunIcon }[] = [
+  { value: "system", label: "System", icon: MonitorIcon },
+  { value: "light", label: "Light", icon: SunIcon },
+  { value: "dark", label: "Dark", icon: MoonIcon },
+];
 
 function Brand() {
   return (
@@ -63,6 +80,7 @@ function UserMenu({ user }: { user: ShellUser }) {
   const router = useRouter();
   const { isMobile } = useSidebar();
   const profile = useProfile(user.id).data;
+  const { theme, setTheme } = useTheme();
   const [signingOut, setSigningOut] = useState(false);
   const name = profile.displayName ?? user.email;
 
@@ -137,6 +155,29 @@ function UserMenu({ user }: { user: ShellUser }) {
               <SettingsIcon aria-hidden="true" />
               Settings
             </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger id="theme-menu">
+                <SunMoonIcon aria-hidden="true" />
+                Theme
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuRadioGroup
+                  value={theme}
+                  onValueChange={value => setTheme(parseTheme(value))}
+                >
+                  {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+                    <DropdownMenuRadioItem
+                      key={value}
+                      id={`theme-${value}`}
+                      value={value}
+                    >
+                      <Icon aria-hidden="true" />
+                      {label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               id="sign-out"
