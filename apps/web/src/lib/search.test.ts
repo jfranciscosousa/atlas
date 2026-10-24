@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { highlight, hitPath, queryTerms } from "./search.ts";
+import {
+  highlight,
+  hitHref,
+  hitPath,
+  parseTarget,
+  queryTerms,
+  type SearchHit,
+} from "./search.ts";
 
 test("every kind opens its own page", () => {
   const base = { campaign_id: "c1", session_id: "s1" };
@@ -75,4 +82,48 @@ test("highlight returns the text whole when no word matches", () => {
     { text: "A torch", match: false },
   ]);
   assert.deepEqual(highlight("", ["dragon"]), []);
+});
+
+const found = (
+  kind: SearchHit["kind"],
+  sections: SearchHit["sections"]
+): SearchHit => ({
+  kind,
+  id: "h1",
+  title: "Keep",
+  campaign_id: "c1",
+  campaign_name: "Keep",
+  session_id: null,
+  sections,
+});
+
+test("a hit with text opens its first matching block", () => {
+  const href = hitHref(
+    found("session", [
+      { section: "log", blocks: [{ id: "b-7", text: "torch" }] },
+      { section: "prep", blocks: [{ id: "b-9", text: "torch" }] },
+    ])
+  );
+  assert.equal(
+    href,
+    "/campaigns/c1/sessions/h1#entry=h1&section=log&block=b-7"
+  );
+  assert.deepEqual(parseTarget(href.split("#")[1]), {
+    entry: "h1",
+    section: "log",
+    block: "b-7",
+  });
+});
+
+test("a hit that matches by title only opens its page", () => {
+  assert.equal(hitHref(found("note", [])), "/campaigns/c1/notes/h1");
+});
+
+test("a target survives odd block IDs, and a broken hash is no target", () => {
+  const href = hitHref(
+    found("note", [{ section: "body", blocks: [{ id: "a&b=c d", text: "x" }] }])
+  );
+  assert.equal(parseTarget(href.split("#")[1])?.block, "a&b=c d");
+  assert.equal(parseTarget(""), undefined);
+  assert.equal(parseTarget("#entry=h1"), undefined);
 });

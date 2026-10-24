@@ -22,6 +22,7 @@ import type { CharacterSection } from "../hooks/use-characters";
 
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
+import { revealBlock } from "../lib/reveal-block";
 import { summarize, type Person } from "../lib/presence";
 import { createImageResolver, uploadImage } from "../lib/images";
 import { schema } from "../lib/editor-schema";
@@ -37,6 +38,7 @@ import {
   type BlockNoteDocument,
 } from "../lib/blocknote-schema";
 import { useTheme } from "../hooks/use-theme";
+import { useSearchTarget } from "../hooks/use-search-target";
 import { useMentionEntries } from "../hooks/use-mentions";
 import { fetchImageUrl, type Section } from "../hooks/use-campaigns";
 
@@ -125,6 +127,12 @@ export default function RichTextEditor({
   const { resolvedTheme } = useTheme();
   const meta = () => queryClient.getDefaultOptions().mutations?.meta;
   const ref = `${KINDS[parent.kind]}:${parent.id}:${section}`;
+  const target = useSearchTarget();
+  // A search hit that points into this section.
+  const aimedBlock =
+    target?.entry === parent.id && target.section === section
+      ? target.block
+      : undefined;
 
   const [collab, setCollab] = useState<Collab>();
   const [status, setStatus] = useState<CollabStatus>("connecting");
@@ -247,6 +255,12 @@ export default function RichTextEditor({
         },
     [live, collab]
   );
+
+  // Once the live text shows, a search hit scrolls to its block. The page has opened the tab.
+  useEffect(() => {
+    if (!aimedBlock || !live) return;
+    return revealBlock(`${id}-editor`, aimedBlock);
+  }, [aimedBlock, live, id]);
 
   // After access ended or the text was replaced, the old text must not stay on screen.
   const closed =

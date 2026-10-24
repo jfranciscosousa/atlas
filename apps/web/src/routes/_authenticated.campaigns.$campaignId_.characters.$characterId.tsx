@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronRightIcon, LockIcon } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
+import { useTabState } from "../hooks/use-search-target";
 import { notesQueryOptions, useNotesList } from "../hooks/use-notes";
 import {
   characterQueryOptions,
@@ -68,6 +69,11 @@ export const Route = createFileRoute(
   component: CharacterPage,
 });
 
+const SECTION_TABS = {
+  description: "description",
+  secret_notes: "secret-notes",
+};
+
 function CharacterPage() {
   const { campaignId, characterId } = Route.useParams();
   const campaign = useCampaign(campaignId).data;
@@ -77,6 +83,7 @@ function CharacterPage() {
     note => note.characterId === characterId
   );
   const [name, setName] = useState(character.name ?? "");
+  const [tab, setTab] = useTabState(SECTION_TABS, "description");
   const RichTextEditor = getEditor();
   const title = character.name ?? "Unnamed character";
 
@@ -126,7 +133,7 @@ function CharacterPage() {
       )}
       {/* The key gives each character its own editor; BlockNote reads its content only once. */}
       {/* keepMounted: a hidden editor keeps its text and its pending autosave. */}
-      <Tabs defaultValue="description">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="description">Description</TabsTrigger>
           {campaign.isGm && (

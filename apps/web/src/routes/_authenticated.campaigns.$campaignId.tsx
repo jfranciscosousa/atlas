@@ -1,6 +1,7 @@
 import { CalendarDays, Eye, ScrollText, Users } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
+import { useTabState } from "../hooks/use-search-target";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import {
   Tabs,
@@ -49,10 +50,16 @@ export const Route = createFileRoute("/_authenticated/campaigns/$campaignId")({
   component: CampaignPage,
 });
 
+const SECTION_TABS = {
+  description: "description",
+  progress_rewards: "progress",
+};
+
 function CampaignPage() {
   const { campaignId } = Route.useParams();
   const campaign = useCampaign(campaignId).data;
   const RichTextEditor = getEditor();
+  const [tab, setTab] = useTabState(SECTION_TABS, "description");
 
   if (!campaign.isGm)
     return (
@@ -155,7 +162,7 @@ function CampaignPage() {
       />
       {/* The key gives each campaign its own editor; BlockNote reads its content only once. */}
       {/* keepMounted: a hidden editor keeps its text and its pending autosave. */}
-      <Tabs defaultValue="description">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="description">Description</TabsTrigger>
           <TabsTrigger value="progress">Progress and rewards</TabsTrigger>

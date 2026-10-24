@@ -59,6 +59,30 @@ export function hitPath(
   }
 }
 
+/** Where a hit sits inside its page: the record that owns the section, the section, the block. */
+export type SearchTarget = { entry: string; section: string; block: string };
+
+/** The page of a hit, with the first matching block as its target. */
+export function hitHref(hit: SearchHit) {
+  const section = hit.sections[0];
+  const block = section?.blocks[0];
+  if (!section || !block) return hitPath(hit);
+  const target = new URLSearchParams({
+    entry: hit.id,
+    section: section.section,
+    block: block.id,
+  });
+  return `${hitPath(hit)}#${target}`;
+}
+
+export function parseTarget(hash: string): SearchTarget | undefined {
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const entry = params.get("entry");
+  const section = params.get("section");
+  const block = params.get("block");
+  return entry && section && block ? { entry, section, block } : undefined;
+}
+
 // Same folding as the API: accents and case never matter.
 const fold = (text: string) =>
   text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();

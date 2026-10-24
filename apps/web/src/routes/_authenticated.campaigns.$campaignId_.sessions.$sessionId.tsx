@@ -8,6 +8,7 @@ import {
   useSession,
   useSessionDetails,
 } from "../hooks/use-sessions";
+import { useTabState } from "../hooks/use-search-target";
 import { playerLogsQueryOptions } from "../hooks/use-player-logs";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import {
@@ -68,6 +69,9 @@ export const Route = createFileRoute(
   component: SessionPage,
 });
 
+// A player log is a section of its own record, shown in the player logs tab.
+const SECTION_TABS = { prep: "prep", log: "log", body: "player-logs" };
+
 function SessionPage() {
   const { campaignId, sessionId } = Route.useParams();
   const campaign = useCampaign(campaignId).data;
@@ -75,7 +79,8 @@ function SessionPage() {
   const details = useSessionDetails(campaignId, sessionId);
   const [title, setTitle] = useState(session.title ?? "");
   const RichTextEditor = getEditor();
-  const [tab, setTab] = useState(
+  const [tab, setTab] = useTabState(
+    SECTION_TABS,
     campaign.isGm && session.status === "in_prep" ? "prep" : "log"
   );
   const [replaceLog, setReplaceLog] =

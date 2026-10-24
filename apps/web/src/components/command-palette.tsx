@@ -31,7 +31,7 @@ import { CampaignAvatar } from "./campaign-avatar";
 import {
   KIND_NAMES,
   highlight,
-  hitPath,
+  hitHref,
   queryTerms,
   sectionLabel,
   type SearchHit,
@@ -80,7 +80,7 @@ const campaignItem = (campaign: { id: string; name: string }): Item => ({
 function hitItem(hit: SearchHit): Item {
   return {
     key: `${hit.kind}:${hit.id}`,
-    path: hitPath(hit),
+    path: hitHref(hit),
     title: hit.title,
     hit,
     ...(hit.kind === "campaign"
