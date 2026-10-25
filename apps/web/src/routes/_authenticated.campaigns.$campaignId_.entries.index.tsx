@@ -227,6 +227,7 @@ function EntriesPage() {
           kind={kind}
           fieldId={field}
           value={value}
+          isGm={campaign.isGm}
           onChange={next =>
             void navigate({
               search: previous => ({

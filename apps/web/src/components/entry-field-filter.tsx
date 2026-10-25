@@ -2,13 +2,12 @@ import { useState } from "react";
 import { FilterIcon, XIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
-import type { EntryKind } from "../lib/entry-kinds";
-
 import { Skeleton } from "./ui/skeleton";
 import { NativeSelect } from "./ui/native-select";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { ENTRY_KIND_LABELS, type EntryKind } from "../lib/entry-kinds";
 import {
   entryFieldsQueryOptions,
   fieldChoices,
@@ -16,6 +15,9 @@ import {
   type EntryFieldRecord,
 } from "../hooks/use-entry-fields";
 import { useEntriesList } from "../hooks/use-entries";
+
+// Every state of the bar keeps this height, so the list below never jumps.
+const BAR_HEIGHT = "min-h-[5.125rem]";
 
 /**
  * Keeps the entries of one kind whose custom field has one value (equality). The value is text,
@@ -27,27 +29,56 @@ export function EntryFieldFilter({
   kind,
   fieldId,
   value,
+  isGm,
   onChange,
 }: {
   campaignId: string;
   kind: EntryKind;
   fieldId?: string;
   value?: string;
+  isGm: boolean | null;
   onChange: (filter: { field?: string; value?: string }) => void;
 }) {
   // Every kind of this campaign in one read: a kind switch must not empty the bar.
   const fields = useQuery(entryFieldsQueryOptions(campaignId));
   if (fields.isPending) return <LoadingFilter />;
+  if (fields.error) {
+    return (
+      <FilterNotice>
+        <p className="text-sm text-destructive">{fields.error.message}</p>
+      </FilterNotice>
+    );
+  }
   const kindFields = (fields.data ?? []).filter(
     candidate => candidate.kind === kind
   );
-  if (kindFields.length === 0) return null;
+  if (kindFields.length === 0) {
+    return (
+      <FilterNotice>
+        <FilterIcon
+          aria-hidden="true"
+          className="size-4 shrink-0 text-muted-foreground"
+        />
+        <div className="min-w-0">
+          <p className="text-sm font-medium">
+            No custom fields for {ENTRY_KIND_LABELS[kind].plural.toLowerCase()}{" "}
+            yet
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {isGm
+              ? "Custom fields are details you add to a kind. Add one with Fields to filter this list."
+              : "Custom fields are details the GM adds to a kind. They become filters here."}
+          </p>
+        </div>
+      </FilterNotice>
+    );
+  }
   const field = kindFields.find(candidate => candidate.id === fieldId);
 
   return (
     <div
       id="entry-field-filter"
-      className="flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3"
+      className={`flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3 ${BAR_HEIGHT}`}
     >
       <div className="grid gap-1.5">
         <Label htmlFor="entry-filter-field">Filter by field</Label>
@@ -110,12 +141,24 @@ function LoadingFilter() {
       id="entry-field-filter"
       role="status"
       aria-label="Loading the filter"
-      className="flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3"
+      className={`flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3 ${BAR_HEIGHT}`}
     >
       <div className="grid gap-1.5">
-        <Skeleton className="h-5 w-20 rounded-md" />
+        <Skeleton className="h-3.5 w-20 rounded-md" />
         <Skeleton className="h-9 w-44 rounded-lg" />
       </div>
+    </div>
+  );
+}
+
+/** A quiet bar in place of the filter, with the same height. */
+function FilterNotice({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      id="entry-field-filter"
+      className={`flex flex-wrap items-center gap-3 rounded-2xl border border-dashed bg-card/50 p-3 ${BAR_HEIGHT}`}
+    >
+      {children}
     </div>
   );
 }
