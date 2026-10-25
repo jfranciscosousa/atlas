@@ -18,6 +18,7 @@ import type { SaveState } from "../lib/save-tracker";
 import type { SessionSection } from "../hooks/use-sessions";
 import "@blocknote/shadcn/style.css";
 
+import type { EntrySection } from "../hooks/use-entries";
 import type { CharacterSection } from "../hooks/use-characters";
 
 import { Button } from "./ui/button";
@@ -25,6 +26,11 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { revealBlock } from "../lib/reveal-block";
 import { summarize, type Person } from "../lib/presence";
 import { createImageResolver, uploadImage } from "../lib/images";
+import {
+  ENTRY_KIND_LABELS,
+  isEntryKind,
+  type EntryKind,
+} from "../lib/entry-kinds";
 import { schema } from "../lib/editor-schema";
 import {
   FRAGMENT,
@@ -61,10 +67,17 @@ function UploadOnlyFilePanel(props: FilePanelProps) {
 type Props = {
   // The campaign, note, or session that owns this section. It decides where a save goes.
   parent: {
-    kind: "campaign" | "note" | "session" | "playerLog" | "character";
+    kind:
+      | "campaign"
+      | "note"
+      | "session"
+      | "playerLog"
+      | "character"
+      // A world entry names its own kind: the section is `npc:<id>:description`.
+      | EntryKind;
     id: string;
   };
-  section: Section | "body" | SessionSection | CharacterSection;
+  section: Section | "body" | SessionSection | CharacterSection | EntrySection;
   // Page elements get this ID prefix. Set it when one page holds several editors of a section.
   id?: string;
   label: string;
@@ -95,7 +108,16 @@ const MENTION_GROUPS = {
   character: "Characters",
   session: "Sessions",
   note: "Notes",
+  npc: ENTRY_KIND_LABELS.npc.plural,
+  location: ENTRY_KIND_LABELS.location.plural,
+  faction: ENTRY_KIND_LABELS.faction.plural,
+  item: ENTRY_KIND_LABELS.item.plural,
+  creature: ENTRY_KIND_LABELS.creature.plural,
+  plot: ENTRY_KIND_LABELS.plot.plural,
 } as const;
+
+const kindName = (kind: Props["parent"]["kind"]) =>
+  isEntryKind(kind) ? kind : KINDS[kind];
 
 const NOTICES: Record<CollabNotice["kind"], string> = {
   revoked: "You no longer have access to this text.",
@@ -126,7 +148,7 @@ export default function RichTextEditor({
   const { entries: mentionable } = useMentionEntries(campaignId);
   const { resolvedTheme } = useTheme();
   const meta = () => queryClient.getDefaultOptions().mutations?.meta;
-  const ref = `${KINDS[parent.kind]}:${parent.id}:${section}`;
+  const ref = `${kindName(parent.kind)}:${parent.id}:${section}`;
   const target = useSearchTarget();
   // A search hit that points into this section.
   const aimedBlock =

@@ -4,6 +4,7 @@ defmodule Atlas.Mcp.Guide do
   types, props and styles come from the validation code, so the text cannot drift from it.
   """
 
+  alias Atlas.Content.{EntrySpec, RelationSpec}
   alias Atlas.Kinds
   alias Atlas.RichText.Collab.Blocks
   alias Atlas.RichText.Document
@@ -90,6 +91,80 @@ defmodule Atlas.Mcp.Guide do
     as in edit_blocks. The result has the section revision.
 
     #{blocks()}\
+    """
+  end
+
+  @doc "A line per kind of world entry: its statuses and fields."
+  def entry_kinds do
+    Enum.map_join(EntrySpec.kinds(), "\n", fn kind ->
+      spec = EntrySpec.fetch!(kind)
+
+      fields =
+        spec.fields
+        |> Enum.map(& &1.key)
+        |> then(&if(&1 == [], do: "none", else: Enum.join(&1, ", ")))
+
+      "  - #{kind}: status #{Enum.join(spec.statuses, ", ")} (default #{hd(spec.statuses)}); fields: #{fields}"
+    end)
+  end
+
+  @doc "The description of `list_entries`."
+  def list_entries do
+    """
+    List the world entries of a campaign that you can read: NPCs, locations, factions, items,
+    creatures and plots. Set kind to list one kind, and archived to true for the archived ones.
+    A player never gets a hidden entry. Use get_entry for the details.
+    """
+  end
+
+  @doc "The description of `get_entry`."
+  def get_entry do
+    """
+    Read a world entry: its kind, name, status, hidden flag, fields, parent location, image id and
+    relations, with its description and GM-only secret notes as blocks (see edit_blocks) and their
+    revisions. A relation has the id to remove it, the text from this entry ("member of" or
+    "members") and the other end. Fields: all text, readable by everyone who reads the entry.
+    """
+  end
+
+  @doc "The description of `create_entry`."
+  def create_entry do
+    """
+    Create a world entry in a campaign that you run as GM. kind is #{Enum.join(EntrySpec.kinds(), ", ")}.
+    It starts hidden: only you read it until you show it with set_entry_hidden. Statuses and
+    fields by kind:
+    #{entry_kinds()}
+    Give status and fields only when you know them. A field is text; a faction's reputation is
+    plain text. Use edit_blocks for the description and the secret notes. A location may have a
+    parent location (parent_id) of the same campaign. image_id is an image from upload_image.
+    """
+  end
+
+  @doc "The description of `update_entry`."
+  def update_entry do
+    """
+    Change the status, the fields, the parent location or the image of a world entry. Only the GM
+    may. fields is merged into the stored fields: send only the fields that change, and use a
+    blank value to clear one. Set parent_id (a location only) or image_id to null to clear it.
+    Statuses and fields by kind:
+    #{entry_kinds()}
+    """
+  end
+
+  @doc "The description of `add_entry_relation`."
+  def add_entry_relation do
+    relations =
+      Enum.map_join(RelationSpec.describe(), "\n", fn spec ->
+        "  - #{spec.relation} (\"#{spec.label}\"): from #{Enum.join(spec.from, ", ")} to #{Enum.join(spec.to, ", ")}"
+      end)
+
+    """
+    Relate two ends in a campaign that you run as GM. An end is an entry or a character: give
+    its kind (character, #{Enum.join(EntrySpec.kinds(), ", ")}) and its id. The relation reads
+    from the first end to the second. label is optional text, for example "staff". Relations and
+    the kinds they join:
+    #{relations}
+    Players see a relation only when they can read both ends.
     """
   end
 

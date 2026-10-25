@@ -12,7 +12,7 @@ defmodule Atlas.Kinds do
   time. A test checks that the sections below equal the sections that each resource declares.
   """
 
-  @kinds [
+  @base [
     %{
       kind: :campaign,
       resource: Atlas.Campaigns.Campaign,
@@ -44,6 +44,17 @@ defmodule Atlas.Kinds do
       mention?: false
     }
   ]
+
+  # The world entries share one resource. `Atlas.Content.EntrySpec` names their kinds.
+  @entries for kind <- Atlas.Content.EntrySpec.kinds(),
+               do: %{
+                 kind: kind,
+                 resource: Atlas.Content.Entry,
+                 sections: [:description, :secret_notes],
+                 mention?: true
+               }
+
+  @kinds @base ++ @entries
 
   @by_name Map.new(@kinds, &{Atom.to_string(&1.kind), &1})
   @by_kind Map.new(@kinds, &{&1.kind, &1})

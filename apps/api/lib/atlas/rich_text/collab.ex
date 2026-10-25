@@ -144,20 +144,29 @@ defmodule Atlas.RichText.Collab do
   end
 
   # Reads happen as the actor, so policies and field policies decide.
-  defp fetch(%__MODULE__{resource: resource, id: id, section: section}, actor) do
+  defp fetch(%__MODULE__{resource: resource, id: id, section: section} = target, actor) do
     case Ash.get(resource, id, actor: actor, not_found_error?: false) do
       {:ok, %_{} = record} ->
         json = Map.fetch!(record, RichText.json_attribute(section))
         revision = Map.fetch!(record, RichText.revision_attribute(section))
 
-        if forbidden_field?(json) or forbidden_field?(revision),
-          do: {:error, :forbidden},
-          else: {:ok, record}
+        if forbidden_field?(json) or forbidden_field?(revision) or
+             not kind_matches?(target, record),
+           do: {:error, :forbidden},
+           else: {:ok, record}
 
       _ ->
         {:error, :forbidden}
     end
   end
+
+  @doc """
+  True when the record is of the kind that the target names. A resource that stores several kinds
+  must not open a record under another kind: it would get a second document.
+  """
+  @spec kind_matches?(t(), struct()) :: boolean()
+  def kind_matches?(%__MODULE__{kind: kind, resource: resource}, record),
+    do: Atom.to_string(Kinds.record_kind(resource, record)) == kind
 
   defp forbidden_field?(%Ash.ForbiddenField{}), do: true
   defp forbidden_field?(_), do: false

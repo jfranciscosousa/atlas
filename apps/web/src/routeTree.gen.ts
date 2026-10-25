@@ -28,10 +28,13 @@ import { Route as PublicPasswordResetTokenRouteImport } from './routes/_public.p
 import { Route as AuthenticatedCampaignsCampaignIdPreviewRouteImport } from './routes/_authenticated.campaigns.$campaignId_.preview'
 import { Route as AuthenticatedCampaignsCampaignIdCharactersIndexRouteImport } from './routes/_authenticated.campaigns.$campaignId_.characters.index'
 import { Route as AuthenticatedCampaignsCampaignIdCharactersCharacterIdRouteImport } from './routes/_authenticated.campaigns.$campaignId_.characters.$characterId'
+import { Route as AuthenticatedCampaignsCampaignIdEntriesIndexRouteImport } from './routes/_authenticated.campaigns.$campaignId_.entries.index'
+import { Route as AuthenticatedCampaignsCampaignIdEntriesEntryIdRouteImport } from './routes/_authenticated.campaigns.$campaignId_.entries.$entryId'
 import { Route as AuthenticatedCampaignsCampaignIdNotesIndexRouteImport } from './routes/_authenticated.campaigns.$campaignId_.notes.index'
 import { Route as AuthenticatedCampaignsCampaignIdNotesNoteIdRouteImport } from './routes/_authenticated.campaigns.$campaignId_.notes.$noteId'
 import { Route as AuthenticatedCampaignsCampaignIdSessionsIndexRouteImport } from './routes/_authenticated.campaigns.$campaignId_.sessions.index'
 import { Route as AuthenticatedCampaignsCampaignIdSessionsSessionIdRouteImport } from './routes/_authenticated.campaigns.$campaignId_.sessions.$sessionId'
+import { Route as AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRouteImport } from './routes/_authenticated.campaigns.$campaignId_.preview_.entries.$entryId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -132,6 +135,18 @@ const AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute =
     path: '/campaigns/$campaignId/characters/$characterId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCampaignsCampaignIdEntriesIndexRoute =
+  AuthenticatedCampaignsCampaignIdEntriesIndexRouteImport.update({
+    id: '/campaigns/$campaignId_/entries/',
+    path: '/campaigns/$campaignId/entries/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute =
+  AuthenticatedCampaignsCampaignIdEntriesEntryIdRouteImport.update({
+    id: '/campaigns/$campaignId_/entries/$entryId',
+    path: '/campaigns/$campaignId/entries/$entryId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCampaignsCampaignIdNotesIndexRoute =
   AuthenticatedCampaignsCampaignIdNotesIndexRouteImport.update({
     id: '/campaigns/$campaignId_/notes/',
@@ -156,6 +171,12 @@ const AuthenticatedCampaignsCampaignIdSessionsSessionIdRoute =
     path: '/campaigns/$campaignId/sessions/$sessionId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRoute =
+  AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRouteImport.update({
+    id: '/campaigns/$campaignId_/preview_/entries/$entryId',
+    path: '/campaigns/$campaignId/preview/entries/$entryId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof GuestIndexRoute
@@ -173,11 +194,14 @@ export interface FileRoutesByFullPath {
   '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
   '/campaigns/$campaignId/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   '/campaigns/$campaignId/characters/$characterId': typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute
+  '/campaigns/$campaignId/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute
   '/campaigns/$campaignId/notes/$noteId': typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
   '/campaigns/$campaignId/sessions/$sessionId': typeof AuthenticatedCampaignsCampaignIdSessionsSessionIdRoute
   '/campaigns/$campaignId/characters/': typeof AuthenticatedCampaignsCampaignIdCharactersIndexRoute
+  '/campaigns/$campaignId/entries/': typeof AuthenticatedCampaignsCampaignIdEntriesIndexRoute
   '/campaigns/$campaignId/notes/': typeof AuthenticatedCampaignsCampaignIdNotesIndexRoute
   '/campaigns/$campaignId/sessions/': typeof AuthenticatedCampaignsCampaignIdSessionsIndexRoute
+  '/campaigns/$campaignId/preview/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof GuestIndexRoute
@@ -195,11 +219,14 @@ export interface FileRoutesByTo {
   '/campaigns': typeof AuthenticatedCampaignsIndexRoute
   '/campaigns/$campaignId/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   '/campaigns/$campaignId/characters/$characterId': typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute
+  '/campaigns/$campaignId/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute
   '/campaigns/$campaignId/notes/$noteId': typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
   '/campaigns/$campaignId/sessions/$sessionId': typeof AuthenticatedCampaignsCampaignIdSessionsSessionIdRoute
   '/campaigns/$campaignId/characters': typeof AuthenticatedCampaignsCampaignIdCharactersIndexRoute
+  '/campaigns/$campaignId/entries': typeof AuthenticatedCampaignsCampaignIdEntriesIndexRoute
   '/campaigns/$campaignId/notes': typeof AuthenticatedCampaignsCampaignIdNotesIndexRoute
   '/campaigns/$campaignId/sessions': typeof AuthenticatedCampaignsCampaignIdSessionsIndexRoute
+  '/campaigns/$campaignId/preview/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -221,11 +248,14 @@ export interface FileRoutesById {
   '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
   '/_authenticated/campaigns/$campaignId_/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   '/_authenticated/campaigns/$campaignId_/characters/$characterId': typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute
+  '/_authenticated/campaigns/$campaignId_/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute
   '/_authenticated/campaigns/$campaignId_/notes/$noteId': typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
   '/_authenticated/campaigns/$campaignId_/sessions/$sessionId': typeof AuthenticatedCampaignsCampaignIdSessionsSessionIdRoute
   '/_authenticated/campaigns/$campaignId_/characters/': typeof AuthenticatedCampaignsCampaignIdCharactersIndexRoute
+  '/_authenticated/campaigns/$campaignId_/entries/': typeof AuthenticatedCampaignsCampaignIdEntriesIndexRoute
   '/_authenticated/campaigns/$campaignId_/notes/': typeof AuthenticatedCampaignsCampaignIdNotesIndexRoute
   '/_authenticated/campaigns/$campaignId_/sessions/': typeof AuthenticatedCampaignsCampaignIdSessionsIndexRoute
+  '/_authenticated/campaigns/$campaignId_/preview_/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -245,11 +275,14 @@ export interface FileRouteTypes {
     | '/campaigns/'
     | '/campaigns/$campaignId/preview'
     | '/campaigns/$campaignId/characters/$characterId'
+    | '/campaigns/$campaignId/entries/$entryId'
     | '/campaigns/$campaignId/notes/$noteId'
     | '/campaigns/$campaignId/sessions/$sessionId'
     | '/campaigns/$campaignId/characters/'
+    | '/campaigns/$campaignId/entries/'
     | '/campaigns/$campaignId/notes/'
     | '/campaigns/$campaignId/sessions/'
+    | '/campaigns/$campaignId/preview/entries/$entryId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -267,11 +300,14 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/campaigns/$campaignId/preview'
     | '/campaigns/$campaignId/characters/$characterId'
+    | '/campaigns/$campaignId/entries/$entryId'
     | '/campaigns/$campaignId/notes/$noteId'
     | '/campaigns/$campaignId/sessions/$sessionId'
     | '/campaigns/$campaignId/characters'
+    | '/campaigns/$campaignId/entries'
     | '/campaigns/$campaignId/notes'
     | '/campaigns/$campaignId/sessions'
+    | '/campaigns/$campaignId/preview/entries/$entryId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -292,11 +328,14 @@ export interface FileRouteTypes {
     | '/_authenticated/campaigns/'
     | '/_authenticated/campaigns/$campaignId_/preview'
     | '/_authenticated/campaigns/$campaignId_/characters/$characterId'
+    | '/_authenticated/campaigns/$campaignId_/entries/$entryId'
     | '/_authenticated/campaigns/$campaignId_/notes/$noteId'
     | '/_authenticated/campaigns/$campaignId_/sessions/$sessionId'
     | '/_authenticated/campaigns/$campaignId_/characters/'
+    | '/_authenticated/campaigns/$campaignId_/entries/'
     | '/_authenticated/campaigns/$campaignId_/notes/'
     | '/_authenticated/campaigns/$campaignId_/sessions/'
+    | '/_authenticated/campaigns/$campaignId_/preview_/entries/$entryId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -440,6 +479,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/campaigns/$campaignId_/entries/': {
+      id: '/_authenticated/campaigns/$campaignId_/entries/'
+      path: '/campaigns/$campaignId/entries'
+      fullPath: '/campaigns/$campaignId/entries/'
+      preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdEntriesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/campaigns/$campaignId_/entries/$entryId': {
+      id: '/_authenticated/campaigns/$campaignId_/entries/$entryId'
+      path: '/campaigns/$campaignId/entries/$entryId'
+      fullPath: '/campaigns/$campaignId/entries/$entryId'
+      preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/campaigns/$campaignId_/notes/': {
       id: '/_authenticated/campaigns/$campaignId_/notes/'
       path: '/campaigns/$campaignId/notes'
@@ -468,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdSessionsSessionIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/campaigns/$campaignId_/preview_/entries/$entryId': {
+      id: '/_authenticated/campaigns/$campaignId_/preview_/entries/$entryId'
+      path: '/campaigns/$campaignId/preview/entries/$entryId'
+      fullPath: '/campaigns/$campaignId/preview/entries/$entryId'
+      preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -480,11 +540,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCampaignsIndexRoute: typeof AuthenticatedCampaignsIndexRoute
   AuthenticatedCampaignsCampaignIdPreviewRoute: typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute: typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute
+  AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute: typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute
   AuthenticatedCampaignsCampaignIdNotesNoteIdRoute: typeof AuthenticatedCampaignsCampaignIdNotesNoteIdRoute
   AuthenticatedCampaignsCampaignIdSessionsSessionIdRoute: typeof AuthenticatedCampaignsCampaignIdSessionsSessionIdRoute
   AuthenticatedCampaignsCampaignIdCharactersIndexRoute: typeof AuthenticatedCampaignsCampaignIdCharactersIndexRoute
+  AuthenticatedCampaignsCampaignIdEntriesIndexRoute: typeof AuthenticatedCampaignsCampaignIdEntriesIndexRoute
   AuthenticatedCampaignsCampaignIdNotesIndexRoute: typeof AuthenticatedCampaignsCampaignIdNotesIndexRoute
   AuthenticatedCampaignsCampaignIdSessionsIndexRoute: typeof AuthenticatedCampaignsCampaignIdSessionsIndexRoute
+  AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRoute: typeof AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -498,16 +561,22 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedCampaignsCampaignIdPreviewRoute,
   AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute:
     AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute,
+  AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute:
+    AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute,
   AuthenticatedCampaignsCampaignIdNotesNoteIdRoute:
     AuthenticatedCampaignsCampaignIdNotesNoteIdRoute,
   AuthenticatedCampaignsCampaignIdSessionsSessionIdRoute:
     AuthenticatedCampaignsCampaignIdSessionsSessionIdRoute,
   AuthenticatedCampaignsCampaignIdCharactersIndexRoute:
     AuthenticatedCampaignsCampaignIdCharactersIndexRoute,
+  AuthenticatedCampaignsCampaignIdEntriesIndexRoute:
+    AuthenticatedCampaignsCampaignIdEntriesIndexRoute,
   AuthenticatedCampaignsCampaignIdNotesIndexRoute:
     AuthenticatedCampaignsCampaignIdNotesIndexRoute,
   AuthenticatedCampaignsCampaignIdSessionsIndexRoute:
     AuthenticatedCampaignsCampaignIdSessionsIndexRoute,
+  AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRoute:
+    AuthenticatedCampaignsCampaignIdPreviewEntriesEntryIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

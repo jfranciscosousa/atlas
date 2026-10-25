@@ -19,6 +19,7 @@ defmodule Atlas.Mcp.ReadBlocks do
 
     with {:ok, target} <- target("#{args.kind}:#{args.id}:#{args.section}"),
          {:ok, record} <- Ash.get(target.resource, target.id, actor: actor),
+         true <- Collab.kind_matches?(target, record) || {:error, :forbidden},
          {:ok, blocks, revision} <- section(record, target.section),
          labels = Mentions.labels([blocks], actor, Describe.campaign_id(record)),
          {:ok, result} <- result(blocks, labels, args) do

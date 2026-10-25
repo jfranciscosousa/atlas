@@ -1,5 +1,7 @@
 import { defaultBlockSpecs } from "@blocknote/core";
 
+import { ENTRY_KINDS } from "./entry-kinds.ts";
+
 // The server accepts only these blocks. Audio, video and file blocks are left out so the editor
 // never produces a document the server would reject.
 const { audio, video, file, ...blockSpecs } = defaultBlockSpecs;
@@ -9,7 +11,12 @@ void file;
 
 export { blockSpecs };
 
-export const MENTION_KINDS = ["character", "session", "note"] as const;
+export const MENTION_KINDS = [
+  "character",
+  "session",
+  "note",
+  ...ENTRY_KINDS,
+] as const;
 export type MentionKind = (typeof MENTION_KINDS)[number];
 
 // The document stores the kind and the ID of the entry, never its name. This file has no React,
@@ -29,7 +36,9 @@ export function parseMention(element: HTMLElement) {
   const match = element
     .getAttribute("href")
     ?.match(
-      /^atlas-entry:(character|session|note):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/
+      new RegExp(
+        `^atlas-entry:(${MENTION_KINDS.join("|")}):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$`
+      )
     );
   if (!match) return undefined;
   return { kind: match[1] as MentionKind, id: match[2]! };

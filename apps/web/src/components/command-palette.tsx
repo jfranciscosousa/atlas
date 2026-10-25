@@ -27,6 +27,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "./ui/dialog";
+import { ENTRY_ICONS } from "./entry-icons";
 import { CampaignAvatar } from "./campaign-avatar";
 import {
   KIND_NAMES,
@@ -50,6 +51,7 @@ const KIND_ICONS: Record<Exclude<SearchKind, "campaign">, typeof UsersIcon> = {
   character: UsersIcon,
   note: BookOpenTextIcon,
   player_log: ScrollTextIcon,
+  ...ENTRY_ICONS,
 };
 
 const PAGES = [

@@ -4,7 +4,7 @@ defmodule Atlas.Search.Reader do
   import Ecto.Query
 
   alias Atlas.Campaigns.{Campaign, Character, PlayerLog, Session}
-  alias Atlas.Content.Note
+  alias Atlas.Content.{Entry, Note}
   alias Atlas.Search.{Match, Projection}
 
   def entries(actor, campaign_id) do
@@ -19,6 +19,7 @@ defmodule Atlas.Search.Reader do
     session_map = Map.new(sessions, &{&1.id, &1})
     characters = read(Character, actor, [:id, :campaign_id, :name], campaign_ids)
     notes = read(Note, actor, [:id, :campaign_id, :title, :archived_at], campaign_ids)
+    world = read(Entry, actor, [:id, :campaign_id, :kind, :name, :archived_at], campaign_ids)
 
     logs =
       PlayerLog
@@ -37,6 +38,11 @@ defmodule Atlas.Search.Reader do
         Enum.map(
           notes,
           &(entry(:note, &1, &1.campaign_id, &1.title)
+            |> Map.put(:archived?, not is_nil(&1.archived_at)))
+        ) ++
+        Enum.map(
+          world,
+          &(entry(&1.kind, &1, &1.campaign_id, &1.name)
             |> Map.put(:archived?, not is_nil(&1.archived_at)))
         ) ++
         Enum.map(logs, fn log ->

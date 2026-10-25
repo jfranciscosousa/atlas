@@ -19,8 +19,19 @@ defmodule Atlas.KindsTest do
     assert Kinds.fetch(:no_such_kind) == :error
   end
 
-  test "mentions point to sessions, characters and notes" do
-    assert Enum.sort(Kinds.mention_names()) == ["character", "note", "session"]
+  test "mentions point to sessions, characters, notes and the world entries" do
+    assert Enum.sort(Kinds.mention_names()) ==
+             Enum.sort(
+               ["character", "note", "session"] ++
+                 Enum.map(Atlas.Content.EntrySpec.kinds(), &Atom.to_string/1)
+             )
+  end
+
+  test "the world entries share one resource" do
+    resources = for kind <- Atlas.Content.EntrySpec.kinds(), do: Kinds.resource(kind)
+    assert Enum.uniq(resources) == [Atlas.Content.Entry]
+    assert Kinds.shared_resource?(Atlas.Content.Entry)
+    refute Kinds.shared_resource?(Atlas.Content.Note)
   end
 
   test "every kind is stored by a resource that has a kind list" do

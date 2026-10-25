@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  KIND_NAMES,
   highlight,
   hitHref,
   hitPath,
@@ -28,6 +29,23 @@ test("every kind opens its own page", () => {
     hitPath({ ...base, kind: "note", id: "n1" }),
     "/campaigns/c1/notes/n1"
   );
+});
+
+test("every kind of world entry opens the entry page", () => {
+  for (const kind of [
+    "npc",
+    "location",
+    "faction",
+    "item",
+    "creature",
+    "plot",
+  ] as const)
+    assert.equal(
+      hitPath({ kind, id: "e1", campaign_id: "c1", session_id: null }),
+      "/campaigns/c1/entries/e1"
+    );
+  assert.equal(KIND_NAMES.npc, "NPC");
+  assert.equal(KIND_NAMES.plot, "Plot");
 });
 
 test("a player log opens the page of its session", () => {

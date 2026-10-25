@@ -15,13 +15,17 @@ type Crumb = {
   label: string;
   to?: "/campaigns";
   campaignId?: string;
-  list?: { campaignId: string; kind: "notes" | "sessions" | "characters" };
+  list?: {
+    campaignId: string;
+    kind: "notes" | "sessions" | "characters" | "entries";
+  };
 };
 
 const LIST_PATHS = {
   notes: "/campaigns/$campaignId/notes",
   sessions: "/campaigns/$campaignId/sessions",
   characters: "/campaigns/$campaignId/characters",
+  entries: "/campaigns/$campaignId/entries",
 } as const;
 
 export function PageHeader({

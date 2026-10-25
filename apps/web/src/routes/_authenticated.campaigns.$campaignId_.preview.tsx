@@ -1,9 +1,15 @@
 import { ArrowLeft, Eye } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
+import { PreviewContext } from "../lib/preview";
+import {
+  entriesQueryOptions,
+  entryKindsQueryOptions,
+} from "../hooks/use-entries";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import { buttonVariants } from "../components/ui/button";
 import { loadEditor } from "../components/rich-text-editor-loader";
+import { PreviewWorld } from "../components/preview-world";
 import { CampaignReadOnly } from "../components/campaign-read-only";
 
 export const Route = createFileRoute(
@@ -15,10 +21,18 @@ export const Route = createFileRoute(
   loader: async ({ context, params }) => {
     const editor = loadEditor();
     try {
-      await context.queryClient.fetchQuery({
-        ...campaignQueryOptions(params.campaignId),
-        staleTime: 0,
-      });
+      await Promise.all([
+        context.queryClient.fetchQuery({
+          ...campaignQueryOptions(params.campaignId),
+          staleTime: 0,
+        }),
+        context.queryClient.ensureQueryData(entryKindsQueryOptions()),
+        // Only what players read: the GM's own lists include hidden entries.
+        context.queryClient.fetchQuery({
+          ...entriesQueryOptions(params.campaignId, { asPlayer: true }),
+          staleTime: 0,
+        }),
+      ]);
     } catch {
       throw notFound();
     }
@@ -32,29 +46,32 @@ function PreviewPage() {
   const campaign = useCampaign(campaignId).data;
 
   return (
-    <div className="space-y-10">
-      <div
-        id="preview-banner"
-        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm"
-      >
-        <span className="flex items-center gap-2 font-medium">
-          <Eye className="size-4" />
-          Previewing as a player. This page is read-only.
-        </span>
-        <Link
-          id="back-to-editing"
-          to="/campaigns/$campaignId"
-          params={{ campaignId: campaign.id }}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+    <PreviewContext.Provider value>
+      <div className="space-y-10">
+        <div
+          id="preview-banner"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm"
         >
-          <ArrowLeft />
-          Back to editing
-        </Link>
+          <span className="flex items-center gap-2 font-medium">
+            <Eye className="size-4" />
+            Previewing as a player. This page is read-only.
+          </span>
+          <Link
+            id="back-to-editing"
+            to="/campaigns/$campaignId"
+            params={{ campaignId: campaign.id }}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <ArrowLeft />
+            Back to editing
+          </Link>
+        </div>
+        <CampaignReadOnly
+          campaign={campaign}
+          crumbs={[{ label: campaign.name }]}
+        />
+        <PreviewWorld campaignId={campaignId} />
       </div>
-      <CampaignReadOnly
-        campaign={campaign}
-        crumbs={[{ label: campaign.name }]}
-      />
-    </div>
+    </PreviewContext.Provider>
   );
 }

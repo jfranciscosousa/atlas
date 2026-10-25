@@ -4,7 +4,8 @@ defmodule Atlas.Mcp.Describe do
   and the blocks of the listed rich-text sections, in the form `edit_blocks` takes (see
   `Atlas.Mcp.BlockView`). Each section also has a `<section>_revision`, for the
   `expected_revision` of a write. The normal read policies and field policies apply, so a hidden
-  section and its revision come back as `nil`.
+  section and its revision come back as `nil`. The option `extra` names a `{module, function}` that
+  gets the record and the actor and returns more data to merge into the result.
   """
   use Ash.Resource.Actions.Implementation
 
@@ -40,7 +41,19 @@ defmodule Atlas.Mcp.Describe do
            field(Map.fetch!(record, Atlas.RichText.revision_attribute(section)))}
         end)
 
-      {:ok, fields |> Map.merge(sections) |> Map.merge(revisions)}
+      {:ok,
+       fields
+       |> Map.merge(sections)
+       |> Map.merge(revisions)
+       |> Map.merge(extra(record, opts, context))}
+    end
+  end
+
+  # `extra: {module, function}` adds data that no attribute holds, such as the relations of an entry.
+  defp extra(record, opts, context) do
+    case Keyword.get(opts, :extra) do
+      {module, function} -> apply(module, function, [record, context.actor])
+      nil -> %{}
     end
   end
 

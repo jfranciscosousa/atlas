@@ -28,7 +28,17 @@ const editor = ServerBlockNoteEditor.create({ schema });
 const id = "11111111-1111-1111-1111-111111111111";
 
 test("pasted Markdown and HTML Atlas links become mentions without storing labels", async () => {
-  for (const kind of ["character", "session", "note"]) {
+  for (const kind of [
+    "character",
+    "session",
+    "note",
+    "npc",
+    "location",
+    "faction",
+    "item",
+    "creature",
+    "plot",
+  ]) {
     const href = `atlas-entry:${kind}:${id}`;
     for (const blocks of [
       await editor.tryParseMarkdownToBlocks(`Met [@Renoir](${href}) today.`),

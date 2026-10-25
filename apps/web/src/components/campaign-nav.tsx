@@ -11,6 +11,7 @@ import {
   CalendarDaysIcon,
   ChevronRightIcon,
   EyeIcon,
+  GlobeIcon,
   ScrollTextIcon,
   UsersIcon,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import {
 import { CampaignAvatar } from "./campaign-avatar";
 import { sessionsQueryOptions } from "../hooks/use-sessions";
 import { notesQueryOptions } from "../hooks/use-notes";
+import { entriesQueryOptions } from "../hooks/use-entries";
 import { charactersQueryOptions } from "../hooks/use-characters";
 
 type Campaign = { id: string; name: string; isGm: boolean | null };
@@ -44,16 +46,19 @@ function useResourceCounts(campaignId: string, enabled: boolean) {
     ...notesQueryOptions(campaignId, false),
     enabled,
   });
+  const entries = useQuery({ ...entriesQueryOptions(campaignId), enabled });
   return {
     sessions: sessions.data?.length,
     characters: characters.data?.length,
     notes: notes.data?.length,
+    entries: entries.data?.length,
     refetch: () => {
       // Do not cancel a fetch that already runs: a page may have started it.
       const options = { cancelRefetch: false };
       void sessions.refetch(options);
       void characters.refetch(options);
       void notes.refetch(options);
+      void entries.refetch(options);
     },
   };
 }
@@ -194,6 +199,19 @@ export function CampaignNav({
               link={
                 <Link
                   to="/campaigns/$campaignId/notes"
+                  params={{ campaignId: campaign.id }}
+                />
+              }
+            />
+            <ResourceLink
+              active={isActive("entries")}
+              icon={<GlobeIcon aria-hidden="true" />}
+              label="World"
+              count={counts.entries}
+              onClick={onNavigate}
+              link={
+                <Link
+                  to="/campaigns/$campaignId/entries"
                   params={{ campaignId: campaign.id }}
                 />
               }

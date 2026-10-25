@@ -19,6 +19,36 @@ defmodule Atlas.Fixtures do
     Ash.create!(Atlas.Campaigns.Campaign, %{name: name}, actor: gm)
   end
 
+  @doc "A new account that joined the campaign with its invitation. Returns `{player, character}`."
+  def join_player(campaign, gm) do
+    player = user()
+    invitation = Ash.create!(Atlas.Campaigns.Invitation, %{campaign_id: campaign.id}, actor: gm)
+
+    character =
+      Ash.create!(Atlas.Campaigns.Character, %{token: invitation.token},
+        action: :join,
+        actor: player
+      )
+
+    {player, character}
+  end
+
+  @doc "A world entry made by the GM. It starts hidden. Pass `shown: true` to show it."
+  def entry(gm, campaign, kind, name, attrs \\ %{}) do
+    {shown, attrs} = Map.pop(attrs, :shown, false)
+
+    entry =
+      Ash.create!(
+        Atlas.Content.Entry,
+        Map.merge(%{campaign_id: campaign.id, kind: kind, name: name}, attrs),
+        actor: gm
+      )
+
+    if shown,
+      do: Ash.update!(entry, %{hidden: false}, action: :set_hidden, actor: gm),
+      else: entry
+  end
+
   def paragraph(text, id \\ "b1") do
     %{
       "id" => id,

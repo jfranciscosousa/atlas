@@ -193,6 +193,93 @@ export type SessionAttributesOnlySchema = {
 };
 
 
+// Entry Schema
+export type EntryResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "archivedAt" | "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "fields" | "hidden" | "id" | "imageId" | "isGm" | "kind" | "name" | "parentId" | "parentName" | "parentShown" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion" | "shown" | "status";
+  archivedAt: UtcDateTimeUsec | null;
+  campaignId: UUID;
+  descriptionJson: Array<Record<string, unknown>>;
+  descriptionRevision: number;
+  descriptionSchemaVersion: number;
+  fields: Record<string, any>;
+  hidden: boolean;
+  id: UUID;
+  imageId: UUID | null;
+  isGm: boolean | null;
+  kind: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  name: string;
+  parentId: UUID | null;
+  parentName: string | null;
+  parentShown: boolean | null;
+  secretNotesJson: Array<Record<string, unknown>>;
+  secretNotesRevision: number;
+  secretNotesSchemaVersion: number;
+  shown: boolean | null;
+  status: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+  campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
+  parent: { __type: "Relationship"; __resource: EntryResourceSchema | null; };
+};
+
+
+
+export type EntryAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "archivedAt" | "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "fields" | "hidden" | "id" | "imageId" | "kind" | "name" | "parentId" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion" | "status";
+  archivedAt: UtcDateTimeUsec | null;
+  campaignId: UUID;
+  descriptionJson: Array<Record<string, unknown>>;
+  descriptionRevision: number;
+  descriptionSchemaVersion: number;
+  fields: Record<string, any>;
+  hidden: boolean;
+  id: UUID;
+  imageId: UUID | null;
+  kind: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  name: string;
+  parentId: UUID | null;
+  secretNotesJson: Array<Record<string, unknown>>;
+  secretNotesRevision: number;
+  secretNotesSchemaVersion: number;
+  status: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+};
+
+
+// EntryRelation Schema
+export type EntryRelationResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "campaignId" | "fromId" | "fromKind" | "fromName" | "fromShown" | "id" | "label" | "relation" | "toId" | "toKind" | "toName" | "toShown";
+  campaignId: UUID;
+  fromId: UUID;
+  fromKind: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  fromName: string | null;
+  fromShown: boolean | null;
+  id: UUID;
+  label: string | null;
+  relation: "allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of";
+  toId: UUID;
+  toKind: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  toName: string | null;
+  toShown: boolean | null;
+  campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
+};
+
+
+
+export type EntryRelationAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "campaignId" | "fromId" | "fromKind" | "id" | "label" | "relation" | "toId" | "toKind";
+  campaignId: UUID;
+  fromId: UUID;
+  fromKind: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  id: UUID;
+  label: string | null;
+  relation: "allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of";
+  toId: UUID;
+  toKind: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+};
+
+
 // Note Schema
 export type NoteResourceSchema = {
   __type: "Resource";
@@ -945,6 +1032,347 @@ export type SessionFilterInput = {
   campaign?: CampaignFilterInput;
 
 };
+export type EntryFilterInput = {
+  and?: Array<EntryFilterInput>;
+  or?: Array<EntryFilterInput>;
+  not?: Array<EntryFilterInput>;
+
+  archivedAt?: {
+    isNil?: boolean;
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
+  };
+
+  campaignId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  descriptionJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  descriptionRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  descriptionSchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  fields?: {
+    eq?: Record<string, any>;
+    notEq?: Record<string, any>;
+    in?: Array<Record<string, any>>;
+    lessThan?: Record<string, any>;
+    greaterThan?: Record<string, any>;
+    lessThanOrEqual?: Record<string, any>;
+    greaterThanOrEqual?: Record<string, any>;
+  };
+
+  hidden?: {
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  imageId?: {
+    isNil?: boolean;
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  isGm?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  kind?: {
+    eq?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    notEq?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    in?: Array<"creature" | "faction" | "item" | "location" | "npc" | "plot">;
+    lessThan?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    greaterThan?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    lessThanOrEqual?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    greaterThanOrEqual?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  };
+
+  name?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  parentId?: {
+    isNil?: boolean;
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  parentName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  parentShown?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  secretNotesJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  secretNotesRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  secretNotesSchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  shown?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  status?: {
+    eq?: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+    notEq?: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+    in?: Array<"abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown">;
+    lessThan?: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+    greaterThan?: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+    lessThanOrEqual?: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+    greaterThanOrEqual?: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+  };
+
+  campaign?: CampaignFilterInput;
+
+  parent?: EntryFilterInput;
+
+};
+export type EntryRelationFilterInput = {
+  and?: Array<EntryRelationFilterInput>;
+  or?: Array<EntryRelationFilterInput>;
+  not?: Array<EntryRelationFilterInput>;
+
+  campaignId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  fromId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  fromKind?: {
+    eq?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    notEq?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    in?: Array<"character" | "creature" | "faction" | "item" | "location" | "npc" | "plot">;
+    lessThan?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    greaterThan?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    lessThanOrEqual?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    greaterThanOrEqual?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  };
+
+  fromName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  fromShown?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  label?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  relation?: {
+    eq?: "allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of";
+    notEq?: "allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of";
+    in?: Array<"allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of">;
+    lessThan?: "allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of";
+    greaterThan?: "allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of";
+    lessThanOrEqual?: "allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of";
+    greaterThanOrEqual?: "allied_with" | "enemy_of" | "headquarters_of" | "held_by" | "involves" | "located_in" | "member_of";
+  };
+
+  toId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  toKind?: {
+    eq?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    notEq?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    in?: Array<"character" | "creature" | "faction" | "item" | "location" | "npc" | "plot">;
+    lessThan?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    greaterThan?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    lessThanOrEqual?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    greaterThanOrEqual?: "character" | "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  };
+
+  toName?: {
+    isNil?: boolean;
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  toShown?: {
+    isNil?: boolean;
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  campaign?: CampaignFilterInput;
+
+};
 export type NoteFilterInput = {
   and?: Array<NoteFilterInput>;
   or?: Array<NoteFilterInput>;
@@ -1212,6 +1640,12 @@ export type PlayerLogFilterField = (typeof playerLogFilterFields)[number];
 export const sessionFilterFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title", "campaign"] as const;
 export type SessionFilterField = (typeof sessionFilterFields)[number];
 
+export const entryFilterFields = ["archivedAt", "campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "fields", "hidden", "id", "imageId", "isGm", "kind", "name", "parentId", "parentName", "parentShown", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown", "status", "campaign", "parent"] as const;
+export type EntryFilterField = (typeof entryFilterFields)[number];
+
+export const entryRelationFilterFields = ["campaignId", "fromId", "fromKind", "fromName", "fromShown", "id", "label", "relation", "toId", "toKind", "toName", "toShown", "campaign"] as const;
+export type EntryRelationFilterField = (typeof entryRelationFilterFields)[number];
+
 export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "characterId", "characterName", "id", "isOwner", "ownerName", "title", "visibility", "campaign", "character"] as const;
 export type NoteFilterField = (typeof noteFilterFields)[number];
 
@@ -1243,6 +1677,12 @@ export type PlayerLogSortField = (typeof playerLogSortFields)[number];
 
 export const sessionSortFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title"] as const;
 export type SessionSortField = (typeof sessionSortFields)[number];
+
+export const entrySortFields = ["archivedAt", "campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "fields", "hidden", "id", "imageId", "isGm", "kind", "name", "parentId", "parentName", "parentShown", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown", "status"] as const;
+export type EntrySortField = (typeof entrySortFields)[number];
+
+export const entryRelationSortFields = ["campaignId", "fromId", "fromKind", "fromName", "fromShown", "id", "label", "relation", "toId", "toKind", "toName", "toShown"] as const;
+export type EntryRelationSortField = (typeof entryRelationSortFields)[number];
 
 export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "characterId", "characterName", "id", "isOwner", "ownerName", "title", "visibility"] as const;
 export type NoteSortField = (typeof noteSortFields)[number];

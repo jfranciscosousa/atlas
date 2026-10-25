@@ -1,9 +1,16 @@
+import {
+  ENTRY_KIND_LABELS,
+  ENTRY_KINDS,
+  type EntryKind,
+} from "./entry-kinds.ts";
+
 export type SearchKind =
   | "campaign"
   | "session"
   | "character"
   | "note"
-  | "player_log";
+  | "player_log"
+  | EntryKind;
 
 /** One hit of the `search` action. The action returns an untyped map, so the keys stay snake_case. */
 export type SearchHit = {
@@ -25,6 +32,12 @@ export const KIND_NAMES: Record<SearchKind, string> = {
   character: "Character",
   note: "Note",
   player_log: "Player log",
+  npc: ENTRY_KIND_LABELS.npc.label,
+  location: ENTRY_KIND_LABELS.location.label,
+  faction: ENTRY_KIND_LABELS.faction.label,
+  item: ENTRY_KIND_LABELS.item.label,
+  creature: ENTRY_KIND_LABELS.creature.label,
+  plot: ENTRY_KIND_LABELS.plot.label,
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -56,8 +69,14 @@ export function hitPath(
       return `${base}/characters/${hit.id}`;
     case "note":
       return `${base}/notes/${hit.id}`;
+    default:
+      return `${base}/entries/${hit.id}`;
   }
 }
+
+/** True for a hit on a world entry. */
+export const isEntryHit = (kind: SearchKind): kind is EntryKind =>
+  (ENTRY_KINDS as readonly string[]).includes(kind);
 
 /** Where a hit sits inside its page: the record that owns the section, the section, the block. */
 export type SearchTarget = { entry: string; section: string; block: string };

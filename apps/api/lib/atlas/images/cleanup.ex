@@ -50,22 +50,27 @@ defmodule Atlas.Images.Cleanup do
   end
 
   defp references_sql do
-    Application.fetch_env!(:atlas, :ash_domains)
-    |> Enum.flat_map(&Ash.Domain.Info.resources/1)
-    |> Enum.flat_map(fn resource ->
-      Enum.map(RichText.sections(resource), fn section ->
-        table = quote_identifier(AshPostgres.DataLayer.Info.table(resource))
-        column = quote_identifier(RichText.json_attribute(section))
+    # An entry holds the ID of its portrait in a column, outside every document.
+    entry_images = ~s|SELECT 1 FROM "entries" WHERE "image_id" = images.id|
 
-        """
-        SELECT 1 FROM #{table}
-        WHERE jsonb_path_exists(#{column},
-          '$.** ? (@.type == "image" && @.props.url == $ref)',
-          jsonb_build_object('ref', 'atlas-image:' || images.id::text))
-        """
+    documents =
+      Application.fetch_env!(:atlas, :ash_domains)
+      |> Enum.flat_map(&Ash.Domain.Info.resources/1)
+      |> Enum.flat_map(fn resource ->
+        Enum.map(RichText.sections(resource), fn section ->
+          table = quote_identifier(AshPostgres.DataLayer.Info.table(resource))
+          column = quote_identifier(RichText.json_attribute(section))
+
+          """
+          SELECT 1 FROM #{table}
+          WHERE jsonb_path_exists(#{column},
+            '$.** ? (@.type == "image" && @.props.url == $ref)',
+            jsonb_build_object('ref', 'atlas-image:' || images.id::text))
+          """
+        end)
       end)
-    end)
-    |> Enum.join(" UNION ALL ")
+
+    Enum.join([entry_images | documents], " UNION ALL ")
   end
 
   defp quote_identifier(value), do: "\"" <> String.replace(to_string(value), "\"", "\"\"") <> "\""
