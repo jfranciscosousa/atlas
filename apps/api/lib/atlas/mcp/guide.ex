@@ -113,7 +113,10 @@ defmodule Atlas.Mcp.Guide do
     """
     List the world entries of a campaign that you can read: NPCs, locations, factions, items,
     creatures and plots. Set kind to list one kind, and archived to true for the archived ones.
-    A player never gets a hidden entry. Use get_entry for the details.
+    A player never gets a hidden entry. Use get_entry for the details. To keep the entries whose
+    custom field has one value, give custom_field_id (from list_entry_fields) and
+    custom_field_value as text: a number as "3", a boolean as "true", a select as one of its
+    choices, an entry field as the id of the entry. Text ignores case.
     """
   end
 
@@ -124,6 +127,10 @@ defmodule Atlas.Mcp.Guide do
     relations, with its description and GM-only secret notes as blocks (see edit_blocks) and their
     revisions. A relation has the id to remove it, the text from this entry ("member of" or
     "members") and the other end. Fields: all text, readable by everyone who reads the entry.
+    custom_values lists the custom fields of the kind that you may read, in order: id, label, type,
+    gm_only, choices (a select), target_kind (an entry field) and value. A field with no value has
+    value null. The value of an entry field is {kind, id, label, restricted, shown}: if you cannot
+    read that entry, the label is "Restricted entry" and the id is null.
     """
   end
 
@@ -137,6 +144,7 @@ defmodule Atlas.Mcp.Guide do
     Give status and fields only when you know them. A field is text; a faction's reputation is
     plain text. Use edit_blocks for the description and the secret notes. A location may have a
     parent location (parent_id) of the same campaign. image_id is an image from upload_image.
+    custom_values sets custom fields: a map of field id (from list_entry_fields) to value.
     """
   end
 
@@ -146,8 +154,46 @@ defmodule Atlas.Mcp.Guide do
     Change the status, the fields, the parent location or the image of a world entry. Only the GM
     may. fields is merged into the stored fields: send only the fields that change, and use a
     blank value to clear one. Set parent_id (a location only) or image_id to null to clear it.
+    custom_values is a map of custom field id (from list_entry_fields) to value. It changes only the
+    fields it names; null or "" clears one. A number is a number, a boolean is true or false, a
+    select is one of its choices, and an entry field is the id of a non-archived entry of its
+    target kind in this campaign.
     Statuses and fields by kind:
     #{entry_kinds()}
+    """
+  end
+
+  @doc "The description of `list_entry_fields`."
+  def list_entry_fields do
+    """
+    List the custom fields of a campaign, in order. A custom field is a field that the GM defines for
+    one kind of world entry in this campaign only, for example "Kingdom" (a link to a location) on
+    locations. Set kind to list one kind, and archived to true for the archived fields. The values
+    are in get_entry (custom_values) and are set with update_entry. A player never gets a GM-only
+    field or its values.
+    """
+  end
+
+  @doc "The description of `create_entry_field`."
+  def create_entry_field do
+    """
+    Define a custom field for one kind of entry (#{Enum.join(EntrySpec.kinds(), ", ")}) in a campaign
+    that you run as GM. label has 1 to 60 characters and must not equal another active field of the
+    kind, ignoring case, or a built-in field. type is #{Enum.join(Atlas.Content.EntryField.types(), ", ")}. A select needs choices (a
+    list of names). An entry field needs target_kind: the kind of entry it points to. gm_only true
+    hides the field and its values from players. The type and the target kind never change. The
+    field goes last in its kind.
+    """
+  end
+
+  @doc "The description of `update_entry_field`."
+  def update_entry_field do
+    """
+    Change a custom field: label, gm_only and, for a select, choices. choices is the whole new list.
+    To rename a choice, put the new name in choices and give renamed_choices as {"old": "new"}: the
+    stored values follow. A choice that is gone from the list and that entries use is refused with
+    the number of entries; rename it, or change those entries first. The type and the target kind
+    never change. Only the GM may.
     """
   end
 

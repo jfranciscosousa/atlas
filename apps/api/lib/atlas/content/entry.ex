@@ -20,7 +20,16 @@ defmodule Atlas.Content.Entry do
     extensions: [AshTypescript.Resource, Atlas.RichText]
 
   alias Atlas.Content.Checks.ActorIsCampaignGm
-  alias Atlas.Content.Entry.{ApplyKindData, CheckParent, VerifyImage}
+
+  alias Atlas.Content.Entry.{
+    ApplyCustomValues,
+    ApplyKindData,
+    CheckParent,
+    CustomValuesView,
+    FilterByCustomValue,
+    VerifyImage
+  }
+
   alias Atlas.Content.{EntrySpec, RelationSpec}
 
   postgres do
@@ -89,6 +98,10 @@ defmodule Atlas.Content.Entry do
       # same with or without it.
       argument :as_player, :boolean, default: false, allow_nil?: false
 
+      # Keeps the entries whose custom field has this value. Both are given together.
+      argument :custom_field_id, :uuid
+      argument :custom_field_value, :string
+
       filter expr(
                campaign_id == ^arg(:campaign_id) and
                  (is_nil(^arg(:kind)) or kind == ^arg(:kind)) and
@@ -97,6 +110,7 @@ defmodule Atlas.Content.Entry do
              )
 
       prepare build(sort: [name: :asc, id: :asc])
+      prepare FilterByCustomValue
     end
 
     create :create do
@@ -106,7 +120,10 @@ defmodule Atlas.Content.Entry do
       # Optional: without it the entry starts with the default status of its kind.
       argument :status, :atom, constraints: [one_of: EntrySpec.all_statuses()]
 
+      argument :custom_values, :map
+
       change ApplyKindData
+      change ApplyCustomValues
       change CheckParent
       change VerifyImage
     end
@@ -116,10 +133,16 @@ defmodule Atlas.Content.Entry do
     end
 
     # `fields` is merged into the stored fields. A blank value clears one field.
+    #
+    # `custom_values` maps the ID of a custom field to its value; an empty value clears it.
     update :update_details do
       require_atomic? false
       accept [:status, :fields, :parent_id, :image_id]
+
+      argument :custom_values, :map
+
       change ApplyKindData
+      change ApplyCustomValues
       change CheckParent
       change VerifyImage
     end
@@ -161,9 +184,10 @@ defmodule Atlas.Content.Entry do
              :parent_id,
              :parent_name,
              :image_id,
-             :archived_at
+             :archived_at,
+             :custom_values
            ],
-           load: [:parent_name],
+           load: [:parent_name, :custom_values],
            sections: [:description, :secret_notes],
            extra: {Atlas.Content.EntryRelation, :describe}}
     end
@@ -236,6 +260,14 @@ defmodule Atlas.Content.Entry do
       public? true
     end
 
+    # The values of the custom fields, by the ID of the field. Never public: players must not
+    # receive the values of a GM-only field. `custom_values` shows what the actor may read.
+    attribute :custom_fields, :map do
+      allow_nil? false
+      default %{}
+      public? false
+    end
+
     # A portrait or cover. Images stand alone, so this is an ID and not a relationship.
     attribute :image_id, :uuid, public?: true
 
@@ -261,6 +293,9 @@ defmodule Atlas.Content.Entry do
   calculations do
     calculate :is_gm, :boolean, expr(exists(campaign, gm_id == ^actor(:id))), public?: true
     calculate :parent_name, :string, expr(parent.name), public?: true
+
+    # The custom fields of the kind and their values, as the actor may read them.
+    calculate :custom_values, {:array, :map}, CustomValuesView, public?: true
 
     # True when players read this entry. A player gets true for every entry that is readable.
     calculate :shown, :boolean, expr(hidden == false and is_nil(archived_at)), public?: true

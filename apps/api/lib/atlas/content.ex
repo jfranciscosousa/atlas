@@ -30,6 +30,15 @@ defmodule Atlas.Content do
       rpc_action :get_entry_kinds, :kinds
     end
 
+    resource Atlas.Content.EntryField do
+      rpc_action :list_entry_fields, :list
+      rpc_action :create_entry_field, :create
+      rpc_action :update_entry_field, :update
+      rpc_action :move_entry_field, :move
+      rpc_action :archive_entry_field, :archive
+      rpc_action :restore_entry_field, :restore
+    end
+
     resource Atlas.Content.EntryRelation do
       rpc_action :list_entry_relations, :list
       rpc_action :create_entry_relation, :create
@@ -101,6 +110,27 @@ defmodule Atlas.Content do
     tool :restore_entry, Atlas.Content.Entry, :restore,
       description: "Restore an archived entry. Only the GM may."
 
+    tool :list_entry_fields, Atlas.Content.EntryField, :list,
+      description: Atlas.Mcp.Guide.list_entry_fields()
+
+    tool :create_entry_field, Atlas.Content.EntryField, :create,
+      description: Atlas.Mcp.Guide.create_entry_field()
+
+    tool :update_entry_field, Atlas.Content.EntryField, :update,
+      description: Atlas.Mcp.Guide.update_entry_field()
+
+    tool :move_entry_field, Atlas.Content.EntryField, :move,
+      description:
+        "Move an active custom field to a place in the order of its kind (position 0 is first). The other fields shift. Only the GM may."
+
+    tool :archive_entry_field, Atlas.Content.EntryField, :archive,
+      description:
+        "Archive a custom field. Fields are never deleted. Its values stay stored and are hidden everywhere until you restore it. Only the GM may."
+
+    tool :restore_entry_field, Atlas.Content.EntryField, :restore,
+      description:
+        "Restore an archived custom field. It goes last in its kind and its stored values show again. Only the GM may."
+
     tool :add_entry_relation, Atlas.Content.EntryRelation, :create,
       description: Atlas.Mcp.Guide.add_entry_relation()
 
@@ -113,6 +143,7 @@ defmodule Atlas.Content do
     resource Atlas.Search.Request
     resource Atlas.Content.Note
     resource Atlas.Content.Entry
+    resource Atlas.Content.EntryField
     resource Atlas.Content.EntryRelation
   end
 end

@@ -24,11 +24,21 @@ import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
 const entriesKey = (campaignId: string) =>
   rpcKey(listEntries, { input: { campaignId } });
 
+/** Keeps the entries whose custom field has this value. The value is text, as the API reads it. */
+export type CustomFieldFilter = { id: string; value: string };
+
+type ListOptions = {
+  kind?: EntryKind;
+  archived?: boolean;
+  asPlayer?: boolean;
+  customField?: CustomFieldFilter;
+};
+
 export function entriesQueryOptions(
   campaignId: string,
-  options: { kind?: EntryKind; archived?: boolean; asPlayer?: boolean } = {}
+  options: ListOptions = {}
 ) {
-  const { kind, archived = false, asPlayer = false } = options;
+  const { kind, archived = false, asPlayer = false, customField } = options;
   return rpcQuery(
     listEntries,
     run =>
@@ -39,6 +49,10 @@ export function entriesQueryOptions(
           // The GM lists what a player reads, for Preview as player.
           ...(asPlayer && { asPlayer }),
           ...(kind && { kind }),
+          ...(customField && {
+            customFieldId: customField.id,
+            customFieldValue: customField.value,
+          }),
         },
         fields: [
           "id",
@@ -56,10 +70,7 @@ export function entriesQueryOptions(
   );
 }
 
-export function useEntriesList(
-  campaignId: string,
-  options: { kind?: EntryKind; archived?: boolean; asPlayer?: boolean } = {}
-) {
+export function useEntriesList(campaignId: string, options: ListOptions = {}) {
   return useSuspenseQuery(entriesQueryOptions(campaignId, options));
 }
 
@@ -97,6 +108,7 @@ const ENTRY_FIELDS = [
   "parentShown",
   "imageId",
   "archivedAt",
+  "customValues",
   "descriptionJson",
   "secretNotesJson",
 ] as const;
@@ -136,6 +148,7 @@ const FIELDS_AFTER_WRITE = [
   "parentShown",
   "imageId",
   "archivedAt",
+  "customValues",
 ] as const;
 
 // No list refetch after a create: the list route reloads on every visit, and a refetch would

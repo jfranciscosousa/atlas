@@ -6,8 +6,15 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Alert, AlertDescription } from "./ui/alert";
 import { EntryImage } from "./entry-image";
+import { CustomFieldInputs } from "./entry-custom-fields";
 import { EntryStatusBadge } from "./entry-badges";
 import { endPath, statusLabel } from "../lib/entry-kinds";
+import {
+  isEntryRef,
+  playerValues,
+  valueText,
+  type CustomValue,
+} from "../lib/entry-fields";
 import {
   useEntriesList,
   useEntryKinds,
@@ -35,6 +42,10 @@ export function EntryDetails({
   const spec = useEntryKinds().kinds.find(kind => kind.kind === entry.kind);
   const update = useEntryUpdate(campaignId, entry.id);
   const fields = spec?.fields ?? [];
+  // The GM sees every custom field. A player's list is already cut down. The preview cuts the
+  // GM's list down the same way.
+  const customValues = (entry.customValues ?? []) as CustomValue[];
+  const readable = preview ? playerValues(customValues) : customValues;
   // A player gets the parent only when players read it too. The preview must do the same.
   const parent =
     entry.parentId && entry.parentName && entry.parentShown !== false
@@ -91,6 +102,15 @@ export function EntryDetails({
                 }
               />
             ))}
+            <CustomFieldInputs
+              campaignId={campaignId}
+              entryId={entry.id}
+              values={customValues}
+              disabled={update.isPending}
+              onChange={(fieldId, value) =>
+                update.mutate({ customValues: { [fieldId]: value } })
+              }
+            />
             {entry.kind === "location" && (
               <ParentSelect
                 campaignId={campaignId}
@@ -117,6 +137,29 @@ export function EntryDetails({
                   {value}
                 </Item>
               ) : null;
+            })}
+            {readable.map(value => {
+              const text = valueText(value);
+              if (text === null) return null;
+              const target = isEntryRef(value.value) ? value.value : null;
+              return (
+                <Item
+                  key={value.id}
+                  label={value.label}
+                  id={`entry-custom-${value.id}`}
+                >
+                  {target?.id ? (
+                    <Link
+                      to={endPath(campaignId, target.kind, target.id, preview)}
+                      className="font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      {text}
+                    </Link>
+                  ) : (
+                    text
+                  )}
+                </Item>
+              );
             })}
             {parent && (
               <Item label="Inside" id="entry-parent">

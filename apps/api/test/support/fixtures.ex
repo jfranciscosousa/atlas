@@ -49,6 +49,18 @@ defmodule Atlas.Fixtures do
       else: entry
   end
 
+  @doc """
+  A custom field made by the GM. `type` is text, number, boolean, select or entry. Pass `choices`
+  for a select and `target_kind` for an entry field, and `gm_only: true` for a GM-only field.
+  """
+  def entry_field(gm, campaign, kind, label, type \\ :text, attrs \\ %{}) do
+    Ash.create!(
+      Atlas.Content.EntryField,
+      Map.merge(%{campaign_id: campaign.id, kind: kind, label: label, type: type}, attrs),
+      actor: gm
+    )
+  end
+
   def paragraph(text, id \\ "b1") do
     %{
       "id" => id,

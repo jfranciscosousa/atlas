@@ -4,7 +4,13 @@ import {
   ChevronRightIcon,
   GlobeIcon,
 } from "lucide-react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  notFound,
+  useNavigate,
+} from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   ENTRY_KIND_LABELS,
@@ -33,13 +39,21 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { PageHeader } from "../components/page-header";
 import { NewEntryButton } from "../components/new-entry-button";
 import { ENTRY_ICONS } from "../components/entry-icons";
+import { EntryFieldsManager } from "../components/entry-fields-manager";
+import { EntryFieldFilter } from "../components/entry-field-filter";
 import {
   EntryHiddenBadge,
   EntryHiddenToggle,
   EntryStatusBadge,
 } from "../components/entry-badges";
 
-type Search = { kind?: EntryKind; archived?: true };
+type Search = {
+  kind?: EntryKind;
+  archived?: true;
+  // Keeps the entries whose custom field has this value. Both come together.
+  field?: string;
+  value?: string;
+};
 
 export const Route = createFileRoute(
   "/_authenticated/campaigns/$campaignId_/entries/"
@@ -51,6 +65,13 @@ export const Route = createFileRoute(
     ...((search.archived === true || search.archived === "true") && {
       archived: true as const,
     }),
+    ...(typeof search.field === "string" &&
+      search.field !== "" &&
+      search.value !== undefined &&
+      search.value !== "" && {
+        field: search.field,
+        value: String(search.value),
+      }),
   }),
   loaderDeps: ({ search }) => ({
     archived: search.archived ?? false,
@@ -81,10 +102,25 @@ export const Route = createFileRoute(
 
 function EntriesPage() {
   const { campaignId } = Route.useParams();
-  const { kind, archived = false } = Route.useSearch();
+  const { kind, archived = false, field, value } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const campaign = useCampaign(campaignId).data;
   const all = useEntriesList(campaignId, { archived }).data;
-  const entries = kind ? all.filter(entry => entry.kind === kind) : all;
+  // The filter reads the list again on the server, so a player's filter obeys the same rules.
+  const filter = kind && field && value ? { id: field, value } : undefined;
+  const filtered = useQuery({
+    ...entriesQueryOptions(campaignId, {
+      archived,
+      kind,
+      customField: filter,
+    }),
+    enabled: !!filter,
+  });
+  const entries = filter
+    ? (filtered.data ?? [])
+    : kind
+      ? all.filter(entry => entry.kind === kind)
+      : all;
   const archiveEntry = useEntryArchive(campaignId);
   const restoreEntry = useEntryRestore(campaignId);
   const archive = archived ? restoreEntry : archiveEntry;
@@ -122,6 +158,9 @@ function EntriesPage() {
               >
                 {archived ? "Back to the world" : "Archived"}
               </Link>
+            )}
+            {campaign.isGm && !archived && (
+              <EntryFieldsManager campaignId={campaignId} kind={kind} />
             )}
             {campaign.isGm && !archived && all.length > 0 && (
               <NewEntryButton campaignId={campaignId} kind={kind} />
@@ -174,6 +213,30 @@ function EntriesPage() {
           );
         })}
       </nav>
+      {kind && !archived && (
+        <EntryFieldFilter
+          campaignId={campaignId}
+          kind={kind}
+          fieldId={field}
+          value={value}
+          onChange={next =>
+            void navigate({
+              search: previous => ({
+                ...previous,
+                field: next.field,
+                value: next.value,
+              }),
+            })
+          }
+        />
+      )}
+      {filtered.error && (
+        <Alert id="entry-filter-error" variant="destructive">
+          <AlertDescription>
+            {filtered.error.message} Clear the filter to see the list.
+          </AlertDescription>
+        </Alert>
+      )}
       {archive.error && (
         <Alert id="entry-archive-error" variant="destructive">
           <AlertDescription>{archive.error.message}</AlertDescription>
@@ -186,19 +249,23 @@ function EntriesPage() {
               <GlobeIcon aria-hidden="true" />
             </EmptyMedia>
             <EmptyTitle>
-              {archived
-                ? `No archived ${noun.toLowerCase()}`
-                : `No ${noun.toLowerCase()} yet`}
+              {filter
+                ? `No ${noun.toLowerCase()} match this filter`
+                : archived
+                  ? `No archived ${noun.toLowerCase()}`
+                  : `No ${noun.toLowerCase()} yet`}
             </EmptyTitle>
             <EmptyDescription>
-              {archived
-                ? "Entries you archive appear here, and you can restore them."
-                : campaign.isGm
-                  ? "Create one. Players see it only after you show it to them."
-                  : "The GM has not shown you any yet."}
+              {filter
+                ? "Change the value, or clear the filter."
+                : archived
+                  ? "Entries you archive appear here, and you can restore them."
+                  : campaign.isGm
+                    ? "Create one. Players see it only after you show it to them."
+                    : "The GM has not shown you any yet."}
             </EmptyDescription>
           </EmptyHeader>
-          {campaign.isGm && !archived && (
+          {campaign.isGm && !archived && !filter && (
             <EmptyContent>
               <NewEntryButton campaignId={campaignId} kind={kind}>
                 {kind

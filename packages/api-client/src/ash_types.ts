@@ -196,9 +196,10 @@ export type SessionAttributesOnlySchema = {
 // Entry Schema
 export type EntryResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "archivedAt" | "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "fields" | "hidden" | "id" | "imageId" | "isGm" | "kind" | "name" | "parentId" | "parentName" | "parentShown" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion" | "shown" | "status";
+  __primitiveFields: "archivedAt" | "campaignId" | "customValues" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "fields" | "hidden" | "id" | "imageId" | "isGm" | "kind" | "name" | "parentId" | "parentName" | "parentShown" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion" | "shown" | "status";
   archivedAt: UtcDateTimeUsec | null;
   campaignId: UUID;
+  customValues: Array<Record<string, any>> | null;
   descriptionJson: Array<Record<string, unknown>>;
   descriptionRevision: number;
   descriptionSchemaVersion: number;
@@ -242,6 +243,39 @@ export type EntryAttributesOnlySchema = {
   secretNotesRevision: number;
   secretNotesSchemaVersion: number;
   status: "abandoned" | "active" | "alive" | "dead" | "defeated" | "destroyed" | "disbanded" | "done" | "held" | "lost" | "missing" | "planned" | "unknown";
+};
+
+
+// EntryField Schema
+export type EntryFieldResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "archivedAt" | "campaignId" | "gmOnly" | "id" | "kind" | "label" | "options" | "position" | "type";
+  archivedAt: UtcDateTimeUsec | null;
+  campaignId: UUID;
+  gmOnly: boolean;
+  id: UUID;
+  kind: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  label: string;
+  options: Record<string, any>;
+  position: number;
+  type: "boolean" | "entry" | "number" | "select" | "text";
+  campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
+};
+
+
+
+export type EntryFieldAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "archivedAt" | "campaignId" | "gmOnly" | "id" | "kind" | "label" | "options" | "position" | "type";
+  archivedAt: UtcDateTimeUsec | null;
+  campaignId: UUID;
+  gmOnly: boolean;
+  id: UUID;
+  kind: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  label: string;
+  options: Record<string, any>;
+  position: number;
+  type: "boolean" | "entry" | "number" | "select" | "text";
 };
 
 
@@ -1058,6 +1092,14 @@ export type EntryFilterInput = {
     greaterThanOrEqual?: UUID;
   };
 
+  customValues?: {
+    isNil?: boolean;
+    eq?: Array<Record<string, any>>;
+    notEq?: Array<Record<string, any>>;
+    in?: Array<Array<Record<string, any>>>;
+    has?: Record<string, any>;
+  };
+
   descriptionJson?: {
     eq?: Array<Record<string, unknown>>;
     notEq?: Array<Record<string, unknown>>;
@@ -1237,6 +1279,104 @@ export type EntryFilterInput = {
   campaign?: CampaignFilterInput;
 
   parent?: EntryFilterInput;
+
+};
+export type EntryFieldFilterInput = {
+  and?: Array<EntryFieldFilterInput>;
+  or?: Array<EntryFieldFilterInput>;
+  not?: Array<EntryFieldFilterInput>;
+
+  archivedAt?: {
+    isNil?: boolean;
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
+  };
+
+  campaignId?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  gmOnly?: {
+    eq?: boolean;
+    notEq?: boolean;
+    in?: Array<boolean>;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  kind?: {
+    eq?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    notEq?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    in?: Array<"creature" | "faction" | "item" | "location" | "npc" | "plot">;
+    lessThan?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    greaterThan?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    lessThanOrEqual?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+    greaterThanOrEqual?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  };
+
+  label?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  options?: {
+    eq?: Record<string, any>;
+    notEq?: Record<string, any>;
+    in?: Array<Record<string, any>>;
+    lessThan?: Record<string, any>;
+    greaterThan?: Record<string, any>;
+    lessThanOrEqual?: Record<string, any>;
+    greaterThanOrEqual?: Record<string, any>;
+  };
+
+  position?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  type?: {
+    eq?: "boolean" | "entry" | "number" | "select" | "text";
+    notEq?: "boolean" | "entry" | "number" | "select" | "text";
+    in?: Array<"boolean" | "entry" | "number" | "select" | "text">;
+    lessThan?: "boolean" | "entry" | "number" | "select" | "text";
+    greaterThan?: "boolean" | "entry" | "number" | "select" | "text";
+    lessThanOrEqual?: "boolean" | "entry" | "number" | "select" | "text";
+    greaterThanOrEqual?: "boolean" | "entry" | "number" | "select" | "text";
+  };
+
+  campaign?: CampaignFilterInput;
 
 };
 export type EntryRelationFilterInput = {
@@ -1640,8 +1780,11 @@ export type PlayerLogFilterField = (typeof playerLogFilterFields)[number];
 export const sessionFilterFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title", "campaign"] as const;
 export type SessionFilterField = (typeof sessionFilterFields)[number];
 
-export const entryFilterFields = ["archivedAt", "campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "fields", "hidden", "id", "imageId", "isGm", "kind", "name", "parentId", "parentName", "parentShown", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown", "status", "campaign", "parent"] as const;
+export const entryFilterFields = ["archivedAt", "campaignId", "customValues", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "fields", "hidden", "id", "imageId", "isGm", "kind", "name", "parentId", "parentName", "parentShown", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown", "status", "campaign", "parent"] as const;
 export type EntryFilterField = (typeof entryFilterFields)[number];
+
+export const entryFieldFilterFields = ["archivedAt", "campaignId", "gmOnly", "id", "kind", "label", "options", "position", "type", "campaign"] as const;
+export type EntryFieldFilterField = (typeof entryFieldFilterFields)[number];
 
 export const entryRelationFilterFields = ["campaignId", "fromId", "fromKind", "fromName", "fromShown", "id", "label", "relation", "toId", "toKind", "toName", "toShown", "campaign"] as const;
 export type EntryRelationFilterField = (typeof entryRelationFilterFields)[number];
@@ -1678,8 +1821,11 @@ export type PlayerLogSortField = (typeof playerLogSortFields)[number];
 export const sessionSortFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title"] as const;
 export type SessionSortField = (typeof sessionSortFields)[number];
 
-export const entrySortFields = ["archivedAt", "campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "fields", "hidden", "id", "imageId", "isGm", "kind", "name", "parentId", "parentName", "parentShown", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown", "status"] as const;
+export const entrySortFields = ["archivedAt", "campaignId", "customValues", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "fields", "hidden", "id", "imageId", "isGm", "kind", "name", "parentId", "parentName", "parentShown", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown", "status"] as const;
 export type EntrySortField = (typeof entrySortFields)[number];
+
+export const entryFieldSortFields = ["archivedAt", "campaignId", "gmOnly", "id", "kind", "label", "options", "position", "type"] as const;
+export type EntryFieldSortField = (typeof entryFieldSortFields)[number];
 
 export const entryRelationSortFields = ["campaignId", "fromId", "fromKind", "fromName", "fromShown", "id", "label", "relation", "toId", "toKind", "toName", "toShown"] as const;
 export type EntryRelationSortField = (typeof entryRelationSortFields)[number];
