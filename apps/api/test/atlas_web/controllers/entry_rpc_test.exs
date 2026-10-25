@@ -3,7 +3,8 @@ defmodule AtlasWeb.EntryRpcTest do
   The app's view of world entries, and the check that MCP shows the same.
 
   The app calls the RPC actions below. MCP calls the tools. Both must show the same entries, the
-  same names, statuses, fields, relations and texts, and hide the same things.
+  same names, hidden flags and texts, and hide the same things. An entry is text: neither surface
+  has a status, fields, relations or a parent to show.
   """
   use AtlasWeb.ConnCase, async: true
 
@@ -14,13 +15,8 @@ defmodule AtlasWeb.EntryRpcTest do
     "id",
     "kind",
     "name",
-    "status",
     "hidden",
-    "fields",
     "campaignId",
-    "parentId",
-    "parentName",
-    "imageId",
     "archivedAt",
     "isGm",
     "descriptionJson",
@@ -54,10 +50,10 @@ defmodule AtlasWeb.EntryRpcTest do
      player_token: token_for(Atlas.Fixtures.user_by_email("ann@example.com"))}
   end
 
-  defp create(ctx, kind, name, extra \\ %{}) do
+  defp create(ctx, kind, name) do
     assert %{"success" => true, "data" => data} =
              rpc(ctx.gm, "create_entry", %{
-               input: Map.merge(%{campaignId: ctx.campaign_id, kind: kind, name: name}, extra),
+               input: %{campaignId: ctx.campaign_id, kind: kind, name: name},
                fields: @fields
              })
 
@@ -80,22 +76,13 @@ defmodule AtlasWeb.EntryRpcTest do
     do: assert(%{"success" => true} = act(ctx.gm, "set_entry_hidden", id, %{hidden: hidden}))
 
   test "the GM creates an entry that starts hidden, and works with it", ctx do
-    assert %{"id" => id, "kind" => "npc", "hidden" => true, "status" => "alive", "isGm" => true} =
-             create(ctx, "npc", "Vex", %{fields: %{ancestry: "Elf"}})
+    assert %{"id" => id, "kind" => "npc", "hidden" => true, "isGm" => true} =
+             create(ctx, "npc", "Vex")
 
-    assert %{"success" => true, "data" => %{"fields" => %{"ancestry" => "Elf"}}} =
-             fetch(ctx.gm, id)
+    assert %{"success" => true, "data" => %{"name" => "Vex"}} = fetch(ctx.gm, id)
 
     assert %{"success" => true, "data" => %{"name" => "Vexa"}} =
              act(ctx.gm, "rename_entry", id, %{name: "Vexa"})
-
-    assert %{"success" => true, "data" => %{"status" => "dead", "fields" => fields}} =
-             act(ctx.gm, "update_entry", id, %{status: "dead", fields: %{gender: "Female"}})
-
-    assert fields == %{"ancestry" => "Elf", "gender" => "Female"}
-
-    assert %{"success" => false} = act(ctx.gm, "update_entry", id, %{status: "planned"})
-    assert %{"success" => false} = act(ctx.gm, "update_entry", id, %{fields: %{type: "x"}})
 
     assert %{"success" => true, "data" => %{"archivedAt" => at}} =
              act(ctx.gm, "archive_entry", id)
@@ -111,17 +98,19 @@ defmodule AtlasWeb.EntryRpcTest do
     assert [] = list(ctx.gm, ctx, %{kind: "location"})
   end
 
-  test "the app can read the kinds with their statuses, fields and relations", ctx do
-    assert %{"success" => true, "data" => %{"kinds" => kinds, "relations" => relations}} =
-             rpc(ctx.gm, "get_entry_kinds", %{})
-
-    assert Enum.map(kinds, & &1["kind"]) == ~w(npc location faction item creature plot)
-    npc = Enum.find(kinds, &(&1["kind"] == "npc"))
-    assert npc["statuses"] == ~w(alive dead missing unknown)
-    assert Enum.map(npc["fields"], & &1["key"]) == ~w(ancestry gender)
-
-    assert Enum.map(relations, & &1["relation"]) ==
-             ~w(member_of located_in headquarters_of held_by allied_with enemy_of involves)
+  test "an entry refuses metadata: its text carries every detail", ctx do
+    for input <- [
+          %{status: "dead"},
+          %{fields: %{ancestry: "Elf"}},
+          %{parentId: Ash.UUID.generate()},
+          %{imageId: Ash.UUID.generate()}
+        ] do
+      assert %{"success" => false} =
+               rpc(ctx.gm, "create_entry", %{
+                 input: Map.merge(%{campaignId: ctx.campaign_id, kind: "npc", name: "V"}, input),
+                 fields: ["id"]
+               })
+    end
   end
 
   test "a player cannot write, a non-member reads nothing", ctx do
@@ -130,7 +119,6 @@ defmodule AtlasWeb.EntryRpcTest do
 
     for {action, input} <- [
           {"rename_entry", %{name: "Mine"}},
-          {"update_entry", %{status: "dead"}},
           {"set_entry_hidden", %{hidden: true}},
           {"archive_entry", %{}},
           {"restore_entry", %{}}
@@ -149,95 +137,23 @@ defmodule AtlasWeb.EntryRpcTest do
     assert %{"data" => %{"name" => "Vex"}} = fetch(ctx.gm, id)
   end
 
-  test "relations: add, list in both directions, remove, and visibility", ctx do
-    %{"id" => vex} = create(ctx, "npc", "Vex")
-    %{"id" => guild} = create(ctx, "faction", "Guild")
-    show(ctx, guild)
-
-    assert %{"success" => true, "data" => %{"id" => relation_id}} =
-             rpc(ctx.gm, "create_entry_relation", %{
-               input: %{
-                 campaignId: ctx.campaign_id,
-                 fromKind: "npc",
-                 fromId: vex,
-                 toKind: "faction",
-                 toId: guild,
-                 relation: "member_of",
-                 label: "staff"
-               },
-               fields: ["id"]
-             })
-
-    relations = fn who, end_id ->
-      rpc(who, "list_entry_relations", %{
-        input: %{campaignId: ctx.campaign_id, endId: end_id},
-        fields: [
-          "id",
-          "relation",
-          "label",
-          "fromKind",
-          "fromId",
-          "toKind",
-          "toId",
-          "fromName",
-          "toName"
-        ]
-      })["data"]
-    end
-
-    assert [%{"relation" => "member_of", "fromName" => "Vex", "toName" => "Guild"}] =
-             relations.(ctx.gm, vex)
-
-    assert [%{"id" => ^relation_id}] = relations.(ctx.gm, guild)
-    assert [] = relations.(ctx.player, guild)
-
-    show(ctx, vex)
-    assert [%{"label" => "staff"}] = relations.(ctx.player, guild)
-
-    assert %{"success" => false} =
-             rpc(ctx.player, "delete_entry_relation", %{identity: relation_id})
-
-    assert %{"success" => true} = rpc(ctx.gm, "delete_entry_relation", %{identity: relation_id})
-    assert [] = relations.(ctx.gm, vex)
-  end
-
   describe "the app and MCP match" do
     setup ctx do
-      realm = create(ctx, "location", "Realm", %{fields: %{type: "Kingdom"}})
+      realm = create(ctx, "location", "Realm")
       show(ctx, realm["id"])
 
-      keep = create(ctx, "location", "Keep", %{parentId: realm["id"]})
+      keep = create(ctx, "location", "Keep")
       show(ctx, keep["id"])
 
-      vex = create(ctx, "npc", "Vex", %{fields: %{ancestry: "Elf"}})
+      vex = create(ctx, "npc", "Vex")
       show(ctx, vex["id"])
       spy = create(ctx, "npc", "Spy")
-      guild = create(ctx, "faction", "Guild", %{fields: %{reputation: "Friendly"}})
+      guild = create(ctx, "faction", "Guild")
       show(ctx, guild["id"])
-      heist = create(ctx, "plot", "The heist", %{status: "active"})
+      heist = create(ctx, "plot", "The heist")
       old = create(ctx, "item", "Old blade")
       show(ctx, old["id"])
       act(ctx.gm, "archive_entry", old["id"])
-
-      for {from, to, kind, relation} <- [
-            {vex, guild, "faction", "member_of"},
-            {spy, guild, "faction", "member_of"},
-            {vex, keep, "location", "located_in"},
-            {heist, vex, "npc", "involves"}
-          ] do
-        assert %{"success" => true} =
-                 rpc(ctx.gm, "create_entry_relation", %{
-                   input: %{
-                     campaignId: ctx.campaign_id,
-                     fromKind: from["kind"],
-                     fromId: from["id"],
-                     toKind: kind,
-                     toId: to["id"],
-                     relation: relation
-                   },
-                   fields: ["id"]
-                 })
-      end
 
       for {entry, section, text} <- [
             {vex, :description, "Vex bakes bread for the guild"},
@@ -269,10 +185,8 @@ defmodule AtlasWeb.EntryRpcTest do
         for entry <- app_list do
           mcp = Enum.find(mcp_list, &(&1["id"] == entry["id"]))
 
-          assert {entry["kind"], entry["name"], entry["status"], entry["hidden"]} ==
-                   {mcp["kind"], mcp["name"], mcp["status"], mcp["hidden"]}
-
-          assert entry["parentName"] == mcp["parent_name"]
+          assert {entry["kind"], entry["name"], entry["hidden"]} ==
+                   {mcp["kind"], mcp["name"], mcp["hidden"]}
         end
 
         # An archived entry and a hidden one are in neither list for a player.
@@ -284,18 +198,12 @@ defmodule AtlasWeb.EntryRpcTest do
           %{"data" => app_entry} = fetch(app, id)
           mcp = ok!(token, "get_entry", %{input: %{id: id}})
 
-          assert app_entry["fields"] == mcp["fields"]
-          assert app_entry["parentId"] == mcp["parent_id"]
-          assert app_entry["parentName"] == mcp["parent_name"]
-          assert app_entry["imageId"] == mcp["image_id"]
           assert app_entry["descriptionRevision"] == mcp["description_revision"]
           assert app_entry["secretNotesRevision"] == mcp["secret_notes_revision"]
           assert is_nil(app_entry["secretNotesJson"]) == is_nil(mcp["secret_notes"])
           assert entry["name"] == mcp["name"]
 
           assert text(app_entry["descriptionJson"]) == text(mcp["description"])
-
-          assert app_relations(app, ctx, id) == mcp_relations(mcp)
         end
       end
 
@@ -381,20 +289,23 @@ defmodule AtlasWeb.EntryRpcTest do
       end
     end
 
-    test "the app and MCP refuse the same writes", ctx do
+    test "the app and MCP refuse the same metadata", ctx do
       vex = Enum.at(ctx.entries, 2)
 
-      for {app_action, tool, input} <- [
-            {"update_entry", "update_entry", %{status: "planned"}},
-            {"update_entry", "update_entry", %{fields: %{type: "x"}}},
-            {"update_entry", "update_entry", %{parentId: Enum.at(ctx.entries, 0)["id"]}}
-          ] do
-        mcp_input =
-          for {key, value} <- input, into: %{}, do: {Macro.underscore(to_string(key)), value}
+      for {key, value} <- [{"status", "dead"}, {"fields", %{"type" => "x"}}] do
+        input = Map.put(%{campaignId: ctx.campaign_id, kind: "npc", name: "V"}, key, value)
 
-        assert %{"success" => false} = act(ctx.gm, app_action, vex["id"], input)
-        assert {true, _} = call(ctx.gm_token, tool, %{id: vex["id"], input: mcp_input})
+        assert %{"success" => false} =
+                 rpc(ctx.gm, "create_entry", %{input: input, fields: ["id"]})
+
+        mcp_input = Map.put(%{campaign_id: ctx.campaign_id, kind: "npc", name: "V"}, key, value)
+
+        assert {true, _} = call(ctx.gm_token, "create_entry", %{input: mcp_input})
       end
+
+      # The old update tool is gone, so no client can invent fields.
+      refute "update_entry" in Enum.map(tools(ctx.gm_token), & &1["name"])
+      assert %{"success" => false} = act(ctx.gm, "update_entry", vex["id"], %{})
     end
   end
 
@@ -408,48 +319,12 @@ defmodule AtlasWeb.EntryRpcTest do
     |> Atlas.RichText.PlainText.render()
   end
 
-  defp app_relations(app, ctx, id) do
-    rpc(app, "list_entry_relations", %{
-      input: %{campaignId: ctx.campaign_id, endId: id},
-      fields: [
-        "id",
-        "relation",
-        "label",
-        "fromKind",
-        "fromId",
-        "toKind",
-        "toId",
-        "fromName",
-        "toName"
-      ]
-    })["data"]
-    |> Enum.map(fn relation ->
-      outgoing? = relation["fromId"] == id
-
-      %{
-        id: relation["id"],
-        relation: relation["relation"],
-        outgoing?: outgoing?,
-        other:
-          if(outgoing?,
-            do: {relation["toKind"], relation["toId"], relation["toName"]},
-            else: {relation["fromKind"], relation["fromId"], relation["fromName"]}
-          )
-      }
-    end)
-    |> Enum.sort_by(& &1.id)
-  end
-
-  defp mcp_relations(mcp) do
-    mcp["relations"]
-    |> Enum.map(fn relation ->
-      %{
-        id: relation["id"],
-        relation: relation["relation"],
-        outgoing?: relation["direction"] == "outgoing",
-        other: {relation["other"]["kind"], relation["other"]["id"], relation["other"]["name"]}
-      }
-    end)
-    |> Enum.sort_by(& &1.id)
+  defp tools(token) do
+    build_conn()
+    |> put_req_header("authorization", "Bearer " <> token)
+    |> put_req_header("accept", "application/json, text/event-stream")
+    |> post("/mcp", %{jsonrpc: "2.0", id: 1, method: "tools/list"})
+    |> json_response(200)
+    |> get_in(["result", "tools"])
   end
 end

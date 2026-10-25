@@ -1,18 +1,10 @@
-import { useState } from "react";
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
   ChevronRightIcon,
   GlobeIcon,
-  SlidersHorizontalIcon,
 } from "lucide-react";
-import {
-  createFileRoute,
-  Link,
-  notFound,
-  useNavigate,
-} from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import {
   ENTRY_KIND_LABELS,
@@ -20,10 +12,8 @@ import {
   isEntryKind,
   type EntryKind,
 } from "../lib/entry-kinds";
-import { entryFieldsQueryOptions } from "../hooks/use-entry-fields";
 import {
   entriesQueryOptions,
-  entryKindsQueryOptions,
   useEntriesList,
   useEntryArchive,
   useEntryRestore,
@@ -42,20 +32,14 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { PageHeader } from "../components/page-header";
 import { NewEntryButton } from "../components/new-entry-button";
 import { ENTRY_ICONS } from "../components/entry-icons";
-import { EntryFieldsManager } from "../components/entry-fields-manager";
-import { EntryFieldFilter } from "../components/entry-field-filter";
 import {
   EntryHiddenBadge,
   EntryHiddenToggle,
-  EntryStatusBadge,
 } from "../components/entry-badges";
 
 type Search = {
   kind?: EntryKind;
   archived?: true;
-  // Keeps the entries whose custom field has this value. Both come together.
-  field?: string;
-  value?: string;
 };
 
 export const Route = createFileRoute(
@@ -68,13 +52,6 @@ export const Route = createFileRoute(
     ...((search.archived === true || search.archived === "true") && {
       archived: true as const,
     }),
-    ...(typeof search.field === "string" &&
-      search.field !== "" &&
-      search.value !== undefined &&
-      search.value !== "" && {
-        field: search.field,
-        value: String(search.value),
-      }),
   }),
   loaderDeps: ({ search }) => ({
     archived: search.archived ?? false,
@@ -87,12 +64,6 @@ export const Route = createFileRoute(
       await Promise.all([
         context.queryClient.ensureQueryData(
           campaignQueryOptions(params.campaignId)
-        ),
-        context.queryClient.ensureQueryData(entryKindsQueryOptions()),
-        // The field filter reads these, so the bar is ready with the rest of the page.
-        // A failure hides the bar, not the page.
-        context.queryClient.prefetchQuery(
-          entryFieldsQueryOptions(params.campaignId)
         ),
         context.queryClient.fetchQuery({
           ...entriesQueryOptions(params.campaignId, {
@@ -110,32 +81,14 @@ export const Route = createFileRoute(
 
 function EntriesPage() {
   const { campaignId } = Route.useParams();
-  const { kind, archived = false, field, value } = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const { kind, archived = false } = Route.useSearch();
   const campaign = useCampaign(campaignId).data;
   const all = useEntriesList(campaignId, { archived }).data;
-  // The filter reads the list again on the server, so a player's filter obeys the same rules.
-  const filter = kind && field && value ? { id: field, value } : undefined;
-  const filtered = useQuery({
-    ...entriesQueryOptions(campaignId, {
-      archived,
-      kind,
-      customField: filter,
-    }),
-    enabled: !!filter,
-    // A filter change must not blank the list while the server answers.
-    placeholderData: previous => previous ?? all,
-  });
-  const entries = filter
-    ? (filtered.data ?? [])
-    : kind
-      ? all.filter(entry => entry.kind === kind)
-      : all;
+  const entries = kind ? all.filter(entry => entry.kind === kind) : all;
   const archiveEntry = useEntryArchive(campaignId);
   const restoreEntry = useEntryRestore(campaignId);
   const archive = archived ? restoreEntry : archiveEntry;
   const noun = kind ? ENTRY_KIND_LABELS[kind].plural : "World entries";
-  const [fieldsOpen, setFieldsOpen] = useState(false);
 
   return (
     <div className="space-y-8">
@@ -148,7 +101,7 @@ function EntriesPage() {
         title={archived ? "Archived world entries" : "World"}
         description={
           campaign.isGm
-            ? "NPCs, locations, factions, items, creatures, and plots. A new entry is hidden until you show it to the players."
+            ? "Anything of the world: NPCs, locations, factions, items, creatures and plots. An entry is free-form text. A new entry is hidden until you show it to the players."
             : "What the GM has shown you of the world."
         }
         actions={
@@ -170,30 +123,11 @@ function EntriesPage() {
                 {archived ? "Back to the world" : "Archived"}
               </Link>
             )}
-            {campaign.isGm && !archived && (
-              <Button
-                id="entry-fields-open"
-                variant="outline"
-                onClick={() => setFieldsOpen(true)}
-              >
-                <SlidersHorizontalIcon
-                  aria-hidden="true"
-                  data-icon="inline-start"
-                />
-                Fields
-              </Button>
-            )}
             {campaign.isGm && !archived && all.length > 0 && (
               <NewEntryButton campaignId={campaignId} kind={kind} />
             )}
           </div>
         }
-      />
-      <EntryFieldsManager
-        campaignId={campaignId}
-        kind={kind}
-        open={fieldsOpen}
-        onOpenChange={setFieldsOpen}
       />
       <nav
         id="entry-kind-filter"
@@ -240,31 +174,6 @@ function EntriesPage() {
           );
         })}
       </nav>
-      {kind && !archived && (
-        <EntryFieldFilter
-          campaignId={campaignId}
-          kind={kind}
-          fieldId={field}
-          value={value}
-          onManageFields={campaign.isGm ? () => setFieldsOpen(true) : undefined}
-          onChange={next =>
-            void navigate({
-              search: previous => ({
-                ...previous,
-                field: next.field,
-                value: next.value,
-              }),
-            })
-          }
-        />
-      )}
-      {filtered.error && (
-        <Alert id="entry-filter-error" variant="destructive">
-          <AlertDescription>
-            {filtered.error.message} Clear the filter to see the list.
-          </AlertDescription>
-        </Alert>
-      )}
       {archive.error && (
         <Alert id="entry-archive-error" variant="destructive">
           <AlertDescription>{archive.error.message}</AlertDescription>
@@ -277,23 +186,19 @@ function EntriesPage() {
               <GlobeIcon aria-hidden="true" />
             </EmptyMedia>
             <EmptyTitle>
-              {filter
-                ? `No ${noun.toLowerCase()} match this filter`
-                : archived
-                  ? `No archived ${noun.toLowerCase()}`
-                  : `No ${noun.toLowerCase()} yet`}
+              {archived
+                ? `No archived ${noun.toLowerCase()}`
+                : `No ${noun.toLowerCase()} yet`}
             </EmptyTitle>
             <EmptyDescription>
-              {filter
-                ? "Change the value, or clear the filter."
-                : archived
-                  ? "Entries you archive appear here, and you can restore them."
-                  : campaign.isGm
-                    ? "Create one. Players see it only after you show it to them."
-                    : "The GM has not shown you any yet."}
+              {archived
+                ? "Entries you archive appear here, and you can restore them."
+                : campaign.isGm
+                  ? "Create one. Players see it only after you show it to them."
+                  : "The GM has not shown you any yet."}
             </EmptyDescription>
           </EmptyHeader>
-          {campaign.isGm && !archived && !filter && (
+          {campaign.isGm && !archived && (
             <EmptyContent>
               <NewEntryButton campaignId={campaignId} kind={kind}>
                 {kind
@@ -324,13 +229,7 @@ function EntriesPage() {
                   />
                   <span className="min-w-0 flex-1 truncate font-heading text-lg font-semibold">
                     {entry.name}
-                    {entry.parentName && (
-                      <span className="ml-2 font-sans text-sm font-normal text-muted-foreground">
-                        in {entry.parentName}
-                      </span>
-                    )}
                   </span>
-                  <EntryStatusBadge status={entry.status} />
                   {campaign.isGm && <EntryHiddenBadge hidden={entry.hidden} />}
                   <ChevronRightIcon
                     aria-hidden="true"

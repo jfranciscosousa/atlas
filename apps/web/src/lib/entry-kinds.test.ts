@@ -1,14 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-  ENTRY_KIND_LABELS,
-  ENTRY_KINDS,
-  endKindLabel,
-  endPath,
-  isEntryKind,
-  statusLabel,
-} from "./entry-kinds.ts";
+import { ENTRY_KIND_LABELS, ENTRY_KINDS, isEntryKind } from "./entry-kinds.ts";
 import { MENTION_KINDS } from "./blocknote-schema.ts";
 
 test("every kind of world entry has a name and can be mentioned", () => {
@@ -26,24 +19,4 @@ test("every kind of world entry has a name and can be mentioned", () => {
   }
   assert.ok(isEntryKind("npc"));
   assert.ok(!isEntryKind("note"));
-});
-
-test("an end opens its own page, and a preview opens the player's page", () => {
-  assert.equal(endPath("c1", "character", "h1"), "/campaigns/c1/characters/h1");
-  assert.equal(endPath("c1", "npc", "e1"), "/campaigns/c1/entries/e1");
-  assert.equal(
-    endPath("c1", "faction", "e1", true),
-    "/campaigns/c1/preview/entries/e1"
-  );
-  // A character has no player's preview page.
-  assert.equal(
-    endPath("c1", "character", "h1", true),
-    "/campaigns/c1/characters/h1"
-  );
-});
-
-test("kinds and statuses read as words", () => {
-  assert.equal(endKindLabel("character"), "Character");
-  assert.equal(endKindLabel("npc"), "NPC");
-  assert.equal(statusLabel("missing"), "Missing");
 });

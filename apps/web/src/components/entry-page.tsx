@@ -8,8 +8,6 @@ import { Button, buttonVariants } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
 import { getEditor } from "./rich-text-editor-loader";
 import { PageHeader } from "./page-header";
-import { EntryRelations } from "./entry-relations";
-import { EntryDetails } from "./entry-details";
 import { EntryHiddenBadge, EntryHiddenToggle } from "./entry-badges";
 import { ENTRY_KIND_LABELS } from "../lib/entry-kinds";
 import { useTabState } from "../hooks/use-search-target";
@@ -167,19 +165,6 @@ export function EntryPage({
           <AlertDescription>{error.message}</AlertDescription>
         </Alert>
       )}
-      <EntryDetails
-        campaignId={campaignId}
-        entry={entry}
-        canManage={canManage}
-        preview={preview}
-      />
-      <EntryRelations
-        campaignId={campaignId}
-        endId={entry.id}
-        endKind={entry.kind}
-        canManage={canManage}
-        preview={preview}
-      />
       {/* The key gives each entry its own editor; BlockNote reads its content only once. */}
       {/* keepMounted: a hidden editor keeps its text and its pending autosave. */}
       {canManage ? (
@@ -198,7 +183,7 @@ export function EntryPage({
               section="description"
               label="Description"
               hideLabel
-              hint="What the players read once you show this entry."
+              hint="Write what the entry is: its state, details and relationships. Players read this once you show the entry."
               initial={entry.descriptionJson}
             />
           </TabsContent>

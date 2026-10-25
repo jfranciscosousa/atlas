@@ -4,16 +4,14 @@ import { notFound } from "@tanstack/react-router";
 
 import {
   entriesQueryOptions,
-  entryKindsQueryOptions,
   entryQueryOptions,
-  entryRelationsQueryOptions,
 } from "../hooks/use-entries.ts";
 import { charactersQueryOptions } from "../hooks/use-characters.ts";
 import { campaignQueryOptions } from "../hooks/use-campaigns.ts";
 
 /**
- * Loads what an entry page reads. Saving does not update the cached entry, so the entry and its
- * relations load again on every visit. In preview the entry must be one that players read.
+ * Loads what an entry page reads. Saving does not update the cached entry, so the entry loads
+ * again on every visit. In preview the entry must be one that players read.
  */
 export async function loadEntryPage(
   queryClient: QueryClient,
@@ -21,20 +19,15 @@ export async function loadEntryPage(
   preview: boolean
 ) {
   try {
-    const [, , , , entry] = await Promise.all([
+    const [, , , entry] = await Promise.all([
       queryClient.ensureQueryData(campaignQueryOptions(params.campaignId)),
       queryClient.ensureQueryData(charactersQueryOptions(params.campaignId)),
-      queryClient.ensureQueryData(entryKindsQueryOptions()),
       queryClient.fetchQuery({
         ...entriesQueryOptions(params.campaignId),
         staleTime: 0,
       }),
       queryClient.fetchQuery({
         ...entryQueryOptions(params.entryId),
-        staleTime: 0,
-      }),
-      queryClient.fetchQuery({
-        ...entryRelationsQueryOptions(params.campaignId, params.entryId),
         staleTime: 0,
       }),
     ]);

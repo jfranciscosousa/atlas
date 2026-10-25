@@ -36,60 +36,38 @@ defmodule AtlasWeb.McpEntriesTest do
 
   defp paragraph(text), do: %{type: "paragraph", content: text}
 
-  test "the GM creates an entry of every kind: hidden, with the default status", ctx do
-    for {kind, status} <- [
-          {"npc", "alive"},
-          {"location", "active"},
-          {"faction", "active"},
-          {"item", "unknown"},
-          {"creature", "active"},
-          {"plot", "planned"}
-        ] do
-      assert %{"id" => id, "kind" => ^kind, "hidden" => true, "status" => ^status} =
-               create(ctx, kind, "A #{kind}")
-
-      assert %{"name" => "A " <> ^kind, "fields" => %{}, "relations" => []} = read(ctx.token, id)
+  test "the GM creates an entry of every kind, and it starts hidden", ctx do
+    for kind <- ~w(npc location faction item creature plot) do
+      assert %{"id" => id, "kind" => ^kind, "hidden" => true} = create(ctx, kind, "A #{kind}")
+      assert %{"name" => "A " <> ^kind} = read(ctx.token, id)
     end
 
     assert 6 == length(list(ctx.token, ctx))
   end
 
-  test "create takes status and fields, and update merges the fields", ctx do
-    assert %{"id" => id, "status" => "dead", "fields" => %{"ancestry" => "Elf"}} =
-             create(ctx, "npc", "Vex", %{status: "dead", fields: %{ancestry: "Elf"}})
+  test "an entry is text: create and update refuse metadata", ctx do
+    for extra <- [
+          %{status: "dead"},
+          %{fields: %{ancestry: "Elf"}},
+          %{parent_id: Ash.UUID.generate()},
+          %{image_id: Ash.UUID.generate()},
+          %{custom_values: %{}}
+        ] do
+      assert {true, _} =
+               call(ctx.token, "create_entry", %{
+                 input: Map.merge(%{campaign_id: ctx.campaign.id, kind: "npc", name: "V"}, extra)
+               })
+    end
 
-    assert %{"fields" => %{"ancestry" => "Elf", "gender" => "Female"}} =
-             ok!(ctx.token, "update_entry", %{
-               id: id,
-               input: %{fields: %{gender: "Female"}}
-             })
+    %{"id" => id} = create(ctx, "npc", "Vex")
 
-    assert %{"fields" => %{"gender" => "Female"}} =
-             ok!(ctx.token, "update_entry", %{id: id, input: %{fields: %{ancestry: ""}}})
+    for input <- [%{status: "dead"}, %{fields: %{ancestry: "Elf"}}] do
+      assert {true, _} = call(ctx.token, "rename_entry", %{id: id, input: input})
+    end
 
-    assert %{"status" => "missing"} =
-             ok!(ctx.token, "update_entry", %{id: id, input: %{status: "missing"}})
-
-    assert {true, _} = call(ctx.token, "update_entry", %{id: id, input: %{status: "planned"}})
-    assert {true, _} = call(ctx.token, "update_entry", %{id: id, input: %{fields: %{type: "x"}}})
-  end
-
-  test "a location takes a parent, and only a location does", ctx do
-    %{"id" => realm} = create(ctx, "location", "Realm")
-    %{"id" => keep} = create(ctx, "location", "Keep", %{parent_id: realm})
-
-    assert %{"parent_id" => ^realm, "parent_name" => "Realm"} = read(ctx.token, keep)
-
-    assert {true, _} = call(ctx.token, "update_entry", %{id: realm, input: %{parent_id: keep}})
-
-    # A tool result leaves out the attributes that are nil.
-    refute ok!(ctx.token, "update_entry", %{id: keep, input: %{parent_id: nil}})["parent_id"]
-    assert %{"parent_id" => nil} = read(ctx.token, keep)
-
-    assert {true, _} =
-             call(ctx.token, "create_entry", %{
-               input: %{campaign_id: ctx.campaign.id, kind: "npc", name: "V", parent_id: realm}
-             })
+    # The metadata tool is gone, so no client can invent fields.
+    refute "update_entry" in tool_names(ctx.token)
+    assert %{"name" => "Vex"} = read(ctx.token, id)
   end
 
   test "rename, hide, show, archive and restore; nothing is deleted", ctx do
@@ -108,29 +86,25 @@ defmodule AtlasWeb.McpEntriesTest do
     refute ok!(ctx.token, "restore_entry", %{id: id})["archived_at"]
     assert [%{"id" => ^id}] = list(ctx.token, ctx)
 
-    tools = tool_names(ctx.token)
-    refute Enum.any?(tools, &String.contains?(&1, "delete"))
-    assert "archive_entry" in tools
+    refute Enum.any?(tool_names(ctx.token), &String.contains?(&1, "delete"))
+    assert "archive_entry" in tool_names(ctx.token)
   end
 
-  test "list_entries filters by kind and shows the parent location", ctx do
-    %{"id" => realm} = create(ctx, "location", "Realm")
-    create(ctx, "location", "Keep", %{parent_id: realm})
+  test "list_entries filters by kind", ctx do
+    create(ctx, "location", "Realm")
+    create(ctx, "location", "Keep")
     create(ctx, "npc", "Vex")
 
     assert ["Keep", "Realm"] =
              ctx.token |> list(ctx, %{kind: "location"}) |> Enum.map(& &1["name"]) |> Enum.sort()
 
-    assert [%{"name" => "Keep", "parent_name" => "Realm"}] =
-             ctx.token |> list(ctx, %{kind: "location"}) |> Enum.filter(&(&1["name"] == "Keep"))
-
-    assert [%{"name" => "Vex", "kind" => "npc", "status" => "alive", "hidden" => true}] =
+    assert [%{"name" => "Vex", "kind" => "npc", "hidden" => true}] =
              list(ctx.token, ctx, %{kind: "npc"})
   end
 
   describe "players" do
     test "never see a hidden entry, and see a shown one without the secret notes", ctx do
-      %{"id" => id} = create(ctx, "npc", "Vex", %{fields: %{ancestry: "Elf"}})
+      %{"id" => id} = create(ctx, "npc", "Vex")
 
       assert [] = list(ctx.player_token, ctx)
       assert {true, _} = call(ctx.player_token, "get_entry", %{input: %{id: id}})
@@ -146,7 +120,6 @@ defmodule AtlasWeb.McpEntriesTest do
 
       assert %{
                "name" => "Vex",
-               "fields" => %{"ancestry" => "Elf"},
                "description" => [],
                "secret_notes" => nil,
                "secret_notes_revision" => nil
@@ -162,11 +135,9 @@ defmodule AtlasWeb.McpEntriesTest do
       assert {true, _} = call(ctx.player_token, "get_entry", %{input: %{id: id}})
     end
 
-    test "cannot create, change, show, archive or relate", ctx do
+    test "cannot create, change, show, archive or restore", ctx do
       %{"id" => id} = create(ctx, "npc", "Vex")
       show(ctx, id)
-      %{"id" => guild} = create(ctx, "faction", "Guild")
-      show(ctx, guild)
 
       assert {true, _} =
                call(ctx.player_token, "create_entry", %{
@@ -175,7 +146,6 @@ defmodule AtlasWeb.McpEntriesTest do
 
       for {tool, args} <- [
             {"rename_entry", %{id: id, input: %{name: "Mine"}}},
-            {"update_entry", %{id: id, input: %{status: "dead"}}},
             {"set_entry_hidden", %{id: id, input: %{hidden: true}}},
             {"archive_entry", %{id: id}},
             {"restore_entry", %{id: id}}
@@ -183,112 +153,7 @@ defmodule AtlasWeb.McpEntriesTest do
         assert {true, _} = call(ctx.player_token, tool, args), tool
       end
 
-      assert {true, _} =
-               call(ctx.player_token, "add_entry_relation", %{
-                 input: %{
-                   campaign_id: ctx.campaign.id,
-                   from_kind: "npc",
-                   from_id: id,
-                   to_kind: "faction",
-                   to_id: guild,
-                   relation: "member_of"
-                 }
-               })
-
-      assert %{"name" => "Vex", "status" => "alive"} = read(ctx.token, id)
-    end
-  end
-
-  describe "relations" do
-    defp relate(ctx, from, to, relation, extra \\ %{}) do
-      ok!(ctx.token, "add_entry_relation", %{
-        input:
-          Map.merge(
-            %{
-              campaign_id: ctx.campaign.id,
-              from_kind: from.kind,
-              from_id: from.id,
-              to_kind: to.kind,
-              to_id: to.id,
-              relation: relation
-            },
-            extra
-          )
-      })
-    end
-
-    test "add, read in both directions, and remove", ctx do
-      %{"id" => vex} = create(ctx, "npc", "Vex")
-      %{"id" => guild} = create(ctx, "faction", "Guild")
-
-      relation =
-        relate(ctx, %{kind: "npc", id: vex}, %{kind: "faction", id: guild}, "member_of", %{
-          label: "staff"
-        })
-
-      assert %{"id" => relation_id, "relation" => "member_of", "label" => "staff"} = relation
-
-      assert %{
-               "relations" => [
-                 %{
-                   "id" => ^relation_id,
-                   "direction" => "outgoing",
-                   "text" => "member of",
-                   "label" => "staff",
-                   "other" => %{"kind" => "faction", "id" => ^guild, "name" => "Guild"}
-                 }
-               ]
-             } = read(ctx.token, vex)
-
-      assert %{
-               "relations" => [
-                 %{
-                   "direction" => "incoming",
-                   "text" => "members",
-                   "other" => %{"kind" => "npc", "id" => ^vex, "name" => "Vex"}
-                 }
-               ]
-             } = read(ctx.token, guild)
-
-      assert {true, _} =
-               call(ctx.token, "add_entry_relation", %{
-                 input: %{
-                   campaign_id: ctx.campaign.id,
-                   from_kind: "faction",
-                   from_id: guild,
-                   to_kind: "npc",
-                   to_id: vex,
-                   relation: "member_of"
-                 }
-               })
-
-      assert {false, _} = call(ctx.token, "remove_entry_relation", %{id: relation_id})
-      assert %{"relations" => []} = read(ctx.token, vex)
-      assert %{"name" => "Vex"} = read(ctx.token, vex)
-    end
-
-    test "a player sees a relation only when both ends are shown", ctx do
-      %{"id" => vex} = create(ctx, "npc", "Vex")
-      %{"id" => guild} = create(ctx, "faction", "Guild")
-      show(ctx, guild)
-
-      relate(ctx, %{kind: "npc", id: vex}, %{kind: "faction", id: guild}, "member_of")
-      assert %{"relations" => []} = read(ctx.player_token, guild)
-
-      show(ctx, vex)
-      assert %{"relations" => [%{"other" => %{"name" => "Vex"}}]} = read(ctx.player_token, guild)
-
-      assert {true, _} =
-               call(ctx.player_token, "remove_entry_relation", %{id: Ash.UUID.generate()})
-    end
-
-    test "the tool description lists the relations and the kinds", ctx do
-      %{"description" => description} = tool(ctx.token, "add_entry_relation")
-
-      for relation <-
-            ~w(member_of located_in headquarters_of held_by allied_with enemy_of involves) do
-        assert description =~ relation
-      end
+      assert %{"name" => "Vex"} = read(ctx.token, id)
     end
   end
 
@@ -323,16 +188,6 @@ defmodule AtlasWeb.McpEntriesTest do
       assert {true, _} =
                call(ctx.token, "read_blocks", %{
                  input: %{kind: "location", id: id, section: "description"}
-               })
-
-      assert {true, _} =
-               call(ctx.token, "edit_blocks", %{
-                 input: %{
-                   kind: "location",
-                   id: id,
-                   section: "description",
-                   operations: [%{op: "insert", blocks: [paragraph("x")]}]
-                 }
                })
     end
 
@@ -419,13 +274,25 @@ defmodule AtlasWeb.McpEntriesTest do
     end
   end
 
-  test "the tool descriptions name the kinds, statuses and fields", ctx do
+  test "the entry tools say what to write in the text", ctx do
     %{"description" => create} = tool(ctx.token, "create_entry")
 
-    for text <-
-          ~w(npc location faction item creature plot alive disbanded planned reputation ancestry source) do
+    for text <- ~w(npc location faction item creature plot) do
       assert create =~ text
     end
+
+    for hint <- ~w(person place organization object monster story) do
+      assert create =~ hint
+    end
+
+    assert create =~ "label for grouping"
+    assert create =~ "edit_blocks"
+    assert create =~ "infer"
+
+    %{"description" => read} = tool(ctx.token, "get_entry")
+    assert read =~ "text"
+    assert read =~ "secret notes"
+    refute read =~ "status"
 
     assert %{"description" => edit} = tool(ctx.token, "edit_blocks")
     assert edit =~ "npc, location, faction, item, creature, plot (description, secret_notes)"

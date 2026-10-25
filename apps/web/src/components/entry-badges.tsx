@@ -2,12 +2,7 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { statusLabel } from "../lib/entry-kinds";
 import { useEntryHidden } from "../hooks/use-entries";
-
-export function EntryStatusBadge({ status }: { status: string }) {
-  return <Badge variant="outline">{statusLabel(status)}</Badge>;
-}
 
 /** Only the GM sees a hidden entry, so a player never sees this badge. */
 export function EntryHiddenBadge({ hidden }: { hidden: boolean }) {

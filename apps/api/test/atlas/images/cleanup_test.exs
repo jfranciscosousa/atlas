@@ -96,28 +96,6 @@ defmodule Atlas.Images.CleanupTest do
     refute file?(image)
   end
 
-  test "keeps the portrait of an entry, and deletes it once the entry drops it", ctx do
-    image = image(ctx.gm)
-
-    entry =
-      Ash.create!(
-        Atlas.Content.Entry,
-        %{campaign_id: ctx.campaign.id, kind: :npc, name: "Vex", image_id: image.id},
-        actor: ctx.gm
-      )
-
-    assert :ok = Cleanup.perform(%Oban.Job{})
-    assert stored?(image)
-    assert file?(image)
-
-    entry
-    |> Ash.Changeset.for_update(:update_details, %{image_id: nil}, actor: ctx.gm)
-    |> Ash.update!()
-
-    assert :ok = Cleanup.perform(%Oban.Job{})
-    refute stored?(image)
-  end
-
   test "missing objects do not prevent metadata cleanup", ctx do
     image = image(ctx.gm)
     assert :ok = Atlas.Storage.delete(image.storage_key)

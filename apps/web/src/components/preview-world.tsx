@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
 import { ENTRY_ICONS } from "./entry-icons";
-import { EntryStatusBadge } from "./entry-badges";
 import { ENTRY_KIND_LABELS, ENTRY_KINDS } from "../lib/entry-kinds";
 import { useEntriesList } from "../hooks/use-entries";
 
@@ -39,7 +38,6 @@ export function PreviewWorld({ campaignId }: { campaignId: string }) {
                       <span className="min-w-0 flex-1 truncate font-medium">
                         {entry.name}
                       </span>
-                      <EntryStatusBadge status={entry.status} />
                     </Link>
                   </li>
                 ))}

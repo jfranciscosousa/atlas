@@ -33,68 +33,20 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "label",
+      "source": "name",
       "type": "text"
     },
     {
       "allow_nil?": false,
-      "default": "nil",
+      "default": "true",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "type",
-      "type": "text"
-    },
-    {
-      "allow_nil?": false,
-      "default": "%{}",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "options",
-      "type": "map"
-    },
-    {
-      "allow_nil?": false,
-      "default": "false",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "gm_only",
+      "source": "hidden",
       "type": "boolean"
-    },
-    {
-      "allow_nil?": false,
-      "default": "0",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "position",
-      "type": "bigint"
-    },
-    {
-      "allow_nil?": false,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "label_key",
-      "type": "text"
     },
     {
       "allow_nil?": true,
@@ -153,7 +105,7 @@
           "global": null,
           "strategy": null
         },
-        "name": "entry_field_definitions_campaign_id_fkey",
+        "name": "entries_campaign_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
@@ -164,6 +116,78 @@
       "size": null,
       "source": "campaign_id",
       "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"'[]'::jsonb\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "description_json",
+      "type": "map"
+    },
+    {
+      "allow_nil?": false,
+      "default": "1",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "description_schema_version",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": false,
+      "default": "0",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "description_revision",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"'[]'::jsonb\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "secret_notes_json",
+      "type": "map"
+    },
+    {
+      "allow_nil?": false,
+      "default": "1",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "secret_notes_schema_version",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": false,
+      "default": "0",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "secret_notes_revision",
+      "type": "bigint"
     }
   ],
   "base_filter": null,
@@ -174,15 +198,7 @@
       ],
       "base_filter": null,
       "check": "kind IN ('npc', 'location', 'faction', 'item', 'creature', 'plot')",
-      "name": "entry_field_definitions_kind_known"
-    },
-    {
-      "attribute": [
-        "type"
-      ],
-      "base_filter": null,
-      "check": "type IN ('text', 'number', 'boolean', 'select', 'entry')",
-      "name": "entry_field_definitions_type_known"
+      "name": "entries_kind_known"
     }
   ],
   "create_table_options": null,
@@ -193,7 +209,7 @@
       "error_fields": [
         "campaign_id",
         "kind",
-        "position"
+        "name"
       ],
       "fields": [
         {
@@ -206,7 +222,7 @@
         },
         {
           "type": "atom",
-          "value": "position"
+          "value": "name"
         }
       ],
       "include": null,
@@ -223,31 +239,8 @@
   ],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "8299055FBBE162F51606E30BE767726270905B40545E84C22C065805DF8A04C3",
-  "identities": [
-    {
-      "all_tenants?": false,
-      "base_filter": null,
-      "index_name": "entry_field_definitions_unique_label_index",
-      "keys": [
-        {
-          "type": "atom",
-          "value": "campaign_id"
-        },
-        {
-          "type": "atom",
-          "value": "kind"
-        },
-        {
-          "type": "atom",
-          "value": "label_key"
-        }
-      ],
-      "name": "unique_label",
-      "nils_distinct?": true,
-      "where": "archived_at IS NULL"
-    }
-  ],
+  "hash": "C16A001048BAD320A81569562D0CDFE77EDEFBC2D4E6ABB649D738B43A226E1E",
+  "identities": [],
   "multitenancy": {
     "attribute": null,
     "global": null,
@@ -255,6 +248,6 @@
   },
   "repo": "Elixir.Atlas.Repo",
   "schema": null,
-  "table": "entry_field_definitions",
+  "table": "entries",
   "temporal": null
 }

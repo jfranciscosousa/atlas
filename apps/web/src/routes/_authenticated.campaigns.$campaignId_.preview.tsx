@@ -2,10 +2,7 @@ import { ArrowLeft, Eye } from "lucide-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { PreviewContext } from "../lib/preview";
-import {
-  entriesQueryOptions,
-  entryKindsQueryOptions,
-} from "../hooks/use-entries";
+import { entriesQueryOptions } from "../hooks/use-entries";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import { buttonVariants } from "../components/ui/button";
 import { loadEditor } from "../components/rich-text-editor-loader";
@@ -26,7 +23,6 @@ export const Route = createFileRoute(
           ...campaignQueryOptions(params.campaignId),
           staleTime: 0,
         }),
-        context.queryClient.ensureQueryData(entryKindsQueryOptions()),
         // Only what players read: the GM's own lists include hidden entries.
         context.queryClient.fetchQuery({
           ...entriesQueryOptions(params.campaignId, { asPlayer: true }),

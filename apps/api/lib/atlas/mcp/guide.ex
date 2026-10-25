@@ -4,7 +4,7 @@ defmodule Atlas.Mcp.Guide do
   types, props and styles come from the validation code, so the text cannot drift from it.
   """
 
-  alias Atlas.Content.{EntrySpec, RelationSpec}
+  alias Atlas.Content.EntrySpec
   alias Atlas.Kinds
   alias Atlas.RichText.Collab.Blocks
   alias Atlas.RichText.Document
@@ -94,17 +94,25 @@ defmodule Atlas.Mcp.Guide do
     """
   end
 
-  @doc "A line per kind of world entry: its statuses and fields."
+  # What to write in the text of each kind. A kind is a label, not a schema.
+  @entry_hints %{
+    npc:
+      "a person. Write who they are, how they look, what they want, who they answer to, and their state.",
+    location:
+      "a place. Write what kind of place it is, where it is, what is inside, who controls it, and its state.",
+    faction:
+      "an organization. Write what it does, its reputation toward the party, its goals, its members, and its base.",
+    item: "an object. Write what it is, how it looks, what it does, who holds it, and its state.",
+    creature:
+      "a kind of monster. Write what it is, where it lives, what it can do, and its state. Use NPC for one unique individual.",
+    plot:
+      "a story thread. Write the goal, who is involved, what has happened, and what comes next."
+  }
+
+  @doc "A line per kind of world entry: what to write in its text."
   def entry_kinds do
     Enum.map_join(EntrySpec.kinds(), "\n", fn kind ->
-      spec = EntrySpec.fetch!(kind)
-
-      fields =
-        spec.fields
-        |> Enum.map(& &1.key)
-        |> then(&if(&1 == [], do: "none", else: Enum.join(&1, ", ")))
-
-      "  - #{kind}: status #{Enum.join(spec.statuses, ", ")} (default #{hd(spec.statuses)}); fields: #{fields}"
+      "  - #{kind} (#{EntrySpec.fetch!(kind).label}): #{Map.fetch!(@entry_hints, kind)}"
     end)
   end
 
@@ -113,104 +121,37 @@ defmodule Atlas.Mcp.Guide do
     """
     List the world entries of a campaign that you can read: NPCs, locations, factions, items,
     creatures and plots. Set kind to list one kind, and archived to true for the archived ones.
-    A player never gets a hidden entry. Use get_entry for the details. To keep the entries whose
-    custom field has one value, give custom_field_id (from list_entry_fields) and
-    custom_field_value as text: a number as "3", a boolean as "true", a select as one of its
-    choices, an entry field as the id of the entry. Text ignores case.
+    A player never gets a hidden entry. Each row has the id, the kind, the name and the hidden
+    flag. Use get_entry for the text.
     """
   end
 
   @doc "The description of `get_entry`."
   def get_entry do
     """
-    Read a world entry: its kind, name, status, hidden flag, fields, parent location, image id and
-    relations, with its description and GM-only secret notes as blocks (see edit_blocks) and their
-    revisions. A relation has the id to remove it, the text from this entry ("member of" or
-    "members") and the other end. Fields: all text, readable by everyone who reads the entry.
-    custom_values lists the custom fields of the kind that you may read, in order: id, label, type,
-    gm_only, choices (a select), target_kind (an entry field) and value. A field with no value has
-    value null. The value of an entry field is {kind, id, label, restricted, shown}: if you cannot
-    read that entry, the label is "Restricted entry" and the id is null.
+    Read a world entry: its kind, name, hidden flag and archive state, with its description and
+    its GM-only secret notes as blocks (see edit_blocks) and their revisions. An entry is text:
+    read the description to learn what the entry is. Its state, details and relationships are in
+    that text, not in fields. A player never receives the secret notes. A hidden or archived entry
+    is readable by the GM alone.
     """
   end
 
   @doc "The description of `create_entry`."
   def create_entry do
     """
-    Create a world entry in a campaign that you run as GM. kind is #{Enum.join(EntrySpec.kinds(), ", ")}.
-    It starts hidden: only you read it until you show it with set_entry_hidden. Statuses and
-    fields by kind:
+    Create a world entry in a campaign that you run as GM. An entry is a name, a kind and text.
+    kind is #{Enum.join(EntrySpec.kinds(), ", ")}. The kind is a label for grouping: an entry can
+    be anything, and the kind does not limit what you write.
+
     #{entry_kinds()}
-    Give status and fields only when you know them. A field is text; a faction's reputation is
-    plain text. Use edit_blocks for the description and the secret notes. A location may have a
-    parent location (parent_id) of the same campaign. image_id is an image from upload_image.
-    custom_values sets custom fields: a map of field id (from list_entry_fields) to value.
-    """
-  end
 
-  @doc "The description of `update_entry`."
-  def update_entry do
-    """
-    Change the status, the fields, the parent location or the image of a world entry. Only the GM
-    may. fields is merged into the stored fields: send only the fields that change, and use a
-    blank value to clear one. Set parent_id (a location only) or image_id to null to clear it.
-    custom_values is a map of custom field id (from list_entry_fields) to value. It changes only the
-    fields it names; null or "" clears one. A number is a number, a boolean is true or false, a
-    select is one of its choices, and an entry field is the id of a non-archived entry of its
-    target kind in this campaign.
-    Statuses and fields by kind:
-    #{entry_kinds()}
-    """
-  end
-
-  @doc "The description of `list_entry_fields`."
-  def list_entry_fields do
-    """
-    List the custom fields of a campaign, in order. A custom field is a field that the GM defines for
-    one kind of world entry in this campaign only, for example "Kingdom" (a link to a location) on
-    locations. Set kind to list one kind, and archived to true for the archived fields. The values
-    are in get_entry (custom_values) and are set with update_entry. A player never gets a GM-only
-    field or its values.
-    """
-  end
-
-  @doc "The description of `create_entry_field`."
-  def create_entry_field do
-    """
-    Define a custom field for one kind of entry (#{Enum.join(EntrySpec.kinds(), ", ")}) in a campaign
-    that you run as GM. label has 1 to 60 characters and must not equal another active field of the
-    kind, ignoring case, or a built-in field. type is #{Enum.join(Atlas.Content.EntryField.types(), ", ")}. A select needs choices (a
-    list of names). An entry field needs target_kind: the kind of entry it points to. gm_only true
-    hides the field and its values from players. The type and the target kind never change. The
-    field goes last in its kind.
-    """
-  end
-
-  @doc "The description of `update_entry_field`."
-  def update_entry_field do
-    """
-    Change a custom field: label, gm_only and, for a select, choices. choices is the whole new list.
-    To rename a choice, put the new name in choices and give renamed_choices as {"old": "new"}: the
-    stored values follow. A choice that is gone from the list and that entries use is refused with
-    the number of entries; rename it, or change those entries first. The type and the target kind
-    never change. Only the GM may.
-    """
-  end
-
-  @doc "The description of `add_entry_relation`."
-  def add_entry_relation do
-    relations =
-      Enum.map_join(RelationSpec.describe(), "\n", fn spec ->
-        "  - #{spec.relation} (\"#{spec.label}\"): from #{Enum.join(spec.from, ", ")} to #{Enum.join(spec.to, ", ")}"
-      end)
-
-    """
-    Relate two ends in a campaign that you run as GM. An end is an entry or a character: give
-    its kind (character, #{Enum.join(EntrySpec.kinds(), ", ")}) and its id. The relation reads
-    from the first end to the second. label is optional text, for example "staff". Relations and
-    the kinds they join:
-    #{relations}
-    Players see a relation only when they can read both ends.
+    It starts hidden: only you read it until you show it with set_entry_hidden. Write the entry
+    with edit_blocks. The description is what players read; the secret notes are yours alone.
+    Put every detail in that text: state, ancestry, allegiance, reputation, history and
+    relationships. Write a relationship in prose and add a mention node for the other entry, so
+    the reader sees its current name. Do not wait for fields: there are none. When you read an
+    entry, infer what it is from its name, its kind and its text.
     """
   end
 
