@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { EntryKind } from "../lib/entry-kinds";
 
+import { Skeleton } from "./ui/skeleton";
 import { NativeSelect } from "./ui/native-select";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -34,9 +35,14 @@ export function EntryFieldFilter({
   value?: string;
   onChange: (filter: { field?: string; value?: string }) => void;
 }) {
-  const fields = useQuery(entryFieldsQueryOptions(campaignId, { kind })).data;
-  const field = fields?.find(candidate => candidate.id === fieldId);
-  if (!fields || fields.length === 0) return null;
+  // Every kind of this campaign in one read: a kind switch must not empty the bar.
+  const fields = useQuery(entryFieldsQueryOptions(campaignId));
+  if (fields.isPending) return <LoadingFilter />;
+  const kindFields = (fields.data ?? []).filter(
+    candidate => candidate.kind === kind
+  );
+  if (kindFields.length === 0) return null;
+  const field = kindFields.find(candidate => candidate.id === fieldId);
 
   return (
     <div
@@ -54,7 +60,7 @@ export function EntryFieldFilter({
           }
         >
           <option value="">No filter</option>
-          {fields.map(candidate => (
+          {kindFields.map(candidate => (
             <option key={candidate.id} value={candidate.id}>
               {candidate.label}
             </option>
@@ -91,6 +97,25 @@ export function EntryFieldFilter({
           className="mb-2 size-4 text-muted-foreground"
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * The same bar with the same height while the fields load, so the list below does not jump.
+ */
+function LoadingFilter() {
+  return (
+    <div
+      id="entry-field-filter"
+      role="status"
+      aria-label="Loading the filter"
+      className="flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3"
+    >
+      <div className="grid gap-1.5">
+        <Skeleton className="h-5 w-20 rounded-md" />
+        <Skeleton className="h-9 w-44 rounded-lg" />
+      </div>
     </div>
   );
 }

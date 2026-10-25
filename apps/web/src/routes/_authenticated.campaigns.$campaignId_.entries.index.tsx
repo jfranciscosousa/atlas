@@ -18,6 +18,7 @@ import {
   isEntryKind,
   type EntryKind,
 } from "../lib/entry-kinds";
+import { entryFieldsQueryOptions } from "../hooks/use-entry-fields";
 import {
   entriesQueryOptions,
   entryKindsQueryOptions,
@@ -86,6 +87,11 @@ export const Route = createFileRoute(
           campaignQueryOptions(params.campaignId)
         ),
         context.queryClient.ensureQueryData(entryKindsQueryOptions()),
+        // The field filter reads these, so the bar is ready with the rest of the page.
+        // A failure hides the bar, not the page.
+        context.queryClient.prefetchQuery(
+          entryFieldsQueryOptions(params.campaignId)
+        ),
         context.queryClient.fetchQuery({
           ...entriesQueryOptions(params.campaignId, {
             archived: deps.archived,
