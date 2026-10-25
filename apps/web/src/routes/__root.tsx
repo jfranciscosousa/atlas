@@ -80,8 +80,25 @@ function Document({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [hasResolved, setHasResolved] = useState(false);
   const isPending = useRouterState({
-    select: state => state.isLoading || state.status === "pending",
+    select: state => state.status === "pending",
   });
+  // A filter change updates the search, not the page. Only a new path is a page change.
+  const pageChanging = useRouterState({
+    select: state =>
+      state.status === "pending" &&
+      state.location.pathname !== state.resolvedLocation?.pathname,
+  });
+  const [showProgress, setShowProgress] = useState(false);
+
+  useEffect(() => {
+    if (!pageChanging) return;
+    // A fast page change never shows the bar: a short flash reads as flicker.
+    const timer = setTimeout(() => setShowProgress(true), 300);
+    return () => {
+      clearTimeout(timer);
+      setShowProgress(false);
+    };
+  }, [pageChanging]);
 
   useEffect(
     () => router.subscribe("onResolved", () => setHasResolved(true)),
@@ -104,7 +121,7 @@ function Document({ children }: { children: ReactNode }) {
       <body>
         {isLoading && <LoadingScreen />}
 
-        {revealed && isPending && (
+        {revealed && showProgress && (
           <div
             role="progressbar"
             aria-label="Loading page"

@@ -13,7 +13,6 @@ export function getRouter() {
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     ),
     scrollRestoration: true,
-    defaultPendingComponent: () => null,
   });
 }
 

@@ -115,6 +115,8 @@ function EntriesPage() {
       customField: filter,
     }),
     enabled: !!filter,
+    // A filter change must not blank the list while the server answers.
+    placeholderData: previous => previous ?? all,
   });
   const entries = filter
     ? (filtered.data ?? [])
