@@ -14,7 +14,7 @@ defmodule Atlas.RichText.Document do
   @block_keys ~w(id type props content children)
   @styles ~w(bold italic underline strike code textColor backgroundColor)
   @link_schemes ~w(http https mailto)
-  @mention_kinds ~w(character session note)
+  @mention_kinds Atlas.Kinds.mention_names()
   @uuid ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/
   @image_ref ~r/\Aatlas-image:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\z/
 

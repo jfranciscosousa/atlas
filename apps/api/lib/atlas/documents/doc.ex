@@ -12,8 +12,8 @@ defmodule Atlas.Documents.Doc do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
-  @kinds [:campaign, :session, :character, :note, :player_log]
-  @sections [:description, :progress_rewards, :log, :prep, :secret_notes, :body]
+  @kinds Atlas.Kinds.kinds()
+  @sections Atlas.Kinds.all_sections()
 
   postgres do
     table "rich_text_docs"

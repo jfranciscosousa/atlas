@@ -15,8 +15,7 @@ defmodule Atlas.Search.Request do
       argument :campaign_id, :uuid
       argument :query, :string, allow_nil?: false, constraints: [max_length: 200]
 
-      argument :kinds, {:array, :atom},
-        constraints: [items: [one_of: [:campaign, :session, :character, :note, :player_log]]]
+      argument :kinds, {:array, :atom}, constraints: [items: [one_of: Atlas.Kinds.kinds()]]
 
       argument :limit, :integer, allow_nil?: false, default: 20, constraints: [min: 1, max: 50]
       run Atlas.Search

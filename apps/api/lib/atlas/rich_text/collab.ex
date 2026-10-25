@@ -22,17 +22,11 @@ defmodule Atlas.RichText.Collab do
   require Ash.Query
 
   alias Atlas.Documents.Doc
+  alias Atlas.Kinds
   alias Atlas.RichText
   alias Atlas.RichText.Collab.Blocks
   alias Atlas.RichText.Document
 
-  @kinds %{
-    "campaign" => Atlas.Campaigns.Campaign,
-    "session" => Atlas.Campaigns.Session,
-    "note" => Atlas.Content.Note,
-    "player_log" => Atlas.Campaigns.PlayerLog,
-    "character" => Atlas.Campaigns.Character
-  }
   @max_update 512_000
   @max_state 4_000_000
 
@@ -50,11 +44,11 @@ defmodule Atlas.RichText.Collab do
   @spec parse(String.t()) :: {:ok, t()} | :error
   def parse(ref) when is_binary(ref) do
     with [kind, id, section] <- String.split(ref, ":"),
-         {:ok, resource} <- Map.fetch(@kinds, kind),
+         {:ok, kind_atom} <- Kinds.fetch(kind),
          {:ok, id} <- Ecto.UUID.cast(id),
          name when not is_nil(name) <-
-           Enum.find(RichText.sections(resource), &(Atom.to_string(&1) == section)) do
-      {:ok, %__MODULE__{kind: kind, resource: resource, id: id, section: name}}
+           Enum.find(Kinds.sections(kind_atom), &(Atom.to_string(&1) == section)) do
+      {:ok, %__MODULE__{kind: kind, resource: Kinds.resource(kind_atom), id: id, section: name}}
     else
       _ -> :error
     end

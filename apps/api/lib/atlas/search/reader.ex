@@ -78,7 +78,7 @@ defmodule Atlas.Search.Reader do
 
   def labels(entries) do
     entries
-    |> Enum.filter(&(&1.kind in [:character, :session, :note]))
+    |> Enum.filter(&(&1.kind in Atlas.Kinds.mention_kinds()))
     |> Map.new(fn entry ->
       {{entry.campaign_id, to_string(entry.kind), entry.id},
        if(entry.archived?, do: "Deleted entry", else: entry.title)}

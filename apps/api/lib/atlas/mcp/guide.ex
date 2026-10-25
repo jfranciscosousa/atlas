@@ -4,6 +4,7 @@ defmodule Atlas.Mcp.Guide do
   types, props and styles come from the validation code, so the text cannot drift from it.
   """
 
+  alias Atlas.Kinds
   alias Atlas.RichText.Collab.Blocks
   alias Atlas.RichText.Document
 
@@ -29,8 +30,8 @@ defmodule Atlas.Mcp.Guide do
       - {"type":"text","text":"Hello","styles":{"bold":true}}; styles: #{Enum.join(Document.styles(), ", ")}
         (textColor and backgroundColor take a color name, the others take true)
       - {"type":"link","href":"https://example.com","content":[text nodes]}; http, https or mailto
-      - {"type":"mention","props":{"kind":"character","id":"<uuid>"}}; kind is character, session
-        or note. Reading adds a read-only "label" with the name that you may see: leave it out
+      - {"type":"mention","props":{"kind":"character","id":"<uuid>"}}; kind is #{mention_kinds()}.
+        Reading adds a read-only "label" with the name that you may see: leave it out
         when you write.
     A "\\n" in text is a line break. image and divider blocks have no content. An image is
     {"type":"image","props":{"url":"atlas-image:<id>","caption":"..."}}; upload_image gives the id.
@@ -44,8 +45,7 @@ defmodule Atlas.Mcp.Guide do
   def edit_blocks do
     """
     Edit a rich-text section by block, like a person in the block editor. The edit is live: open
-    editors see it at once. kind and section: campaign (description, progress_rewards), session
-    (log, prep), character (description, secret_notes), note (body), player_log (body).
+    editors see it at once. kind and section: #{kind_sections()}.
     id is the id of that record. Read the blocks first with get_* or read_blocks.
     operations is a list, applied in order as one edit. If one fails, nothing changes.
       - {"op":"insert","blocks":[...]} adds blocks at the end. Add "after":<block id> or
@@ -91,5 +91,20 @@ defmodule Atlas.Mcp.Guide do
 
     #{blocks()}\
     """
+  end
+
+  # "campaign (description, progress_rewards), npc, location (description, secret_notes)"
+  defp kind_sections do
+    Enum.map_join(Kinds.resources(), ", ", fn {_resource, kinds} ->
+      sections = kinds |> hd() |> Kinds.sections() |> Enum.join(", ")
+      "#{Enum.join(kinds, ", ")} (#{sections})"
+    end)
+  end
+
+  defp mention_kinds do
+    case Kinds.mention_names() do
+      [one] -> one
+      names -> Enum.join(Enum.drop(names, -1), ", ") <> " or " <> List.last(names)
+    end
   end
 end

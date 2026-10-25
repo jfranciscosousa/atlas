@@ -19,7 +19,7 @@ defmodule Atlas.Search do
 
     with :ok <- query_terms(terms) do
       {all_entries, campaigns} = Reader.entries(actor, args[:campaign_id])
-      kinds = args[:kinds] || [:campaign, :session, :character, :note, :player_log]
+      kinds = args[:kinds] || Atlas.Kinds.kinds()
 
       if args[:campaign_id] && campaigns == [] do
         {:error, error(:campaign_id, "is not a campaign that you can read")}

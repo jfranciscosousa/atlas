@@ -1,31 +1,24 @@
 defmodule Atlas.Search.Projection do
   @moduledoc false
 
+  alias Atlas.Kinds
   alias Atlas.RichText.{Document, PlainText}
   alias Atlas.Search.Match
   import Ecto.Query
 
-  @resources [
-    {:campaign, Atlas.Campaigns.Campaign},
-    {:session, Atlas.Campaigns.Session},
-    {:character, Atlas.Campaigns.Character},
-    {:note, Atlas.Content.Note},
-    {:player_log, Atlas.Campaigns.PlayerLog}
-  ]
-
-  def resources, do: @resources
+  @doc "Every kind with its resource."
+  def resources, do: Enum.map(Kinds.kinds(), &{&1, Kinds.resource(&1)})
 
   # Read the stored row, not the action result: field policies can redact the result, and a
   # caller can supply a partially selected or stale record. The parent write holds its row lock.
   def sync!(resource, id, sections) do
-    {kind, ^resource} = Enum.find(@resources, &(elem(&1, 1) == resource))
     table = AshPostgres.DataLayer.Info.table(resource)
 
     attributes =
       Enum.flat_map(
         sections,
         &[Atlas.RichText.json_attribute(&1), Atlas.RichText.revision_attribute(&1)]
-      )
+      ) ++ kind_columns(resource)
 
     row =
       Atlas.Repo.one!(
@@ -34,6 +27,8 @@ defmodule Atlas.Search.Projection do
           lock: "FOR UPDATE",
           select: map(r, ^attributes)
       )
+
+    kind = Kinds.record_kind(resource, row)
 
     Enum.each(sections, fn section ->
       put!(
@@ -45,6 +40,9 @@ defmodule Atlas.Search.Projection do
       )
     end)
   end
+
+  # A resource that stores several kinds has a column that says which one a row is.
+  defp kind_columns(resource), do: if(Kinds.shared_resource?(resource), do: [:kind], else: [])
 
   def put!(kind, id, section, document, revision) do
     blocks = blocks(document)
@@ -184,8 +182,7 @@ defmodule Atlas.Search.Projection do
   end
 
   def sync_title!(resource, id) do
-    {kind, ^resource} = Enum.find(@resources, &(elem(&1, 1) == resource))
-    fields = title_fields(kind)
+    fields = title_fields(resource)
 
     if fields != [] do
       table = AshPostgres.DataLayer.Info.table(resource)
@@ -195,27 +192,27 @@ defmodule Atlas.Search.Projection do
           from r in table,
             where: r.id == type(^id, Ecto.UUID),
             lock: "FOR UPDATE",
-            select: map(r, ^fields)
+            select: map(r, ^(fields ++ kind_columns(resource)))
         )
 
-      put_title!(kind, id, title(kind, row))
+      put_title!(Kinds.record_kind(resource, row), id, title(resource, row))
     end
   end
 
-  defp title_fields(:campaign), do: [:name]
-  defp title_fields(:session), do: [:number, :title]
-  defp title_fields(:character), do: [:name]
-  defp title_fields(:note), do: [:title]
-  defp title_fields(:player_log), do: []
+  defp title_fields(Atlas.Campaigns.Campaign), do: [:name]
+  defp title_fields(Atlas.Campaigns.Session), do: [:number, :title]
+  defp title_fields(Atlas.Campaigns.Character), do: [:name]
+  defp title_fields(Atlas.Content.Note), do: [:title]
+  defp title_fields(Atlas.Campaigns.PlayerLog), do: []
 
-  defp title(:campaign, row), do: row.name
-  defp title(:character, row), do: row.name || "Unnamed character"
-  defp title(:note, row), do: row.title
+  defp title(Atlas.Campaigns.Campaign, row), do: row.name
+  defp title(Atlas.Campaigns.Character, row), do: row.name || "Unnamed character"
+  defp title(Atlas.Content.Note, row), do: row.title
 
-  defp title(:session, row),
+  defp title(Atlas.Campaigns.Session, row),
     do: if(row.title, do: "Session #{row.number}: #{row.title}", else: "Session #{row.number}")
 
-  defp title(:player_log, _row), do: nil
+  defp title(Atlas.Campaigns.PlayerLog, _row), do: nil
 
   defp put_title!(kind, id, title) do
     words = Match.terms(title)
@@ -280,24 +277,25 @@ defmodule Atlas.Search.Projection do
   end
 
   def backfill! do
-    Enum.each(@resources, fn {kind, resource} ->
+    Enum.each(Kinds.resources(), fn {resource, _kinds} ->
       table = AshPostgres.DataLayer.Info.table(resource)
       sections = Atlas.RichText.sections(resource)
 
       attributes = [
         :id
-        | title_fields(kind) ++
+        | title_fields(resource) ++
+            kind_columns(resource) ++
             Enum.flat_map(
               sections,
               &[Atlas.RichText.json_attribute(&1), Atlas.RichText.revision_attribute(&1)]
             )
       ]
 
-      backfill_batch(table, kind, sections, attributes, nil)
+      backfill_batch(table, resource, sections, attributes, nil)
     end)
   end
 
-  defp backfill_batch(table, kind, sections, attributes, after_id) do
+  defp backfill_batch(table, resource, sections, attributes, after_id) do
     query = from r in table, order_by: r.id, limit: 200, select: r.id
     query = if after_id, do: from(r in query, where: r.id > ^after_id), else: query
     ids = Atlas.Repo.all(query)
@@ -313,7 +311,8 @@ defmodule Atlas.Search.Projection do
             )
 
           if row do
-            title = title(kind, row)
+            kind = Kinds.record_kind(resource, row)
+            title = title(resource, row)
             if title, do: put_title!(kind, Ecto.UUID.load!(id), title)
 
             Enum.each(sections, fn section ->
@@ -332,6 +331,6 @@ defmodule Atlas.Search.Projection do
     end)
 
     if length(ids) == 200,
-      do: backfill_batch(table, kind, sections, attributes, List.last(ids))
+      do: backfill_batch(table, resource, sections, attributes, List.last(ids))
   end
 end

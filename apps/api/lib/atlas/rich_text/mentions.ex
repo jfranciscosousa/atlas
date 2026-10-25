@@ -9,11 +9,8 @@ defmodule Atlas.RichText.Mentions do
   """
   require Ash.Query
 
-  alias Atlas.Campaigns.{Character, Session}
-  alias Atlas.Content.Note
+  alias Atlas.Kinds
   alias Atlas.RichText.Document
-
-  @resources %{"character" => Character, "session" => Session, "note" => Note}
 
   @doc "Map of `{kind, id}` to the name of the entry, for the mentions in `documents`."
   @spec labels([[map()] | nil], term(), String.t()) :: %{{String.t(), String.t()} => String.t()}
@@ -22,8 +19,10 @@ defmodule Atlas.RichText.Mentions do
     |> Enum.flat_map(&Document.mention_refs/1)
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
     |> Enum.flat_map(fn {kind, ids} ->
-      @resources
-      |> Map.fetch!(kind)
+      kind
+      |> Kinds.fetch()
+      |> elem(1)
+      |> Kinds.resource()
       |> Ash.Query.filter(campaign_id == ^campaign_id and id in ^ids)
       |> Ash.read!(actor: actor)
       |> Enum.map(&{{kind, &1.id}, label(kind, &1)})
