@@ -13,10 +13,12 @@
     "web:test": "pnpm --filter @atlas/web run test",
     "web:format": "pnpm --filter @atlas/web run format",
     "web:format:check": "pnpm --filter @atlas/web run format:check",
+    "preinstall": "node scripts/check-package-manager.cjs",
     "prepare": "husky",
+    "test:tooling": "node --test scripts/check-package-manager.test.cjs",
     "api:dev": "cd apps/api && mix phx.server",
     "api:generate": "cd apps/api && mix ash_typescript.codegen",
-    "precommit": "pnpm run web:format:check && pnpm run web:build && pnpm run web:check && pnpm run web:test && cd apps/api && mix precommit"
+    "precommit": "pnpm run test:tooling && pnpm run web:format:check && pnpm run web:build && pnpm run web:check && pnpm run web:test && cd apps/api && mix precommit"
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx,js,jsx,json,jsonc,md,css}": "pnpm --filter @atlas/web exec oxfmt --config .oxfmtrc.jsonc --no-error-on-unmatched-pattern"

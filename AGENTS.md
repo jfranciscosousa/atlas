@@ -11,6 +11,13 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 - Phoenix must not build or serve frontend assets or add application LiveViews.
 - Preserve same-origin cookie authentication and CSRF protection.
 
+## Package manager
+
+- Use pnpm for all JavaScript dependencies, scripts, and tools. Use the version pinned in `package.json`.
+- Use `pnpm exec` for installed tools and `pnpm dlx` for temporary tools. Do not use `npm`, `npm exec`, `npx`, Yarn, or Bun for these tasks.
+- Keep `pnpm-lock.yaml` as the only JavaScript dependency lockfile.
+- The Dockerfile may use npm only to install the pinned pnpm version globally.
+
 ## Checks
 
 - Run `pnpm run precommit` from the root to check the frontend and backend.

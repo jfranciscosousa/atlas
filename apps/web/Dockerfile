@@ -12,6 +12,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/
 COPY packages/api-client/package.json packages/api-client/
+COPY scripts/check-package-manager.cjs scripts/
 RUN pnpm install --frozen-lockfile --filter @atlas/web...
 
 COPY apps/web apps/web
