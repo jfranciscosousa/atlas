@@ -281,20 +281,36 @@ defmodule Atlas.Search.Projection do
   def backfill! do
     Enum.each(Kinds.resources(), fn {resource, _kinds} ->
       table = AshPostgres.DataLayer.Info.table(resource)
-      sections = Atlas.RichText.sections(resource)
 
-      attributes = [
-        :id
-        | title_fields(resource) ++
-            kind_columns(resource) ++
-            Enum.flat_map(
-              sections,
-              &[Atlas.RichText.json_attribute(&1), Atlas.RichText.revision_attribute(&1)]
-            )
-      ]
+      # A migration may run the backfill before every resource has its table.
+      # A table that does not exist yet has no rows, so there is nothing to fill.
+      if table_exists?(table) do
+        sections = Atlas.RichText.sections(resource)
 
-      backfill_batch(table, resource, sections, attributes, nil)
+        attributes = [
+          :id
+          | title_fields(resource) ++
+              kind_columns(resource) ++
+              Enum.flat_map(
+                sections,
+                &[Atlas.RichText.json_attribute(&1), Atlas.RichText.revision_attribute(&1)]
+              )
+        ]
+
+        backfill_batch(table, resource, sections, attributes, nil)
+      end
     end)
+  end
+
+  defp table_exists?(table) do
+    {:ok, %{rows: [[result]]}} =
+      Ecto.Adapters.SQL.query(
+        Atlas.Repo,
+        "SELECT to_regclass($1) IS NOT NULL",
+        [table]
+      )
+
+    result
   end
 
   defp backfill_batch(table, resource, sections, attributes, after_id) do
