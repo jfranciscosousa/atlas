@@ -42,6 +42,7 @@ export function EntryDetails({
   const spec = useEntryKinds().kinds.find(kind => kind.kind === entry.kind);
   const update = useEntryUpdate(campaignId, entry.id);
   const fields = spec?.fields ?? [];
+  const hasImage = Boolean(entry.imageId);
   // The GM sees every custom field. A player's list is already cut down. The preview cuts the
   // GM's list down the same way.
   const customValues = (entry.customValues ?? []) as CustomValue[];
@@ -56,7 +57,9 @@ export function EntryDetails({
     <section
       id="entry-details"
       aria-label="Details"
-      className="grid gap-6 md:grid-cols-[14rem_1fr]"
+      className={
+        hasImage ? "grid gap-6 md:grid-cols-[14rem_1fr]" : "grid gap-6"
+      }
     >
       {(entry.imageId || canManage) && (
         <EntryImage
@@ -67,7 +70,7 @@ export function EntryDetails({
           onChange={imageId => update.mutate({ imageId })}
         />
       )}
-      <div className="space-y-4 md:col-start-2">
+      <div className={hasImage ? "space-y-4 md:col-start-2" : "space-y-4"}>
         {canManage ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
