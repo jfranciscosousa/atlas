@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FilterIcon, XIcon } from "lucide-react";
+import { FilterIcon, PlusIcon, XIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Skeleton } from "./ui/skeleton";
@@ -29,14 +29,15 @@ export function EntryFieldFilter({
   kind,
   fieldId,
   value,
-  isGm,
+  onManageFields,
   onChange,
 }: {
   campaignId: string;
   kind: EntryKind;
   fieldId?: string;
   value?: string;
-  isGm: boolean | null;
+  /** The GM opens the custom field dialog. Without it, the empty state only explains. */
+  onManageFields?: () => void;
   onChange: (filter: { field?: string; value?: string }) => void;
 }) {
   // Every kind of this campaign in one read: a kind switch must not empty the bar.
@@ -59,17 +60,28 @@ export function EntryFieldFilter({
           aria-hidden="true"
           className="size-4 shrink-0 text-muted-foreground"
         />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">
             No custom fields for {ENTRY_KIND_LABELS[kind].plural.toLowerCase()}{" "}
             yet
           </p>
           <p className="text-sm text-muted-foreground">
-            {isGm
-              ? "Custom fields are details you add to a kind. Add one with Fields to filter this list."
+            {onManageFields
+              ? "Custom fields are details you add to a kind. They become filters here."
               : "Custom fields are details the GM adds to a kind. They become filters here."}
           </p>
         </div>
+        {onManageFields && (
+          <Button
+            id="entry-fields-empty-open"
+            variant="outline"
+            size="sm"
+            onClick={onManageFields}
+          >
+            <PlusIcon aria-hidden="true" data-icon="inline-start" />
+            Add a field
+          </Button>
+        )}
       </FilterNotice>
     );
   }

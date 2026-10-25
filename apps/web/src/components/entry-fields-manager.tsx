@@ -6,7 +6,6 @@ import {
   ArrowUpIcon,
   LockIcon,
   PlusIcon,
-  SlidersHorizontalIcon,
   XIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +19,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "./ui/dialog";
 import { Checkbox } from "./ui/checkbox";
 import { Button } from "./ui/button";
@@ -51,30 +49,23 @@ import {
 } from "../hooks/use-entry-fields";
 
 /**
- * The GM defines the custom fields of each kind here: fields for this campaign only. The button
- * opens a dialog. Only the GM sees it.
+ * The GM defines the custom fields of each kind here: fields for this campaign only. The page
+ * owns the open state, so a second control, such as the empty filter, can open the same dialog.
  */
 export function EntryFieldsManager({
   campaignId,
   kind,
+  open,
+  onOpenChange,
 }: {
   campaignId: string;
   /** The kind the dialog starts with. */
   kind?: EntryKind;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   return (
-    <Dialog>
-      <DialogTrigger
-        render={
-          <Button id="entry-fields-open" variant="outline">
-            <SlidersHorizontalIcon
-              aria-hidden="true"
-              data-icon="inline-start"
-            />
-            Fields
-          </Button>
-        }
-      />
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Custom fields</DialogTitle>

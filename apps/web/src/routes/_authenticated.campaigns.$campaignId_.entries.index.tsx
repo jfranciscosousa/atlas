@@ -1,8 +1,10 @@
+import { useState } from "react";
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
   ChevronRightIcon,
   GlobeIcon,
+  SlidersHorizontalIcon,
 } from "lucide-react";
 import {
   createFileRoute,
@@ -133,6 +135,7 @@ function EntriesPage() {
   const restoreEntry = useEntryRestore(campaignId);
   const archive = archived ? restoreEntry : archiveEntry;
   const noun = kind ? ENTRY_KIND_LABELS[kind].plural : "World entries";
+  const [fieldsOpen, setFieldsOpen] = useState(false);
 
   return (
     <div className="space-y-8">
@@ -168,13 +171,29 @@ function EntriesPage() {
               </Link>
             )}
             {campaign.isGm && !archived && (
-              <EntryFieldsManager campaignId={campaignId} kind={kind} />
+              <Button
+                id="entry-fields-open"
+                variant="outline"
+                onClick={() => setFieldsOpen(true)}
+              >
+                <SlidersHorizontalIcon
+                  aria-hidden="true"
+                  data-icon="inline-start"
+                />
+                Fields
+              </Button>
             )}
             {campaign.isGm && !archived && all.length > 0 && (
               <NewEntryButton campaignId={campaignId} kind={kind} />
             )}
           </div>
         }
+      />
+      <EntryFieldsManager
+        campaignId={campaignId}
+        kind={kind}
+        open={fieldsOpen}
+        onOpenChange={setFieldsOpen}
       />
       <nav
         id="entry-kind-filter"
@@ -227,7 +246,7 @@ function EntriesPage() {
           kind={kind}
           fieldId={field}
           value={value}
-          isGm={campaign.isGm}
+          onManageFields={campaign.isGm ? () => setFieldsOpen(true) : undefined}
           onChange={next =>
             void navigate({
               search: previous => ({
