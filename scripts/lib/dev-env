@@ -1,0 +1,18 @@
+# Sourced by scripts/dev, scripts/browser, scripts/worktree-setup and scripts/worktree-doctor.
+# Sets dev_name, dev_web and dev_api for the current checkout, and defines port_open.
+
+# A linked worktree has a .git file. Its ports come from its directory name and stay the same.
+# The main checkout keeps 3000 and 4000.
+dev_name=$(basename "$PWD")
+dev_web=3000 dev_api=4000
+if [[ -f .git ]]; then
+  _offset=$(($(printf %s "$dev_name" | cksum | cut -d' ' -f1) % 400))
+  dev_web=$((3100 + _offset)) dev_api=$((4100 + _offset))
+fi
+dev_web=${WEB_PORT:-$dev_web} dev_api=${PORT:-$dev_api}
+
+# port_open HOST PORT: succeeds when something accepts TCP connections. Needs no extra tools.
+port_open() { (exec 3<>"/dev/tcp/$1/$2") 2>/dev/null; }
+
+# api_health URL: prints the HTTP status of the API health check, or 000 when nothing answers.
+api_health() { curl -s -o /dev/null -m 3 -w '%{http_code}' "$1/health" || true; }

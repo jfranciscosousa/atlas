@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Run the shared PostgreSQL server as a systemd user service, so it survives the end of an agent's
+# shell and restarts after a crash or a reboot. Safe to run again.
+#
+#   scripts/db-service install   write the unit, stop a pg_ctl server on the same data, start the unit
+#   scripts/db-service status    show whether the unit is active and the server answers
+#
+# PGDATA, PGPORT and ATLAS_DB_UNIT override the data directory, the port and the unit name.
+set -euo pipefail
+
+unit=${ATLAS_DB_UNIT:-atlas-postgres}
+data=${PGDATA:-$HOME/.local/share/postgres-atlas}
+port=${PGPORT:-5432}
+unit_file=${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/$unit.service
+
+die() { echo "db-service: $*" >&2; exit 1; }
+command -v systemctl >/dev/null || die "systemctl not found"
+
+ready() { (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; }
+
+case ${1:-} in
+  install)
+    main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+    mise_bin=$(command -v mise) || die "mise not found"
+    if [[ ! -f $data/PG_VERSION ]]; then
+      (cd "$main" && PGDATA=$data mise run db:init)
+    fi
+
+    # mise exec keeps the unit working when the pinned PostgreSQL version changes.
+    unit_text="[Unit]
+Description=Atlas PostgreSQL ($data, port $port)
+
+[Service]
+Type=simple
+Environment=LANG=C.UTF-8 LC_ALL=C.UTF-8
+ExecStart=$mise_bin exec -C $main -- postgres -D $data -h localhost -k $data -p $port
+ExecReload=/bin/kill -HUP \$MAINPID
+KillSignal=SIGINT
+TimeoutStopSec=60
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target"
+
+    changed=1
+    [[ -f $unit_file && $(cat "$unit_file") == "$unit_text" ]] && changed=0
+    if ((changed)); then
+      mkdir -p "$(dirname "$unit_file")"
+      printf '%s\n' "$unit_text" >"$unit_file"
+      systemctl --user daemon-reload
+    fi
+
+    if ! systemctl --user is-active --quiet "$unit"; then
+      # A server started by pg_ctl holds the port and the data directory. Stop it first.
+      if mise exec -C "$main" -- pg_ctl -D "$data" status >/dev/null 2>&1; then
+        mise exec -C "$main" -- pg_ctl -D "$data" stop -m fast
+      fi
+    fi
+    systemctl --user enable --now "$unit" >/dev/null 2>&1
+    ((changed)) && systemctl --user restart "$unit"
+
+    for _ in $(seq 1 30); do ready && break; sleep 1; done
+    ready || die "server did not accept connections on port $port. See: journalctl --user -u $unit"
+    echo "db-service: $unit is active on port $port (data $data)"
+    ;;
+  status)
+    systemctl --user is-active --quiet "$unit" || die "$unit is not active. Run: mise run db:install"
+    ready || die "$unit is active but port $port does not answer"
+    echo "db-service: $unit is active on port $port (data $data)"
+    ;;
+  *)
+    die "usage: scripts/db-service install|status"
+    ;;
+esac

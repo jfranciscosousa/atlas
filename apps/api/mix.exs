@@ -89,6 +89,7 @@ defmodule Atlas.MixProject do
         "compile --warnings-as-errors",
         "deps.unlock --unused",
         "format",
+        "atlas.check_migrations",
         "test"
       ]
     ]

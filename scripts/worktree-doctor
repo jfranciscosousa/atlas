@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Check that this worktree can build, test and run. Prints one line per check and the fix for each
+# failure. Exits 1 when a check fails. Safe to run at any time, also from an agent.
+set -uo pipefail
+
+here=$(cd "$(dirname "$0")" && pwd)
+cd "$(git rev-parse --show-toplevel)"
+# shellcheck source=lib/dev-env
+source "$here/lib/dev-env"
+
+failed=0
+pass() { echo "✓ $1"; }
+fail() {
+  echo "✗ $1"
+  echo "    fix: $2"
+  failed=1
+}
+
+for dir in apps/api/deps apps/api/_build node_modules; do
+  if [[ -d $dir ]]; then pass "$dir exists"; else fail "$dir is missing" "scripts/worktree-setup"; fi
+done
+
+port=${PGPORT:-5432}
+if port_open 127.0.0.1 "$port"; then
+  pass "PostgreSQL answers on port $port"
+  suffix=$(cd apps/api && elixir -e 'IO.puts(elem(Code.eval_file("config/worktree.exs"), 0))' 2>/dev/null)
+  if command -v psql >/dev/null; then
+    for kind in dev test; do
+      name=atlas_$kind$suffix
+      exists=$(PGPASSWORD=postgres psql -h localhost -p "$port" -U postgres -Atc \
+        "select 1 from pg_database where datname = '$name'" 2>/dev/null)
+      if [[ $exists == 1 ]]; then pass "database $name exists"; else fail "database $name is missing" "scripts/worktree-setup"; fi
+    done
+  fi
+  if [[ -d apps/api/deps && -d apps/api/_build ]]; then
+    pending=$(cd apps/api && mix ecto.migrations 2>/dev/null | grep -cE '^\s+down\s' || true)
+    if [[ $pending == 0 ]]; then pass "no pending migrations in the dev database"; else fail "$pending pending migrations in the dev database" "cd apps/api && mix ecto.migrate"; fi
+  fi
+else
+  fail "PostgreSQL does not answer on port $port" "mise run db:install (service) or mise run db:start"
+fi
+
+if port_open 127.0.0.1 "$dev_api"; then
+  health=$(api_health "http://127.0.0.1:$dev_api")
+  if [[ $health == 204 ]]; then pass "API healthy on port $dev_api"; else fail "API answers on port $dev_api but /health returned $health" "check the database, then scripts/dev stop && scripts/dev --detach"; fi
+else
+  echo "- no dev server on API port $dev_api (start one with: scripts/dev --detach)"
+fi
+
+exit "$failed"

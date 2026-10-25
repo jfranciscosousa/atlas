@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Prepare a new git worktree: refresh the main checkout (scripts/refresh-main), copy its built
-# dependencies, install, and create the worktree's own database. T3 Code runs this on worktree
-# creation. Safe to run again, also from an agent.
+# dependencies, install, make sure PostgreSQL runs, and create the worktree's own databases. T3 Code
+# runs this on worktree creation. Safe to run again, also from an agent.
+# It prints one line per step. The full output goes to a log file, shown when a step fails.
 set -euo pipefail
 
 worktree=$(git rev-parse --show-toplevel)
@@ -9,35 +10,74 @@ main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
 here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=lib/main-lock
 source "$here/lib/main-lock"
+# shellcheck source=lib/dev-env
+source "$here/lib/dev-env"
 
-warn() { echo "worktree-setup: $*" >&2; }
+log=${TMPDIR:-/tmp}/worktree-setup-$(basename "$worktree").log
+: >"$log"
+
+step() {
+  local label=$1
+  shift
+  if "$@" >>"$log" 2>&1; then
+    echo "✓ $label"
+  else
+    echo "✗ $label" >&2
+    tail -n 30 "$log" >&2
+    echo "worktree-setup: failed. Full log: $log" >&2
+    exit 1
+  fi
+}
 
 copy_from_main() {
   local dir
   for dir in deps _build; do
-    [[ -d "$main/apps/api/$dir" && ! -e "$worktree/apps/api/$dir" ]] \
-      && cp -a "$main/apps/api/$dir" "$worktree/apps/api/$dir"
+    if [[ -d "$main/apps/api/$dir" && ! -e "$worktree/apps/api/$dir" ]]; then
+      cp -a "$main/apps/api/$dir" "$worktree/apps/api/$dir" || return 1
+    fi
   done
-  return 0
 }
 
-if [[ "$main" != "$worktree" ]]; then
+refresh_and_copy() {
   if acquire_lock; then
     # Refresh first, so the copy holds current builds. --skip-refresh copies what main has.
     [[ ${1:-} == --skip-refresh ]] || (ATLAS_MAIN_LOCKED=1 "$here/refresh-main") || true
-    copy_from_main
+    copy_from_main || { release_lock; return 1; }
     release_lock
   else
-    warn "main is locked by another setup, skipping the copy"
+    echo "worktree-setup: main is locked by another setup, skipping the copy" >&2
   fi
+}
+
+ensure_postgres() {
+  local port=${PGPORT:-5432}
+  port_open 127.0.0.1 "$port" && return 0
+  echo "PostgreSQL does not answer on port $port. Starting it."
+  mise run db:start || return 1
+  for _ in $(seq 1 20); do
+    port_open 127.0.0.1 "$port" && return 0
+    sleep 1
+  done
+  echo "PostgreSQL still does not answer on port $port. Run: mise run db:install" >&2
+  return 1
+}
+
+if [[ "$main" != "$worktree" ]]; then
+  label="refresh main and copy its dependencies"
+  [[ ${1:-} == --skip-refresh ]] && label="copy dependencies from main (refresh skipped)"
+  step "$label" refresh_and_copy "$@"
 fi
 
 cd "$worktree"
-pnpm install --frozen-lockfile --prefer-offline
+step "install JavaScript dependencies" pnpm install --frozen-lockfile --prefer-offline
+step "PostgreSQL is running" ensure_postgres
 cd apps/api
-mix setup
-mix atlas.dev_user
-mix compile
+step "create and migrate the dev database" mix setup
+step "create the test database" env MIX_ENV=test mix ash.setup --quiet
+step "create the dev account" mix atlas.dev_user
+step "compile" mix compile
 
-db=$(elixir -e 'IO.puts(elem(Code.eval_file("config/worktree.exs"), 0))')
-echo "worktree-setup: done. Dev database: atlas_dev$db, test database: atlas_test$db"
+db=$(elixir -e 'IO.puts(elem(Code.eval_file("config/worktree.exs"), 0))' 2>/dev/null)
+cd "$worktree"
+"$here/worktree-doctor" || true
+echo "worktree-setup: done. Dev database: atlas_dev$db, test database: atlas_test$db. Log: $log"

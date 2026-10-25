@@ -1,7 +1,52 @@
 #!/usr/bin/env bash
 # agent-browser with one browser session per worktree, so agents in different worktrees do not
 # share tabs or cookies. Use it instead of agent-browser: scripts/browser open <url>
+#
+# Before `open` or `auth login` on a local URL, it checks that the dev servers answer. Otherwise the
+# sign-in form shows "Incorrect email or password" when the real fault is a stopped API or database.
+# ATLAS_BROWSER_SKIP_PREFLIGHT=1 skips the check.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
+here=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=lib/dev-env
+source "$here/lib/dev-env"
+
+preflight() {
+  local url=$1 hostport port health
+  hostport=${url#*://}
+  hostport=${hostport%%/*}
+  [[ ${hostport%%:*} == localhost || ${hostport%%:*} == 127.0.0.1 ]] || return 0
+  port=${hostport##*:}
+  [[ $port == "$hostport" ]] && port=80
+
+  if ! port_open 127.0.0.1 "$port"; then
+    echo "browser: nothing answers on $hostport. Start the servers: scripts/dev --detach" >&2
+    exit 1
+  fi
+  # The API port is known only for this worktree's own web port.
+  [[ $port == "$dev_web" ]] || return 0
+  health=$(api_health "http://127.0.0.1:$dev_api")
+  case $health in
+    204) ;;
+    000) echo "browser: the web server runs, but the API does not answer on port $dev_api. Run: scripts/dev stop && scripts/dev --detach" >&2; exit 1 ;;
+    503) echo "browser: the API on port $dev_api reports /health 503, so the database is not reachable. Run: scripts/db-service status, or mise run db:start" >&2; exit 1 ;;
+    *) echo "browser: the API on port $dev_api reports /health $health instead of 204. Read its log: scripts/dev logs" >&2; exit 1 ;;
+  esac
+}
+
+if [[ -z ${ATLAS_BROWSER_SKIP_PREFLIGHT:-} ]]; then
+  case ${1:-} in
+    open | goto | navigate) [[ -n ${2:-} ]] && preflight "$2" ;;
+    auth)
+      if [[ ${2:-} == login ]]; then
+        args=("$@")
+        for i in "${!args[@]}"; do
+          [[ ${args[$i]} == --url ]] && preflight "${args[$((i + 1))]:-}"
+        done
+      fi
+      ;;
+  esac
+fi
+
 exec agent-browser --session "$(agent-browser session id --scope worktree --prefix atlas)" "$@"

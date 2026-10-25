@@ -6,7 +6,11 @@ erlang = "29.1.2"
 postgres = "18.6"
 
 [env]
-PGDATA = "{{ env.PGDATA | default(value=env.HOME ~ '/.local/share/postgres', boolean=true) }}"
+# One shared cluster holds every worktree's databases. Do not create a second one.
+PGDATA = "{{ env.PGDATA | default(value=env.HOME ~ '/.local/share/postgres-atlas', boolean=true) }}"
+# Without a UTF-8 locale, Elixir warns on every run and initdb creates a SQL_ASCII cluster.
+LANG = "C.UTF-8"
+LC_ALL = "C.UTF-8"
 
 [tasks."db:init"]
 description = "Initialize the shared PostgreSQL cluster"
@@ -18,17 +22,31 @@ if [[ ! -f "$PGDATA/PG_VERSION" ]]; then
 fi
 '''
 
+[tasks."db:install"]
+description = "Run the shared PostgreSQL server as a systemd user service (survives agent shells)"
+run = "scripts/db-service install"
+
 [tasks."db:start"]
 description = "Initialize and start the shared PostgreSQL server"
 depends = ["db:init"]
 run = '''
 #!/usr/bin/env bash
 set -euo pipefail
-if ! pg_ctl status; then
+if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/atlas-postgres.service" ]]; then
+  systemctl --user start atlas-postgres
+elif ! pg_ctl status; then
   pg_ctl -l "$PGDATA/server.log" -o "-h localhost -k \"$PGDATA\" -p ${PGPORT:-5432}" start
 fi
 '''
 
 [tasks."db:stop"]
 description = "Stop the shared PostgreSQL server"
-run = "pg_ctl stop -m fast"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/atlas-postgres.service" ]]; then
+  systemctl --user stop atlas-postgres
+else
+  pg_ctl stop -m fast
+fi
+'''

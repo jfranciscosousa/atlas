@@ -23,23 +23,37 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 - Run `pnpm run precommit` from the root to check the frontend and backend.
 - For backend-only changes, run `mix precommit` from `apps/api`; it does not require Node.
 - Fix failures before reporting completion.
-- Apply every new migration to the development database yourself. Do not ask. Find the database
-  the running dev server uses first: its `PGPORT` is not always the default.
+- Apply every new migration to the development database yourself. Do not ask. Use your worktree's
+  database (`atlas_dev_<slug>`), not `atlas_dev`. One PostgreSQL server on port 5432 holds all of them.
+- PostgreSQL runs as the systemd user service `atlas-postgres` (`mise run db:install` sets it up;
+  `scripts/db-service status` checks it). Never start it with `pg_ctl` from your shell: it stops when
+  your session ends. Never run `initdb`, or delete a data directory. If the server is down, run
+  `mise run db:start`.
+- `mix precommit` also runs `mix atlas.check_migrations`: every migration must apply to an empty
+  database. A migration must not read a table that a later migration creates.
 - A worktree has its own databases, `atlas_dev_<slug>` and `atlas_test_<slug>`. `scripts/worktree-setup`
   creates them and copies built dependencies from the main checkout. T3 Code runs it on worktree creation (`t3.json`).
-  Run it yourself when `deps` is missing or a mix task fails on an unknown dependency. It is safe: it calls
+  Run it yourself when `deps` is missing or a mix task fails on an unknown dependency. It prints one line
+  per step and keeps the full output in a log file. `scripts/worktree-doctor` checks that the worktree is
+  ready and prints the fix for each failure. Setup is safe: it calls
   `scripts/refresh-main`, which fast-forwards the main checkout only when it is clean and on `master`, and
   builds its dependencies. `scripts/refresh-main` is also safe to run alone. `--skip-refresh` skips it.
   `scripts/worktree-prune` lists the databases of deleted worktrees; `--force` drops them.
   `scripts/worktree-cleanup` does not run by itself. Run it by hand. It removes old, clean, fully merged
   worktrees and prunes; it only lists them unless you pass `--force`.
-- Start the dev servers with `pnpm run dev`. A worktree gets its own ports (web 3100-3499, API 4100-4499)
-  from its directory name; the main checkout keeps 3000 and 4000. The script prints the URLs.
+- Start the dev servers with `scripts/dev --detach`. They run as a systemd user service, so they survive
+  the end of your shell. `scripts/dev status|logs|stop` act on this worktree only. Never use `pkill`,
+  `killall` or `nohup` for the servers: `pkill -f` kills other worktrees' servers and your own shell.
+  `pnpm run dev` runs them in the foreground. A worktree gets its own ports (web 3100-3499,
+  API 4100-4499) from its directory name; the main checkout keeps 3000 and 4000. The script prints the URLs.
+- Shell commands run with `LANG=C.UTF-8` (set in `mise.toml`). Do not export a locale yourself.
 - To sign in during manual or browser checks, use `agent@example.com` / `dev-password-123`. Setup creates
   it in every worktree database. `mix atlas.dev_user [EMAIL]` creates or confirms any account without the
   confirmation email. It does not run in production.
 - Use `scripts/browser` instead of `agent-browser`. It gives each worktree its own browser session, so
   agents in different worktrees do not share tabs or cookies. Never run `agent-browser close --all`.
+  Before `open` and `auth login` on a local URL it checks the web server, the API and the database, and
+  names the fault. Read that message before you retry a sign-in.
 - To sign in, use an auth profile. Save it once, then log in with the URL of the dev server you started:
   `printf %s dev-password-123 | scripts/browser auth save atlas-dev --url http://localhost:3000/sign-in --username agent@example.com --password-stdin`
   `scripts/browser auth login atlas-dev --url <web URL from pnpm run dev>/sign-in`

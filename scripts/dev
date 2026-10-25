@@ -1,18 +1,84 @@
 #!/usr/bin/env bash
 # Start both dev servers. A worktree gets its own ports, so it can run beside other checkouts.
+#
+#   scripts/dev            run in the foreground
+#   scripts/dev --detach   run as a systemd user service for this worktree; it survives the shell
+#   scripts/dev status     show whether the service runs and whether the API is healthy
+#   scripts/dev stop       stop this worktree's servers and no others
+#   scripts/dev logs       follow the log of the detached servers
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
+here=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=lib/dev-env
+source "$here/lib/dev-env"
 
-web=3000 api=4000
-# A linked worktree has a .git file. The ports come from its directory name and stay the same.
-if [[ -f .git ]]; then
-  offset=$(($(printf %s "$(basename "$PWD")" | cksum | cut -d' ' -f1) % 400))
-  web=$((3100 + offset)) api=$((4100 + offset))
-fi
-
-export WEB_PORT=${WEB_PORT:-$web} PORT=${PORT:-$api}
+export WEB_PORT=$dev_web PORT=$dev_api
 export API_URL=${API_URL:-http://127.0.0.1:$PORT} FRONTEND_URL=${FRONTEND_URL:-http://localhost:$WEB_PORT}
 
-echo "dev: web $FRONTEND_URL, api $API_URL"
-exec pnpm exec concurrently --kill-others --names web,api "pnpm run web:dev" "pnpm run api:dev"
+unit="atlas-dev-$(printf %s "$dev_name" | tr -c 'a-zA-Z0-9\n' '-')"
+log=${XDG_STATE_HOME:-$HOME/.local/state}/atlas/$unit.log
+
+active() { systemctl --user is-active --quiet "$unit"; }
+
+wait_ready() {
+  for _ in $(seq 1 90); do
+    active || return 1
+    [[ $(api_health "$API_URL") == 204 ]] && port_open 127.0.0.1 "$WEB_PORT" && return 0
+    sleep 1
+  done
+  return 1
+}
+
+case ${1:-} in
+  --detach)
+    if active; then
+      echo "dev: already running. web $FRONTEND_URL, api $API_URL"
+      exit 0
+    fi
+    mkdir -p "$(dirname "$log")"
+    : >"$log"
+    # Pass the variables the servers need; a transient unit does not inherit the shell environment.
+    env_args=()
+    while IFS= read -r name; do env_args+=(-E "$name"); done < <(
+      compgen -e | grep -E '^(PATH|HOME|USER|LANG|LC_ALL|PG[A-Z]*|WEB_PORT|PORT|API_URL|FRONTEND_URL|ALLOWED_ORIGINS|MIX_[A-Z_]*|HEX_[A-Z_]*|ELIXIR_[A-Z_]*|ERL_[A-Z_]*|MISE_[A-Z_]*)$'
+    )
+    systemd-run --user --quiet --collect --unit "$unit" --working-directory "$PWD" \
+      -p "StandardOutput=append:$log" -p "StandardError=append:$log" \
+      "${env_args[@]}" "$here/dev"
+    if wait_ready; then
+      echo "dev: running. web $FRONTEND_URL, api $API_URL. Log: $log"
+    else
+      echo "dev: did not become healthy in 90 seconds. Last log lines:" >&2
+      tail -n 30 "$log" >&2
+      exit 1
+    fi
+    ;;
+  stop)
+    if active; then
+      systemctl --user stop "$unit"
+      echo "dev: stopped $unit"
+    else
+      echo "dev: $unit is not running"
+    fi
+    ;;
+  status)
+    if active; then
+      echo "dev: $unit is running. web $FRONTEND_URL, api $API_URL (health $(api_health "$API_URL")). Log: $log"
+    else
+      echo "dev: $unit is not running"
+      exit 1
+    fi
+    ;;
+  logs)
+    exec tail -n 50 -f "$log"
+    ;;
+  "")
+    echo "dev: web $FRONTEND_URL, api $API_URL"
+    exec pnpm exec concurrently --kill-others --names web,api "pnpm run web:dev" "pnpm run api:dev"
+    ;;
+  *)
+    echo "usage: scripts/dev [--detach|stop|status|logs]" >&2
+    exit 2
+    ;;
+esac
