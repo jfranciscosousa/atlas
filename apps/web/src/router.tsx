@@ -2,9 +2,24 @@ import { createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { routeTree } from "./routeTree.gen";
+import { pollWhileActive } from "./lib/polling";
 
 export function getRouter() {
-  const queryClient = new QueryClient();
+  // Changes from other people arrive by polling. React Query polls only the queries that a mounted
+  // component reads. The server render has no person, so it does not poll.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { refetchOnWindowFocus: "always" } },
+  });
+  if (typeof document !== "undefined") {
+    const defaults = queryClient.getDefaultOptions();
+    queryClient.setDefaultOptions({
+      ...defaults,
+      queries: {
+        ...defaults.queries,
+        refetchInterval: pollWhileActive(queryClient, window),
+      },
+    });
+  }
 
   return createRouter({
     routeTree,
