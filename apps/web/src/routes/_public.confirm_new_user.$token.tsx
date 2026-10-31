@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 
+import { consumeAuthRedirect } from "../lib/redirect";
 import { AuthError, sessionRequest } from "../lib/auth";
 import { Button, buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -15,6 +21,7 @@ function ConfirmEmail() {
   const { token } = Route.useParams();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const navigate = useNavigate();
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState("");
   const form = useForm({
@@ -29,6 +36,7 @@ function ConfirmEmail() {
         });
         await router.invalidate();
         setConfirmed(true);
+        await navigate({ href: consumeAuthRedirect() });
       } catch (reason) {
         setError(
           reason instanceof AuthError

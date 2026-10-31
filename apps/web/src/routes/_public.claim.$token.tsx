@@ -123,8 +123,8 @@ function ClaimPage() {
             I already have an account
           </Link>
           <p className="pt-2 text-center text-xs text-muted-foreground">
-            New accounts confirm their email first. Come back to this link
-            afterwards.
+            After you sign in or confirm your email, we will return you here to
+            claim your character.
           </p>
         </div>
       )}

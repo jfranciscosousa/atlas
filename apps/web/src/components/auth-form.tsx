@@ -9,6 +9,7 @@ import { Input } from "./ui/input";
 import { Field, FieldLabel, FieldDescription, FieldError } from "./ui/field";
 import { Button, buttonVariants } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
+import { authRedirect, consumeAuthRedirect } from "../lib/redirect";
 import { AuthError, sessionRequest } from "../lib/auth";
 
 const modes = {
@@ -40,8 +41,8 @@ const modes = {
 
 type AuthFormProps =
   | { mode: "register" | "sign-in"; redirect?: string }
-  | { mode: "reset-request" }
-  | { mode: "reset-password"; token: string };
+  | { mode: "reset-request"; redirect?: string }
+  | { mode: "reset-password"; token: string; redirect?: string };
 
 function validateField(
   name: string,
@@ -68,6 +69,7 @@ function validateField(
 
 export function AuthForm(props: AuthFormProps) {
   const { mode } = props;
+  const destination = authRedirect(props.redirect);
   const queryClient = useQueryClient();
   const registering = mode === "register";
   const settingPassword = registering || mode === "reset-password";
@@ -117,10 +119,7 @@ export function AuthForm(props: AuthFormProps) {
           setComplete(true);
         } else {
           await router.invalidate();
-          // The guest route already redirects a signed-in person; this covers the same page load.
-          if (props.mode === "sign-in" || props.mode === "register")
-            await navigate({ href: props.redirect ?? "/campaigns" });
-          else await navigate({ to: "/campaigns" });
+          await navigate({ href: consumeAuthRedirect(destination) });
         }
       } catch (reason) {
         if (reason instanceof AuthError) {
@@ -143,7 +142,7 @@ export function AuthForm(props: AuthFormProps) {
       register: {
         id: "confirmation-sent",
         title: "Check your inbox",
-        text: "We sent you a link. Confirm your email address, then sign in.",
+        text: "We sent you a link. Confirm your email address to continue where you left off.",
       },
       "reset-request": {
         id: "reset-request-sent",
@@ -165,7 +164,7 @@ export function AuthForm(props: AuthFormProps) {
         </p>
         <Link
           to="/sign-in"
-          search={{ redirect: registering ? props.redirect : undefined }}
+          search={{ redirect: destination }}
           className={buttonVariants({ variant: "link", className: "mt-6" })}
         >
           Back to sign in
@@ -339,12 +338,7 @@ export function AuthForm(props: AuthFormProps) {
           {registering ? "Already have an account? " : "New here? "}
           <Link
             to={registering ? "/sign-in" : "/register"}
-            search={{
-              redirect:
-                props.mode === "sign-in" || props.mode === "register"
-                  ? props.redirect
-                  : undefined,
-            }}
+            search={{ redirect: destination }}
             className={buttonVariants({
               variant: "link",
               className: "h-auto p-0",
@@ -356,21 +350,33 @@ export function AuthForm(props: AuthFormProps) {
       )}
       {mode === "sign-in" && (
         <p className="mt-4 text-center text-sm">
-          <Link to="/reset" className={buttonVariants({ variant: "link" })}>
+          <Link
+            to="/reset"
+            search={{ redirect: destination }}
+            className={buttonVariants({ variant: "link" })}
+          >
             Forgot password?
           </Link>
         </p>
       )}
       {mode === "reset-request" && (
         <p className="mt-6 text-center text-sm">
-          <Link to="/sign-in" className={buttonVariants({ variant: "link" })}>
+          <Link
+            to="/sign-in"
+            search={{ redirect: destination }}
+            className={buttonVariants({ variant: "link" })}
+          >
             Back to sign in
           </Link>
         </p>
       )}
       {mode === "reset-password" && (
         <p className="mt-6 text-center text-sm">
-          <Link to="/reset" className={buttonVariants({ variant: "link" })}>
+          <Link
+            to="/reset"
+            search={{ redirect: destination }}
+            className={buttonVariants({ variant: "link" })}
+          >
             Request a new reset link
           </Link>
         </p>
