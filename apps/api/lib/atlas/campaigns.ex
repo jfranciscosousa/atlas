@@ -71,11 +71,11 @@ defmodule Atlas.Campaigns do
 
     tool :list_campaigns, Atlas.Campaigns.Campaign, :list_as_gm,
       select: [:id, :name],
-      description: "List the campaigns you run as GM."
+      description: "List the campaigns you run as GM. #{Atlas.Mcp.Guide.skills_reminder()}"
 
     tool :get_campaign, Atlas.Campaigns.Campaign, :describe,
       description:
-        "Read a campaign: its name, description and progress/rewards as blocks (see edit_blocks), with their revisions."
+        "Read a campaign: its name, description and progress/rewards as blocks (see edit_blocks), with their revisions. #{Atlas.Mcp.Guide.skills_reminder()}"
 
     tool :list_sessions, Atlas.Campaigns.Session, :list,
       select: [:id, :number, :title, :played_on, :status],

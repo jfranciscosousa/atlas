@@ -271,6 +271,34 @@ export type NoteAttributesOnlySchema = {
 };
 
 
+// Skill Schema
+export type SkillResourceSchema = {
+  __type: "Resource";
+  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "description" | "id" | "name";
+  archivedAt: UtcDateTimeUsec | null;
+  bodyJson: Array<Record<string, unknown>>;
+  bodyRevision: number;
+  bodySchemaVersion: number;
+  description: string;
+  id: UUID;
+  name: string;
+};
+
+
+
+export type SkillAttributesOnlySchema = {
+  __type: "Resource";
+  __primitiveFields: "archivedAt" | "bodyJson" | "bodyRevision" | "bodySchemaVersion" | "description" | "id" | "name";
+  archivedAt: UtcDateTimeUsec | null;
+  bodyJson: Array<Record<string, unknown>>;
+  bodyRevision: number;
+  bodySchemaVersion: number;
+  description: string;
+  id: UUID;
+  name: string;
+};
+
+
 // Image Schema
 export type ImageResourceSchema = {
   __type: "Resource";
@@ -1268,6 +1296,90 @@ export type NoteFilterInput = {
   character?: CharacterFilterInput;
 
 };
+export type SkillFilterInput = {
+  and?: Array<SkillFilterInput>;
+  or?: Array<SkillFilterInput>;
+  not?: Array<SkillFilterInput>;
+
+  archivedAt?: {
+    isNil?: boolean;
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
+  };
+
+  bodyJson?: {
+    eq?: Array<Record<string, unknown>>;
+    notEq?: Array<Record<string, unknown>>;
+    in?: Array<Array<Record<string, unknown>>>;
+    lessThan?: Array<Record<string, unknown>>;
+    greaterThan?: Array<Record<string, unknown>>;
+    lessThanOrEqual?: Array<Record<string, unknown>>;
+    greaterThanOrEqual?: Array<Record<string, unknown>>;
+  };
+
+  bodyRevision?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  bodySchemaVersion?: {
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
+  };
+
+  description?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+  id?: {
+    eq?: UUID;
+    notEq?: UUID;
+    in?: Array<UUID>;
+    lessThan?: UUID;
+    greaterThan?: UUID;
+    lessThanOrEqual?: UUID;
+    greaterThanOrEqual?: UUID;
+  };
+
+  name?: {
+    eq?: string;
+    notEq?: string;
+    in?: Array<string>;
+    lessThan?: string;
+    greaterThan?: string;
+    lessThanOrEqual?: string;
+    greaterThanOrEqual?: string;
+    contains?: string;
+    stringEndsWith?: string;
+    stringStartsWith?: string;
+  };
+
+
+};
 export type ImageFilterInput = {
   and?: Array<ImageFilterInput>;
   or?: Array<ImageFilterInput>;
@@ -1401,6 +1513,9 @@ export type EntryFilterField = (typeof entryFilterFields)[number];
 export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "characterId", "characterName", "id", "isOwner", "ownerName", "title", "visibility", "campaign", "character"] as const;
 export type NoteFilterField = (typeof noteFilterFields)[number];
 
+export const skillFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "description", "id", "name"] as const;
+export type SkillFilterField = (typeof skillFilterFields)[number];
+
 export const imageFilterFields = ["id"] as const;
 export type ImageFilterField = (typeof imageFilterFields)[number];
 
@@ -1435,6 +1550,9 @@ export type EntrySortField = (typeof entrySortFields)[number];
 
 export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "characterId", "characterName", "id", "isOwner", "ownerName", "title", "visibility"] as const;
 export type NoteSortField = (typeof noteSortFields)[number];
+
+export const skillSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "description", "id", "name"] as const;
+export type SkillSortField = (typeof skillSortFields)[number];
 
 export const imageSortFields = ["id"] as const;
 export type ImageSortField = (typeof imageSortFields)[number];

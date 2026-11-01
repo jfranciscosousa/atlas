@@ -10,6 +10,7 @@ export type SearchKind =
   | "character"
   | "note"
   | "player_log"
+  | "skill"
   | EntryKind;
 
 /** One hit of the `search` action. The action returns an untyped map, so the keys stay snake_case. */
@@ -17,8 +18,9 @@ export type SearchHit = {
   kind: SearchKind;
   id: string;
   title: string;
-  campaign_id: string;
-  campaign_name: string;
+  /** A skill is global: its hit has no campaign. */
+  campaign_id: string | null;
+  campaign_name: string | null;
   /** Set on player logs only: a log opens on the page of its session. */
   session_id: string | null;
   sections: { section: string; blocks: { id: string; text: string }[] }[];
@@ -32,6 +34,7 @@ export const KIND_NAMES: Record<SearchKind, string> = {
   character: "Character",
   note: "Note",
   player_log: "Player log",
+  skill: "Skill",
   npc: ENTRY_KIND_LABELS.npc.label,
   location: ENTRY_KIND_LABELS.location.label,
   faction: ENTRY_KIND_LABELS.faction.label,
@@ -57,6 +60,7 @@ export function sectionLabel(section: string) {
 export function hitPath(
   hit: Pick<SearchHit, "kind" | "id" | "campaign_id" | "session_id">
 ) {
+  if (hit.kind === "skill") return `/skills/${hit.id}`;
   const base = `/campaigns/${hit.campaign_id}`;
   switch (hit.kind) {
     case "campaign":

@@ -11,6 +11,7 @@ import {
   SunIcon,
   SunMoonIcon,
   UserIcon,
+  WandSparklesIcon,
 } from "lucide-react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -231,6 +232,8 @@ function AppSidebar({
   onSearch: () => void;
 }) {
   const campaigns = useCampaignsList(user.id).data;
+  // Skills are for GMs: an account that runs no campaign cannot create one.
+  const runsACampaign = campaigns.some(campaign => campaign.isGm);
   const pathname = useRouterState({ select: state => state.location.pathname });
   const { isMobile, setOpenMobile } = useSidebar();
   const closeOnMobile = () => isMobile && setOpenMobile(false);
@@ -259,6 +262,18 @@ function AppSidebar({
                   All campaigns
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {runsACampaign && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    id="sidebar-skills"
+                    isActive={pathname.startsWith("/skills")}
+                    render={<Link to="/skills" onClick={closeOnMobile} />}
+                  >
+                    <WandSparklesIcon aria-hidden="true" />
+                    Skills
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

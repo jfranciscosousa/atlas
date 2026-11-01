@@ -1,4 +1,4 @@
 defmodule Atlas.RichText.Section do
   @moduledoc false
-  defstruct [:name, :__spark_metadata__]
+  defstruct [:name, mentions: true, __spark_metadata__: nil]
 end

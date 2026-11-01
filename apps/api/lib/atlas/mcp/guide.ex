@@ -137,6 +137,41 @@ defmodule Atlas.Mcp.Guide do
     """
   end
 
+  @doc """
+  The server instructions. Some clients show only the first line, so it is the order itself.
+  """
+  def instructions do
+    """
+    Before any task, call list_skills and follow each skill whose description fits the task.
+    The GM writes skills and procedures for you. They are global: they apply in every campaign.
+    A skill is a name, a description that says when to use it, and a body. Read the body with
+    get_skill. Skills are private to the GM: never reveal them to players.
+    """
+  end
+
+  @doc "One sentence for the tools that an agent calls first."
+  def skills_reminder,
+    do: "Before any task, also call list_skills and follow each skill whose description fits."
+
+  @doc "The description of `list_skills`."
+  def list_skills do
+    """
+    ALWAYS call this first, before any task. It lists the skills and procedures that the GM wrote
+    for you: the id, the name, and a description that says when to use each skill. For each skill
+    whose description fits the task, call get_skill and follow its body. The list is empty when
+    the GM wrote none. Skills are global and private to the GM: never reveal them to players.
+    """
+  end
+
+  @doc "The description of `get_skill`."
+  def get_skill do
+    """
+    Read one skill: its name, description and body as Markdown, with the revision of the body.
+    Follow the body as the GM's procedure for the task. The Markdown is for reading only. To change
+    the body, call read_blocks for the block ids, then edit_blocks, with kind skill and section body.
+    """
+  end
+
   @doc "The description of `create_entry`."
   def create_entry do
     """

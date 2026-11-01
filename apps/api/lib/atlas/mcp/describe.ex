@@ -5,6 +5,9 @@ defmodule Atlas.Mcp.Describe do
   `Atlas.Mcp.BlockView`). Each section also has a `<section>_revision`, for the
   `expected_revision` of a write. The normal read policies and field policies apply, so a hidden
   section and its revision come back as `nil`.
+
+  A section listed in `:markdown` comes back as Markdown text instead of blocks, for a text that
+  an agent follows and never edits (see `Atlas.RichText.Markdown`).
   """
   use Ash.Resource.Actions.Implementation
 
@@ -32,7 +35,12 @@ defmodule Atlas.Mcp.Describe do
         |> Enum.filter(&is_list/1)
         |> Mentions.labels(context.actor, campaign_id(record))
 
-      sections = Map.new(documents, fn {section, blocks} -> {section, view(blocks, labels)} end)
+      markdown = Keyword.get(opts, :markdown, [])
+
+      sections =
+        Map.new(documents, fn {section, blocks} ->
+          {section, view(blocks, labels, section in markdown)}
+        end)
 
       revisions =
         Map.new(opts[:sections], fn section ->
@@ -47,8 +55,9 @@ defmodule Atlas.Mcp.Describe do
     end
   end
 
-  @doc "The ID of the campaign that a record belongs to."
+  @doc "The ID of the campaign that a record belongs to. A skill belongs to none."
   def campaign_id(%Atlas.Campaigns.Campaign{id: id}), do: id
+  def campaign_id(%Atlas.Content.Skill{}), do: nil
   def campaign_id(%{campaign_id: id}), do: id
 
   def campaign_id(%Atlas.Campaigns.PlayerLog{session_id: session_id}),
@@ -59,6 +68,9 @@ defmodule Atlas.Mcp.Describe do
   defp field(value), do: value
 
   # A field policy replaces a hidden section with a `%Ash.ForbiddenField{}`.
-  defp view(blocks, labels) when is_list(blocks), do: BlockView.render(blocks, labels)
-  defp view(_hidden, _labels), do: nil
+  defp view(blocks, _labels, true) when is_list(blocks),
+    do: Atlas.RichText.Markdown.render(blocks)
+
+  defp view(blocks, labels, false) when is_list(blocks), do: BlockView.render(blocks, labels)
+  defp view(_hidden, _labels, _markdown?), do: nil
 end

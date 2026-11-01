@@ -18,6 +18,15 @@ defmodule Atlas.Content do
       rpc_action :set_note_visibility, :set_visibility
     end
 
+    resource Atlas.Content.Skill do
+      rpc_action :list_skills, :list
+      rpc_action :get_skill, :read, get_by: [:id]
+      rpc_action :create_skill, :create
+      rpc_action :update_skill, :update
+      rpc_action :archive_skill, :archive
+      rpc_action :restore_skill, :restore
+    end
+
     resource Atlas.Content.Entry do
       rpc_action :list_entries, :list
       rpc_action :get_entry, :read, get_by: [:id]
@@ -40,7 +49,8 @@ defmodule Atlas.Content do
       Each hit includes kind, id, title, campaign_id, campaign_name and matching sections with
       block ids and snippets. A player_log hit also has session_id. Use get_* or read_blocks for more. kinds filters entry types
       (#{Enum.join(Atlas.Kinds.names(), ", ")}). limit defaults to 20, at most 50.
-      more is true when limit cuts the results. Archived notes are excluded.
+      more is true when limit cuts the results. Archived notes and skills are excluded.
+      A skill hit has no campaign_id and no campaign_name: skills are global and private to you.
       """
 
     tool :create_note, Atlas.Content.Note, :create,
@@ -68,6 +78,25 @@ defmodule Atlas.Content do
       description:
         "Read a note: its title, state and body as blocks (see edit_blocks), with the revision of the body."
 
+    tool :list_skills, Atlas.Content.Skill, :list,
+      select: [:id, :name, :description],
+      description: Atlas.Mcp.Guide.list_skills()
+
+    tool :get_skill, Atlas.Content.Skill, :describe, description: Atlas.Mcp.Guide.get_skill()
+
+    tool :create_skill, Atlas.Content.Skill, :create,
+      description:
+        "Create a skill: a procedure that the GM's agents follow. Give a name and a description that says when to use it. It starts with an empty body: write it with edit_blocks (kind skill, section body). Only a GM may."
+
+    tool :update_skill, Atlas.Content.Skill, :update,
+      description:
+        "Change the name or the description of a skill. The description must say when to use the skill."
+
+    tool :archive_skill, Atlas.Content.Skill, :archive,
+      description: "Archive a skill. Agents stop seeing it. Skills are never deleted."
+
+    tool :restore_skill, Atlas.Content.Skill, :restore, description: "Restore an archived skill."
+
     tool :list_entries, Atlas.Content.Entry, :list,
       select: [:id, :kind, :name, :hidden],
       description: Atlas.Mcp.Guide.list_entries()
@@ -93,6 +122,7 @@ defmodule Atlas.Content do
   resources do
     resource Atlas.Search.Request
     resource Atlas.Content.Note
+    resource Atlas.Content.Skill
     resource Atlas.Content.Entry
   end
 end

@@ -66,7 +66,7 @@ defmodule Atlas.RichText.Transformer do
           Builder.build_action_argument(:schema_version, :integer, allow_nil?: false),
           Builder.build_action_argument(:expected_revision, :integer, allow_nil?: false)
         ],
-        changes: [Builder.build_action_change({Save, section: name})]
+        changes: [Builder.build_action_change({Save, section: name, mentions: section.mentions})]
       )
     end
   end

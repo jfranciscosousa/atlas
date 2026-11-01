@@ -8,6 +8,9 @@ defmodule Atlas.RichText do
       rich_text do
         section :description
       end
+
+  A resource that belongs to no campaign declares `section :body, mentions: false`: a mention
+  points into one campaign, so the section refuses it.
   """
 
   @section %Spark.Dsl.Entity{
@@ -15,7 +18,14 @@ defmodule Atlas.RichText do
     describe: "A rich-text section stored in flat columns on the parent resource.",
     target: Atlas.RichText.Section,
     args: [:name],
-    schema: [name: [type: :atom, required: true, doc: "The section name."]]
+    schema: [
+      name: [type: :atom, required: true, doc: "The section name."],
+      mentions: [
+        type: :boolean,
+        default: true,
+        doc: "False when the section refuses mention nodes, for a resource with no campaign."
+      ]
+    ]
   }
 
   @rich_text %Spark.Dsl.Section{

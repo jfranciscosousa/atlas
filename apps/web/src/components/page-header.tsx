@@ -13,7 +13,7 @@ import {
 // `campaignId` links the crumb to that campaign's page. `list` links it to that campaign's list.
 type Crumb = {
   label: string;
-  to?: "/campaigns";
+  to?: "/campaigns" | "/skills";
   campaignId?: string;
   list?: {
     campaignId: string;

@@ -73,6 +73,7 @@ type Props = {
       | "session"
       | "playerLog"
       | "character"
+      | "skill"
       // A world entry names its own kind: the section is `npc:<id>:description`.
       | EntryKind;
     id: string;
@@ -102,6 +103,7 @@ const KINDS = {
   session: "session",
   playerLog: "player_log",
   character: "character",
+  skill: "skill",
 } as const;
 
 const MENTION_GROUPS = {
@@ -383,26 +385,29 @@ export default function RichTextEditor({
             filePanel={false}
           >
             <FilePanelController filePanel={UploadOnlyFilePanel} />
-            <SuggestionMenuController
-              triggerCharacter="@"
-              getItems={async query =>
-                filterSuggestionItems(
-                  mentionable.map(entry => ({
-                    title: entry.label,
-                    group: MENTION_GROUPS[entry.kind],
-                    onItemClick: () =>
-                      editor.insertInlineContent([
-                        {
-                          type: "mention",
-                          props: { kind: entry.kind, id: entry.id },
-                        },
-                        " ",
-                      ]),
-                  })),
-                  query
-                )
-              }
-            />
+            {/* A skill belongs to no campaign, so its text has nothing to mention. */}
+            {parent.kind !== "skill" && (
+              <SuggestionMenuController
+                triggerCharacter="@"
+                getItems={async query =>
+                  filterSuggestionItems(
+                    mentionable.map(entry => ({
+                      title: entry.label,
+                      group: MENTION_GROUPS[entry.kind],
+                      onItemClick: () =>
+                        editor.insertInlineContent([
+                          {
+                            type: "mention",
+                            props: { kind: entry.kind, id: entry.id },
+                          },
+                          " ",
+                        ]),
+                    })),
+                    query
+                  )
+                }
+              />
+            )}
           </BlockNoteView>
         </div>
       )}

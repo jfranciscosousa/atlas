@@ -4,13 +4,28 @@ defmodule Atlas.Search.Reader do
   import Ecto.Query
 
   alias Atlas.Campaigns.{Campaign, Character, PlayerLog, Session}
-  alias Atlas.Content.{Entry, Note}
+  alias Atlas.Content.{Entry, Note, Skill}
   alias Atlas.Search.{Match, Projection}
 
+  # A skill is global: it belongs to the account, so every search finds it, whatever the campaign
+  # filter says. Its hit has no campaign.
   def entries(actor, campaign_id) do
     campaigns = read(Campaign, actor, [:id, :name], campaign_id)
 
-    if campaigns == [], do: {[], []}, else: campaign_entries(campaigns, actor)
+    {entries, campaigns} =
+      if campaigns == [], do: {[], []}, else: campaign_entries(campaigns, actor)
+
+    {entries ++ skill_entries(actor), campaigns}
+  end
+
+  defp skill_entries(actor) do
+    Skill
+    |> Ash.Query.select([:id, :name, :archived_at])
+    |> Ash.read!(actor: actor)
+    |> Enum.map(
+      &(entry(:skill, &1, nil, &1.name)
+        |> Map.merge(%{campaign_name: nil, archived?: not is_nil(&1.archived_at)}))
+    )
   end
 
   defp campaign_entries(campaigns, actor) do

@@ -31,6 +31,14 @@ test("every kind opens its own page", () => {
   );
 });
 
+test("a skill opens its own page, outside any campaign", () => {
+  assert.equal(
+    hitPath({ kind: "skill", id: "k1", campaign_id: null, session_id: null }),
+    "/skills/k1"
+  );
+  assert.equal(KIND_NAMES.skill, "Skill");
+});
+
 test("every kind of world entry opens the entry page", () => {
   for (const kind of [
     "npc",

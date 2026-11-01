@@ -16,6 +16,7 @@ import {
   SettingsIcon,
   UserIcon,
   UsersIcon,
+  WandSparklesIcon,
 } from "lucide-react";
 import { cn } from "cn";
 import { useRouter } from "@tanstack/react-router";
@@ -51,6 +52,7 @@ const KIND_ICONS: Record<Exclude<SearchKind, "campaign">, typeof UsersIcon> = {
   character: UsersIcon,
   note: BookOpenTextIcon,
   player_log: ScrollTextIcon,
+  skill: WandSparklesIcon,
   ...ENTRY_ICONS,
 };
 
@@ -183,9 +185,9 @@ function ResultRow({
           </span>
           {hit && (
             <span className="ml-auto max-w-[50%] shrink-0 truncate text-xs text-muted-foreground">
-              {hit.kind === "campaign"
-                ? KIND_NAMES.campaign
-                : `${KIND_NAMES[hit.kind]} · ${hit.campaign_name}`}
+              {hit.campaign_name
+                ? `${KIND_NAMES[hit.kind]} · ${hit.campaign_name}`
+                : KIND_NAMES[hit.kind]}
             </span>
           )}
         </span>

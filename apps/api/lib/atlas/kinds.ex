@@ -37,6 +37,14 @@ defmodule Atlas.Kinds do
       sections: [:body],
       mention?: true
     },
+    # A skill belongs to an account, not to a campaign. It has no mentions: a mention points into
+    # one campaign.
+    %{
+      kind: :skill,
+      resource: Atlas.Content.Skill,
+      sections: [:body],
+      mention?: false
+    },
     %{
       kind: :player_log,
       resource: Atlas.Campaigns.PlayerLog,

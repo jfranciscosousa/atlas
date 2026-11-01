@@ -22,6 +22,8 @@ import { Route as GuestSignInRouteImport } from './routes/_guest.sign-in'
 import { Route as AuthenticatedCampaignsIndexRouteImport } from './routes/_authenticated.campaigns.index'
 import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_authenticated.campaigns.$campaignId'
 import { Route as AuthenticatedJoinTokenRouteImport } from './routes/_authenticated.join.$token'
+import { Route as AuthenticatedSkillsIndexRouteImport } from './routes/_authenticated.skills.index'
+import { Route as AuthenticatedSkillsSkillIdRouteImport } from './routes/_authenticated.skills.$skillId'
 import { Route as PublicClaimTokenRouteImport } from './routes/_public.claim.$token'
 import { Route as PublicConfirm_new_userTokenRouteImport } from './routes/_public.confirm_new_user.$token'
 import { Route as PublicPasswordResetTokenRouteImport } from './routes/_public.password-reset.$token'
@@ -100,6 +102,18 @@ const AuthenticatedJoinTokenRoute = AuthenticatedJoinTokenRouteImport.update({
   path: '/join/$token',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSkillsIndexRoute =
+  AuthenticatedSkillsIndexRouteImport.update({
+    id: '/skills/',
+    path: '/skills/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSkillsSkillIdRoute =
+  AuthenticatedSkillsSkillIdRouteImport.update({
+    id: '/skills/$skillId',
+    path: '/skills/$skillId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const PublicClaimTokenRoute = PublicClaimTokenRouteImport.update({
   id: '/claim/$token',
   path: '/claim/$token',
@@ -188,10 +202,12 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof GuestSignInRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/join/$token': typeof AuthenticatedJoinTokenRoute
+  '/skills/$skillId': typeof AuthenticatedSkillsSkillIdRoute
   '/claim/$token': typeof PublicClaimTokenRoute
   '/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
+  '/skills/': typeof AuthenticatedSkillsIndexRoute
   '/campaigns/$campaignId/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   '/campaigns/$campaignId/characters/$characterId': typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute
   '/campaigns/$campaignId/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute
@@ -213,10 +229,12 @@ export interface FileRoutesByTo {
   '/sign-in': typeof GuestSignInRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/join/$token': typeof AuthenticatedJoinTokenRoute
+  '/skills/$skillId': typeof AuthenticatedSkillsSkillIdRoute
   '/claim/$token': typeof PublicClaimTokenRoute
   '/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/campaigns': typeof AuthenticatedCampaignsIndexRoute
+  '/skills': typeof AuthenticatedSkillsIndexRoute
   '/campaigns/$campaignId/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   '/campaigns/$campaignId/characters/$characterId': typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute
   '/campaigns/$campaignId/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute
@@ -242,10 +260,12 @@ export interface FileRoutesById {
   '/_guest/': typeof GuestIndexRoute
   '/_authenticated/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/_authenticated/join/$token': typeof AuthenticatedJoinTokenRoute
+  '/_authenticated/skills/$skillId': typeof AuthenticatedSkillsSkillIdRoute
   '/_public/claim/$token': typeof PublicClaimTokenRoute
   '/_public/confirm_new_user/$token': typeof PublicConfirm_new_userTokenRoute
   '/_public/password-reset/$token': typeof PublicPasswordResetTokenRoute
   '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
+  '/_authenticated/skills/': typeof AuthenticatedSkillsIndexRoute
   '/_authenticated/campaigns/$campaignId_/preview': typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   '/_authenticated/campaigns/$campaignId_/characters/$characterId': typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute
   '/_authenticated/campaigns/$campaignId_/entries/$entryId': typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute
@@ -269,10 +289,12 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/campaigns/$campaignId'
     | '/join/$token'
+    | '/skills/$skillId'
     | '/claim/$token'
     | '/confirm_new_user/$token'
     | '/password-reset/$token'
     | '/campaigns/'
+    | '/skills/'
     | '/campaigns/$campaignId/preview'
     | '/campaigns/$campaignId/characters/$characterId'
     | '/campaigns/$campaignId/entries/$entryId'
@@ -294,10 +316,12 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/campaigns/$campaignId'
     | '/join/$token'
+    | '/skills/$skillId'
     | '/claim/$token'
     | '/confirm_new_user/$token'
     | '/password-reset/$token'
     | '/campaigns'
+    | '/skills'
     | '/campaigns/$campaignId/preview'
     | '/campaigns/$campaignId/characters/$characterId'
     | '/campaigns/$campaignId/entries/$entryId'
@@ -322,10 +346,12 @@ export interface FileRouteTypes {
     | '/_guest/'
     | '/_authenticated/campaigns/$campaignId'
     | '/_authenticated/join/$token'
+    | '/_authenticated/skills/$skillId'
     | '/_public/claim/$token'
     | '/_public/confirm_new_user/$token'
     | '/_public/password-reset/$token'
     | '/_authenticated/campaigns/'
+    | '/_authenticated/skills/'
     | '/_authenticated/campaigns/$campaignId_/preview'
     | '/_authenticated/campaigns/$campaignId_/characters/$characterId'
     | '/_authenticated/campaigns/$campaignId_/entries/$entryId'
@@ -437,6 +463,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJoinTokenRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/skills/': {
+      id: '/_authenticated/skills/'
+      path: '/skills'
+      fullPath: '/skills/'
+      preLoaderRoute: typeof AuthenticatedSkillsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/skills/$skillId': {
+      id: '/_authenticated/skills/$skillId'
+      path: '/skills/$skillId'
+      fullPath: '/skills/$skillId'
+      preLoaderRoute: typeof AuthenticatedSkillsSkillIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_public/claim/$token': {
       id: '/_public/claim/$token'
       path: '/claim/$token'
@@ -537,7 +577,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedCampaignsCampaignIdRoute: typeof AuthenticatedCampaignsCampaignIdRoute
   AuthenticatedJoinTokenRoute: typeof AuthenticatedJoinTokenRoute
+  AuthenticatedSkillsSkillIdRoute: typeof AuthenticatedSkillsSkillIdRoute
   AuthenticatedCampaignsIndexRoute: typeof AuthenticatedCampaignsIndexRoute
+  AuthenticatedSkillsIndexRoute: typeof AuthenticatedSkillsIndexRoute
   AuthenticatedCampaignsCampaignIdPreviewRoute: typeof AuthenticatedCampaignsCampaignIdPreviewRoute
   AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute: typeof AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute
   AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute: typeof AuthenticatedCampaignsCampaignIdEntriesEntryIdRoute
@@ -556,7 +598,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedCampaignsCampaignIdRoute: AuthenticatedCampaignsCampaignIdRoute,
   AuthenticatedJoinTokenRoute: AuthenticatedJoinTokenRoute,
+  AuthenticatedSkillsSkillIdRoute: AuthenticatedSkillsSkillIdRoute,
   AuthenticatedCampaignsIndexRoute: AuthenticatedCampaignsIndexRoute,
+  AuthenticatedSkillsIndexRoute: AuthenticatedSkillsIndexRoute,
   AuthenticatedCampaignsCampaignIdPreviewRoute:
     AuthenticatedCampaignsCampaignIdPreviewRoute,
   AuthenticatedCampaignsCampaignIdCharactersCharacterIdRoute:

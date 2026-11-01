@@ -36,6 +36,7 @@ defmodule AtlasWeb.Router do
 
     forward "/", AshAi.Mcp.Router,
       otp_app: :atlas,
+      instructions: Atlas.Mcp.Guide.instructions(),
       tools: [
         :list_campaigns,
         :get_campaign,
@@ -45,6 +46,8 @@ defmodule AtlasWeb.Router do
         :get_character,
         :list_notes,
         :get_note,
+        :list_skills,
+        :get_skill,
         :list_entries,
         :get_entry,
         :list_player_logs,
@@ -59,6 +62,10 @@ defmodule AtlasWeb.Router do
         :archive_note,
         :restore_note,
         :set_note_visibility,
+        :create_skill,
+        :update_skill,
+        :archive_skill,
+        :restore_skill,
         :create_entry,
         :rename_entry,
         :set_entry_hidden,

@@ -203,12 +203,14 @@ defmodule Atlas.Search.Projection do
   defp title_fields(Atlas.Campaigns.Session), do: [:number, :title]
   defp title_fields(Atlas.Campaigns.Character), do: [:name]
   defp title_fields(Atlas.Content.Note), do: [:title]
+  defp title_fields(Atlas.Content.Skill), do: [:name]
   defp title_fields(Atlas.Content.Entry), do: [:name]
   defp title_fields(Atlas.Campaigns.PlayerLog), do: []
 
   defp title(Atlas.Campaigns.Campaign, row), do: row.name
   defp title(Atlas.Campaigns.Character, row), do: row.name || "Unnamed character"
   defp title(Atlas.Content.Note, row), do: row.title
+  defp title(Atlas.Content.Skill, row), do: row.name
   defp title(Atlas.Content.Entry, row), do: row.name
 
   defp title(Atlas.Campaigns.Session, row),

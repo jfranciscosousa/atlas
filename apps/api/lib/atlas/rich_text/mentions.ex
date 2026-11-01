@@ -13,7 +13,12 @@ defmodule Atlas.RichText.Mentions do
   alias Atlas.RichText.Document
 
   @doc "Map of `{kind, id}` to the name of the entry, for the mentions in `documents`."
-  @spec labels([[map()] | nil], term(), String.t()) :: %{{String.t(), String.t()} => String.t()}
+  @spec labels([[map()] | nil], term(), String.t() | nil) :: %{
+          {String.t(), String.t()} => String.t()
+        }
+  # A text with no campaign, a skill, has no entries to name.
+  def labels(_documents, _actor, nil), do: %{}
+
   def labels(documents, actor, campaign_id) do
     documents
     |> Enum.flat_map(&Document.mention_refs/1)

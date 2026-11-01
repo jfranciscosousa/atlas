@@ -18,8 +18,15 @@ defmodule Atlas.RichText.Save do
     version = RichText.schema_version_attribute(section)
 
     expected = Ash.Changeset.get_argument(changeset, :expected_revision)
+    json_argument = Ash.Changeset.get_argument(changeset, :json)
 
     cond do
+      not Keyword.get(opts, :mentions, true) and Document.mention_refs(json_argument) != [] ->
+        Ash.Changeset.add_error(changeset,
+          field: :json,
+          message: "cannot contain mentions: this text belongs to no campaign"
+        )
+
       Ash.Changeset.get_argument(changeset, :schema_version) != Document.schema_version() ->
         Ash.Changeset.add_error(changeset,
           field: :schema_version,
