@@ -11,8 +11,7 @@ defmodule Atlas.Mcp.Describe do
   """
   use Ash.Resource.Actions.Implementation
 
-  alias Atlas.Mcp.BlockView
-  alias Atlas.RichText.Mentions
+  alias Atlas.Mcp.{BlockView, Records}
 
   @impl true
   def run(input, opts, context) do
@@ -21,38 +20,58 @@ defmodule Atlas.Mcp.Describe do
              actor: context.actor,
              load: Keyword.get(opts, :load, [])
            ) do
-      fields = Map.new(opts[:fields], &{&1, field(Map.fetch!(record, &1))})
-
-      documents =
-        Map.new(opts[:sections], fn section ->
-          {section, Map.fetch!(record, Atlas.RichText.json_attribute(section))}
-        end)
-
-      # The names of mentions are read as the actor, so a restricted entry stays nameless.
-      labels =
-        documents
-        |> Map.values()
-        |> Enum.filter(&is_list/1)
-        |> Mentions.labels(context.actor, campaign_id(record))
-
-      markdown = Keyword.get(opts, :markdown, [])
-
-      sections =
-        Map.new(documents, fn {section, blocks} ->
-          {section, view(blocks, labels, section in markdown)}
-        end)
-
-      revisions =
-        Map.new(opts[:sections], fn section ->
-          {:"#{section}_revision",
-           field(Map.fetch!(record, Atlas.RichText.revision_attribute(section)))}
-        end)
-
-      {:ok,
-       fields
-       |> Map.merge(sections)
-       |> Map.merge(revisions)}
+      {:ok, hd(describe([record], opts, context.actor))}
     end
+  end
+
+  @doc """
+  Describes records that were read as the actor, in the order of the records. Mentions are named
+  once for each campaign, however many records it has, so the number of queries does not grow
+  with the number of records.
+  """
+  @spec describe([struct()], keyword(), term()) :: [map()]
+  def describe(records, opts, actor) do
+    campaign_ids = Records.campaign_ids(records)
+
+    # The names of mentions are read as the actor, so a restricted entry stays nameless.
+    labels =
+      records
+      |> Enum.zip(campaign_ids)
+      |> Enum.map(fn {record, campaign_id} -> {campaign_id, documents(record, opts)} end)
+      |> Records.labels(actor)
+
+    records
+    |> Enum.zip(campaign_ids)
+    |> Enum.map(fn {record, campaign_id} ->
+      render(record, opts, Map.fetch!(labels, campaign_id))
+    end)
+  end
+
+  defp documents(record, opts) do
+    opts[:sections]
+    |> Enum.map(&Map.fetch!(record, Atlas.RichText.json_attribute(&1)))
+    |> Enum.filter(&is_list/1)
+  end
+
+  defp render(record, opts, labels) do
+    fields = Map.new(opts[:fields], &{&1, field(Map.fetch!(record, &1))})
+    markdown = Keyword.get(opts, :markdown, [])
+
+    sections =
+      Map.new(opts[:sections], fn section ->
+        blocks = Map.fetch!(record, Atlas.RichText.json_attribute(section))
+        {section, view(blocks, labels, section in markdown)}
+      end)
+
+    revisions =
+      Map.new(opts[:sections], fn section ->
+        {:"#{section}_revision",
+         field(Map.fetch!(record, Atlas.RichText.revision_attribute(section)))}
+      end)
+
+    fields
+    |> Map.merge(sections)
+    |> Map.merge(revisions)
   end
 
   @doc "The ID of the campaign that a record belongs to. A skill belongs to none."

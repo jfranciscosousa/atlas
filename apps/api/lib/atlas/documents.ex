@@ -8,6 +8,14 @@ defmodule Atlas.Documents do
 
     tool :read_blocks, Atlas.Documents.Doc, :read_blocks,
       description: Atlas.Mcp.Guide.read_blocks()
+
+    tool :get_many, Atlas.Documents.Doc, :get_many, description: Atlas.Mcp.Guide.get_many()
+
+    tool :read_blocks_many, Atlas.Documents.Doc, :read_blocks_many,
+      description: Atlas.Mcp.Guide.read_blocks_many()
+
+    tool :edit_blocks_many, Atlas.Documents.Doc, :edit_blocks_many,
+      description: Atlas.Mcp.Guide.edit_blocks_many()
   end
 
   resources do

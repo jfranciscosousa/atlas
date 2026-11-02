@@ -27,6 +27,24 @@ defmodule Atlas.Content.EntrySurfaceCoverageTest do
     get_entry: "entry_rpc_test.exs: a player cannot read a hidden or archived entry by ID"
   }
 
+  # Each MCP tool that runs an action of Entry. The tools on other resources that read entries,
+  # such as `get_many` and `read_blocks_many`, have their player-view tests in `mcp_batch_test.exs`.
+  @mcp_tools %{
+    list_entries: "mcp_entries_test.exs: never see a hidden entry",
+    get_entry: "mcp_entries_test.exs: never see a hidden entry",
+    create_entry: "mcp_entries_test.exs: cannot create, change, show, archive or restore",
+    rename_entry: "mcp_entries_test.exs: cannot create, change, show, archive or restore",
+    set_entry_hidden: "mcp_entries_test.exs: cannot create, change, show, archive or restore",
+    archive_entry: "mcp_entries_test.exs: cannot create, change, show, archive or restore",
+    restore_entry: "mcp_entries_test.exs: cannot create, change, show, archive or restore",
+    set_entries_hidden:
+      "mcp_batch_test.exs: a player changes nothing, and cannot tell a hidden entry from a missing one",
+    archive_entries:
+      "mcp_batch_test.exs: a player changes nothing, and cannot tell a hidden entry from a missing one",
+    restore_entries:
+      "mcp_batch_test.exs: a player changes nothing, and cannot tell a hidden entry from a missing one"
+  }
+
   @relationships %{
     campaign: "entry_test.exs: a player reads the campaign of a shown entry"
   }
@@ -35,6 +53,10 @@ defmodule Atlas.Content.EntrySurfaceCoverageTest do
 
   test "every exposed RPC action on Entry has a player-view test" do
     assert_covered(:rpc_actions, exposed_rpc_actions(), @rpc_actions)
+  end
+
+  test "every MCP tool on Entry has a player-view test" do
+    assert_covered(:mcp_tools, exposed_mcp_tools(), @mcp_tools)
   end
 
   test "every exposed aggregate on Entry has a player-view test" do
@@ -73,6 +95,14 @@ defmodule Atlas.Content.EntrySurfaceCoverageTest do
       nil -> []
       config -> config.rpc_actions |> Enum.map(& &1.name) |> Enum.sort()
     end
+  end
+
+  defp exposed_mcp_tools do
+    Atlas.Content
+    |> Spark.Dsl.Extension.get_entities([:tools])
+    |> Enum.filter(&(&1.resource == Entry))
+    |> Enum.map(& &1.name)
+    |> Enum.sort()
   end
 
   defp exposed_aggregates do

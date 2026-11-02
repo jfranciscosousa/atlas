@@ -36,25 +36,64 @@ defmodule Atlas.Mcp.EditBlocks do
   def run(input, _opts, %{actor: actor}) do
     args = input.arguments
 
-    with {:ok, target} <- target("#{args.kind}:#{args.id}:#{args.section}"),
-         {:ok, state} <- state(target, actor),
-         {:ok, update, inserted, warnings} <- change(state, args),
-         {:ok, result} <-
-           Collab.apply_update(target, actor, update,
-             expected_revision: Map.get(args, :expected_revision)
-           ) do
-      case result do
-        {:changed, revision} ->
-          Phoenix.PubSub.broadcast(Atlas.PubSub, Collab.topic(target), {:collab_update, update})
-          {:ok, %{saved: true, revision: revision, inserted: inserted, warnings: warnings}}
-
-        :unchanged ->
-          {:ok, %{saved: false, revision: nil, inserted: inserted, warnings: warnings}}
-      end
+    with {:ok, plan} <- plan(actor, args),
+         {:ok, outcome} <-
+           Collab.apply_update(plan.target, actor, plan.update,
+             expected_revision: plan.expected_revision
+           ),
+         {:ok, outcome} <- settled(outcome) do
+      {:ok, publish(plan, outcome)}
     else
       {:error, reason} -> {:error, invalid(reason)}
     end
   end
+
+  @doc """
+  Works out one edit without storing it: the section, the Yjs update, the IDs of the inserted
+  blocks and the warnings. `Collab.apply_update/4` or `Collab.apply_updates/2` stores the update.
+  A caller that read the state of many sections at once passes the state of this one.
+  """
+  def plan(actor, args, state \\ nil) do
+    with {:ok, target} <- target_of(args),
+         {:ok, state} <- if(state, do: {:ok, state}, else: state(target, actor)),
+         {:ok, update, inserted, warnings} <- change(state, args) do
+      {:ok,
+       %{
+         target: target,
+         update: update,
+         inserted: inserted,
+         warnings: warnings,
+         expected_revision: Map.get(args, :expected_revision)
+       }}
+    end
+  end
+
+  @doc """
+  The result of a stored edit. It sends the update to the editors that have the section open, so
+  call it only after the edit is committed.
+  """
+  def publish(plan, {:changed, revision}) do
+    Phoenix.PubSub.broadcast(
+      Atlas.PubSub,
+      Collab.topic(plan.target),
+      {:collab_update, plan.update}
+    )
+
+    %{saved: true, revision: revision, inserted: plan.inserted, warnings: plan.warnings}
+  end
+
+  def publish(plan, :unchanged),
+    do: %{saved: false, revision: nil, inserted: plan.inserted, warnings: plan.warnings}
+
+  # The section was rebuilt from other JSON since the caller read it: the plan is out of date.
+  def settled(:reset), do: {:error, :stale}
+  def settled(outcome), do: {:ok, outcome}
+
+  @doc "The error text that a failed plan or a failed store gives the client."
+  def error_text(reason), do: reason_text(reason)
+
+  @doc "The section that an edit names. `args` has `kind`, `id` and `section`."
+  def target_of(args), do: target("#{args.kind}:#{args.id}:#{args.section}")
 
   defp target(ref) do
     case Collab.parse(ref) do
@@ -63,8 +102,11 @@ defmodule Atlas.Mcp.EditBlocks do
     end
   end
 
-  # The first read after another writer changed the JSON only rebuilds the state.
-  defp state(target, actor) do
+  @doc """
+  The stored state of a section. The first read after another writer changed the JSON only
+  rebuilds the state, so it reads again.
+  """
+  def state(target, actor) do
     case Collab.read_state(target, actor) do
       {:ok, :reset} -> state(target, actor)
       other -> other
@@ -389,13 +431,15 @@ defmodule Atlas.Mcp.EditBlocks do
 
   defp inline(other), do: other
 
-  defp invalid(:forbidden), do: error("is not a section that exists and that you may write")
-  defp invalid(:stale), do: error("changed since you read it: read it again, then retry")
-  defp invalid(:update_too_large), do: error("is too long to write at once")
-  defp invalid(:document_too_large), do: error("would make the section too large")
-  defp invalid({:rejected, reason}), do: error("is not valid: #{inspect(reason)}")
-  defp invalid(message) when is_binary(message), do: error(message)
-  defp invalid(_), do: error("could not be written")
+  defp invalid(reason), do: reason |> reason_text() |> error()
+
+  defp reason_text(:forbidden), do: "is not a section that exists and that you may write"
+  defp reason_text(:stale), do: "changed since you read it: read it again, then retry"
+  defp reason_text(:update_too_large), do: "is too long to write at once"
+  defp reason_text(:document_too_large), do: "would make the section too large"
+  defp reason_text({:rejected, reason}), do: "is not valid: #{inspect(reason)}"
+  defp reason_text(message) when is_binary(message), do: message
+  defp reason_text(_), do: "could not be written"
 
   defp error(message),
     do: Ash.Error.Changes.InvalidArgument.exception(field: :operations, message: message)

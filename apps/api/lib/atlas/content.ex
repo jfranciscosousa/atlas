@@ -117,6 +117,15 @@ defmodule Atlas.Content do
 
     tool :restore_entry, Atlas.Content.Entry, :restore,
       description: "Restore an archived entry. Only the GM may."
+
+    tool :set_entries_hidden, Atlas.Content.Entry, :set_hidden_many,
+      description: Atlas.Mcp.Guide.set_entries_hidden()
+
+    tool :archive_entries, Atlas.Content.Entry, :archive_many,
+      description: Atlas.Mcp.Guide.archive_entries()
+
+    tool :restore_entries, Atlas.Content.Entry, :restore_many,
+      description: Atlas.Mcp.Guide.restore_entries()
   end
 
   resources do

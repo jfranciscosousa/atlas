@@ -75,6 +75,12 @@ defmodule AtlasWeb.Router do
         :upload_image_data,
         :edit_blocks,
         :read_blocks,
+        :get_many,
+        :read_blocks_many,
+        :edit_blocks_many,
+        :set_entries_hidden,
+        :archive_entries,
+        :restore_entries,
         :search
       ]
   end

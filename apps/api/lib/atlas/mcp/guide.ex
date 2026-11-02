@@ -6,6 +6,7 @@ defmodule Atlas.Mcp.Guide do
 
   alias Atlas.Content.EntrySpec
   alias Atlas.Kinds
+  alias Atlas.Mcp.Batch
   alias Atlas.RichText.Collab.Blocks
   alias Atlas.RichText.Document
 
@@ -91,6 +92,71 @@ defmodule Atlas.Mcp.Guide do
     as in edit_blocks. The result has the section revision.
 
     #{blocks()}\
+    """
+  end
+
+  @doc "The description of `get_many`."
+  def get_many do
+    """
+    Read many records in one call, instead of one get_* call for each. refs is a list of
+    {"kind":..., "id":...}, at most #{Batch.max_items()}. kind is one of #{Enum.join(Kinds.names(), ", ")}.
+    Each result has the kind and the id, and either a record or an error. The record is what the
+    matching get_* tool gives for that kind (get_note, get_entry, get_session and so on), with the
+    revision of each section. One error does not stop the other reads. An error gives no reason:
+    the record may not exist, or you may not read it.
+    """
+  end
+
+  @doc "The description of `read_blocks_many`."
+  def read_blocks_many do
+    """
+    Read blocks of many sections in one call. reads is a list, at most #{Batch.max_items()}. Each item is
+    the input of read_blocks: kind, id, section, and optionally ids or outline. Each result
+    has the kind, id and section, and either the blocks (or the outline) with the revision, or an
+    error. One error does not stop the other reads.
+
+    #{blocks()}\
+    """
+  end
+
+  @doc "The description of `edit_blocks_many`."
+  def edit_blocks_many do
+    """
+    Edit many rich-text sections in one call, all or nothing. edits is a list, at most
+    #{Batch.max_items()} edits and #{Batch.max_operations()} operations in total. Each item is the input of edit_blocks: kind,
+    id, section, operations, and optionally expected_revision, remove_images and delete_many.
+    Every rule of edit_blocks applies to each edit (see that tool). If any edit fails, none is
+    stored, and the error names the edit by its index. Do not send two edits for one section: put
+    all its operations in one edit. Edits are live: open editors see them at once, after all are
+    stored. The result lists, for each edit in order, the kind, id, section, saved, revision, the
+    ids of inserted blocks and the warnings.
+
+    #{blocks()}\
+    """
+  end
+
+  @doc "The description of `set_entries_hidden`."
+  def set_entries_hidden do
+    """
+    Show many world entries to the players (hidden false) or hide them (hidden true), all or
+    nothing. ids is a list of entry ids, at most #{Batch.max_items()}. Only the GM may. If one id is not an entry that you
+    may change, no entry changes. The result lists the entries in the order of ids.
+    """
+  end
+
+  @doc "The description of `archive_entries`."
+  def archive_entries do
+    """
+    Archive many world entries, all or nothing. ids is a list of entry ids, at most #{Batch.max_items()}. Entries are never
+    deleted. Only the GM may. If one id is not an entry that you may change, no entry changes.
+    """
+  end
+
+  @doc "The description of `restore_entries`."
+  def restore_entries do
+    """
+    Restore many archived world entries, all or nothing. ids is a list of entry ids, at most #{Batch.max_items()}. Only the GM
+    may. If one id is not an entry that you may change, no entry changes.
     """
   end
 

@@ -7,26 +7,98 @@ defmodule Atlas.Mcp.ReadBlocks do
   """
   use Ash.Resource.Actions.Implementation
 
-  alias Atlas.Mcp.{BlockView, Describe}
+  alias Atlas.Mcp.{BlockView, Records}
   alias Atlas.RichText
   alias Atlas.RichText.Collab
   alias Atlas.RichText.Collab.Blocks
-  alias Atlas.RichText.Mentions
 
   @impl true
   def run(input, _opts, %{actor: actor}) do
-    args = input.arguments
+    case read(actor, input.arguments) do
+      {:ok, result} -> {:ok, result}
+      {:error, message} -> {:error, error(message)}
+    end
+  end
 
-    with {:ok, target} <- target("#{args.kind}:#{args.id}:#{args.section}"),
-         {:ok, record} <- Ash.get(target.resource, target.id, actor: actor),
-         true <- Collab.kind_matches?(target, record) || {:error, :forbidden},
-         {:ok, blocks, revision} <- section(record, target.section),
-         labels = Mentions.labels([blocks], actor, Describe.campaign_id(record)),
-         {:ok, result} <- result(blocks, labels, args) do
-      {:ok, Map.put(result, :revision, revision)}
+  @doc """
+  Reads one section as the actor. `args` has `kind`, `id` and `section`, and may have `ids` or
+  `outline`. The error is a text for the client. A section that does not exist and one the actor
+  may not read give the same text.
+  """
+  @spec read(struct(), map()) :: {:ok, map()} | {:error, String.t()}
+  def read(actor, args), do: actor |> read_many([args]) |> hd()
+
+  @doc """
+  Reads many sections as the actor, in the order of `reads` (see `read/2`). The records of one
+  resource are read in one query and the mentions of one campaign are named in one lookup, so the
+  number of queries does not grow with the number of sections.
+  """
+  @spec read_many(struct(), [map()]) :: [{:ok, map()} | {:error, String.t()}]
+  def read_many(actor, reads) do
+    targets = Enum.map(reads, &target("#{&1.kind}:#{&1.id}:#{&1.section}"))
+    records = fetch_records(targets, actor)
+
+    sections =
+      reads
+      |> Enum.zip(targets)
+      |> Enum.map(fn {args, target} -> section_of(args, target, records) end)
+
+    # The campaigns of all sections are read in one query, and each campaign is named once.
+    readable =
+      for {:ok, _args, _blocks, _revision, record} = section <- sections, do: {section, record}
+
+    campaign_ids = readable |> Enum.map(&elem(&1, 1)) |> Records.campaign_ids()
+
+    labels =
+      readable
+      |> Enum.zip(campaign_ids)
+      |> Enum.map(fn {{{:ok, _args, blocks, _revision, _record}, _}, campaign_id} ->
+        {campaign_id, [blocks]}
+      end)
+      |> Records.labels(actor)
+
+    {results, []} =
+      Enum.map_reduce(sections, campaign_ids, fn
+        {:ok, args, blocks, revision, _record}, [campaign_id | rest] ->
+          {render(args, blocks, revision, Map.fetch!(labels, campaign_id)), rest}
+
+        {:error, message}, rest ->
+          {{:error, message}, rest}
+      end)
+
+    results
+  end
+
+  defp fetch_records(targets, actor) do
+    for {:ok, target} <- targets, reduce: %{} do
+      acc -> Map.update(acc, target.resource, [target.id], &[target.id | &1])
+    end
+    |> Enum.flat_map(fn {resource, ids} ->
+      resource
+      |> Records.fetch(ids, actor)
+      |> Enum.map(fn {id, record} -> {{resource, id}, record} end)
+    end)
+    |> Map.new()
+  end
+
+  # A section that does not exist and one the actor may not read give the same text.
+  defp section_of(args, {:ok, target}, records) do
+    with {:ok, record} <- Map.fetch(records, {target.resource, target.id}),
+         true <- Collab.kind_matches?(target, record),
+         {:ok, blocks, revision} <- section(record, target.section) do
+      {:ok, args, blocks, revision, record}
     else
-      {:error, message} when is_binary(message) -> {:error, error(message)}
-      {:error, _} -> {:error, error("is not a section that exists and that you may read")}
+      _ -> {:error, "is not a section that exists and that you may read"}
+    end
+  end
+
+  defp section_of(_args, {:error, message}, _records), do: {:error, message}
+
+  defp render(args, blocks, revision, labels) do
+    case result(blocks, labels, args) do
+      {:ok, result} -> {:ok, Map.put(result, :revision, revision)}
+      {:error, message} when is_binary(message) -> {:error, message}
+      {:error, _} -> {:error, "is not a section that exists and that you may read"}
     end
   end
 

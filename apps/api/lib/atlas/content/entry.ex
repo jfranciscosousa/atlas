@@ -93,12 +93,39 @@ defmodule Atlas.Content.Entry do
 
     # Entries are archived, never deleted. An archived entry keeps its ID, and the GM reads it.
     update :archive do
-      require_atomic? false
-      change set_attribute(:archived_at, &DateTime.utc_now/0)
+      change atomic_update(:archived_at, expr(now()))
     end
 
     update :restore do
       change set_attribute(:archived_at, nil)
+    end
+
+    # The next three change many entries as one transaction. Used by the MCP tools. Each entry goes
+    # through the update action of the same name as the single tool, so its policies decide.
+    action :set_hidden_many, :map do
+      argument :ids, {:array, :uuid},
+        allow_nil?: false,
+        constraints: [min_length: 1, max_length: Atlas.Mcp.Batch.max_items()]
+
+      argument :hidden, :boolean, allow_nil?: false
+
+      run {Atlas.Mcp.ChangeEntries, action: :set_hidden, params: [:hidden]}
+    end
+
+    action :archive_many, :map do
+      argument :ids, {:array, :uuid},
+        allow_nil?: false,
+        constraints: [min_length: 1, max_length: Atlas.Mcp.Batch.max_items()]
+
+      run {Atlas.Mcp.ChangeEntries, action: :archive}
+    end
+
+    action :restore_many, :map do
+      argument :ids, {:array, :uuid},
+        allow_nil?: false,
+        constraints: [min_length: 1, max_length: Atlas.Mcp.Batch.max_items()]
+
+      run {Atlas.Mcp.ChangeEntries, action: :restore}
     end
 
     # Plain text for a language model, as the actor may read it. Used by the MCP tools.
@@ -129,6 +156,11 @@ defmodule Atlas.Content.Entry do
     end
 
     policy action(:describe) do
+      authorize_if always()
+    end
+
+    # The update policy of every entry decides, inside the action.
+    policy action([:set_hidden_many, :archive_many, :restore_many]) do
       authorize_if always()
     end
 

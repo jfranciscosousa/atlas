@@ -54,6 +54,76 @@ defmodule Atlas.Documents.Doc do
 
       run Atlas.Mcp.ReadBlocks
     end
+
+    # Reads many records, as the matching `get_*` tools read them. Used by the MCP tools.
+    action :get_many, :map do
+      argument :refs, {:array, :map} do
+        allow_nil? false
+
+        constraints min_length: 1,
+                    max_length: Atlas.Mcp.Batch.max_items(),
+                    items: [
+                      fields: [
+                        kind: [type: :atom, allow_nil?: false, constraints: [one_of: @kinds]],
+                        id: [type: :uuid, allow_nil?: false]
+                      ]
+                    ]
+      end
+
+      run Atlas.Mcp.GetMany
+    end
+
+    # Reads blocks of many sections. Used by the MCP tools.
+    action :read_blocks_many, :map do
+      argument :reads, {:array, :map} do
+        allow_nil? false
+
+        constraints min_length: 1,
+                    max_length: Atlas.Mcp.Batch.max_items(),
+                    items: [
+                      fields: [
+                        kind: [type: :atom, allow_nil?: false, constraints: [one_of: @kinds]],
+                        id: [type: :uuid, allow_nil?: false],
+                        section: [
+                          type: :atom,
+                          allow_nil?: false,
+                          constraints: [one_of: @sections]
+                        ],
+                        ids: [type: {:array, :string}],
+                        outline: [type: :boolean]
+                      ]
+                    ]
+      end
+
+      run Atlas.Mcp.ReadBlocksMany
+    end
+
+    # Edits many sections as one live edit that succeeds or fails as a whole. Used by the MCP tools.
+    action :edit_blocks_many, :map do
+      argument :edits, {:array, :map} do
+        allow_nil? false
+
+        constraints min_length: 1,
+                    max_length: Atlas.Mcp.Batch.max_items(),
+                    items: [
+                      fields: [
+                        kind: [type: :atom, allow_nil?: false, constraints: [one_of: @kinds]],
+                        id: [type: :uuid, allow_nil?: false],
+                        section: [
+                          type: :atom,
+                          allow_nil?: false,
+                          constraints: [one_of: @sections]
+                        ],
+                        operations: [type: {:array, :map}, allow_nil?: false],
+                        expected_revision: [type: :integer, constraints: [min: 0]],
+                        remove_images: [type: :boolean],
+                        delete_many: [type: :boolean]
+                      ]
+                    ]
+      end
+
+      run Atlas.Mcp.EditBlocksMany
+    end
   end
 
   # The write action checks the actor against the parent's own policies through `Collab`.
@@ -62,7 +132,14 @@ defmodule Atlas.Documents.Doc do
       forbid_if always()
     end
 
-    policy action([:edit_blocks, :read_blocks]) do
+    # Each section is checked against its own parent's policies, as the actor.
+    policy action([
+             :edit_blocks,
+             :read_blocks,
+             :get_many,
+             :read_blocks_many,
+             :edit_blocks_many
+           ]) do
       authorize_if always()
     end
   end
