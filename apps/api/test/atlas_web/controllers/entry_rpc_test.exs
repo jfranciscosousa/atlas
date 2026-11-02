@@ -137,6 +137,18 @@ defmodule AtlasWeb.EntryRpcTest do
     assert %{"data" => %{"name" => "Vex"}} = fetch(ctx.gm, id)
   end
 
+  test "a player cannot read a hidden or archived entry by ID", ctx do
+    hidden = create(ctx, "npc", "Spy")
+    shown = create(ctx, "npc", "Vex")
+    show(ctx, shown["id"])
+
+    assert %{"success" => false} = fetch(ctx.player, hidden["id"])
+    assert %{"success" => true} = fetch(ctx.player, shown["id"])
+
+    act(ctx.gm, "archive_entry", shown["id"])
+    assert %{"success" => false} = fetch(ctx.player, shown["id"])
+  end
+
   describe "the app and MCP match" do
     setup ctx do
       realm = create(ctx, "location", "Realm")

@@ -149,6 +149,16 @@ defmodule Atlas.Content.EntryTest do
       assert [] = list(ctx.player, ctx.campaign)
     end
 
+    test "a player reads the campaign of a shown entry, and cannot reach a hidden one", ctx do
+      shown = entry(ctx.gm, ctx.campaign, :npc, "Vex", %{shown: true})
+      hidden = entry(ctx.gm, ctx.campaign, :npc, "Spy")
+
+      loaded = Ash.get!(Entry, shown.id, actor: ctx.player, load: [:campaign])
+      assert loaded.campaign.id == ctx.campaign.id
+
+      assert {:error, _} = Ash.get(Entry, hidden.id, actor: ctx.player, load: [:campaign])
+    end
+
     test "an archived entry is readable by the GM alone, even when it was shown", ctx do
       entry = entry(ctx.gm, ctx.campaign, :npc, "Vex", %{shown: true})
       modify(entry, %{}, ctx.gm, :archive)

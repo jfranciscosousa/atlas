@@ -81,6 +81,12 @@ use GitHub Issues or any other tracker. The repository is the only source of tru
   MCP and the AI features, with the same names, labels, and access rules. When you change what
   one surface shows or hides, change the others in the same commit, and add a test that
   compares them. A difference is a bug, not a design choice.
+- A hidden resource stays hidden at the backend. A new path that exposes one ships with a
+  player-view test in the same commit. A path is an RPC action, an aggregate, a relationship, a
+  search field, a mention label, or a websocket join or message. The test reads as a player and
+  asserts that the path returns no hidden entry, no archived entry, and no secret notes. Register
+  the path in that resource's surface coverage test; it fails until you do. A path without that
+  test is incomplete.
 - Every rich-text field behaves the same: one editor, one image behavior, one autosave path.
   Do not build a variant with fewer features.
 

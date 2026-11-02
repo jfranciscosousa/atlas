@@ -27,6 +27,8 @@ These rules apply to the Phoenix/Ash backend. Shared rules are in the root `AGEN
 
 ## Checks and tests
 
+- A new public path on a hidden resource needs a player-view test. See "Product rules and
+  documentation" in the root `AGENTS.md`. Register the path in the resource's surface coverage test.
 - Read task help with `mix help <task>` before using unfamiliar Mix tasks.
 - Run `mix precommit` after changes and fix failures.
 - For focused failures, run `mix test <path>` or `mix test --failed`.
