@@ -10,6 +10,7 @@ import { Field, FieldLabel, FieldDescription, FieldError } from "./ui/field";
 import { Button, buttonVariants } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
 import { authRedirect, consumeAuthRedirect } from "../lib/redirect";
+import { shouldValidate, validateAuthFields } from "../lib/auth-validation";
 import { AuthError, sessionRequest } from "../lib/auth";
 
 const modes = {
@@ -44,29 +45,6 @@ type AuthFormProps =
   | { mode: "reset-request"; redirect?: string }
   | { mode: "reset-password"; token: string; redirect?: string };
 
-function validateField(
-  name: string,
-  label: string,
-  value: string,
-  settingPassword: boolean,
-  form: { getFieldValue: (name: "password") => string }
-) {
-  if (name === "display_name" ? !value.trim() : !value)
-    return `${label} is required.`;
-  if (name === "display_name" && value.trim().length > 100)
-    return "Use a name between 1 and 100 characters.";
-  if (name === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-    return "Enter a valid email address.";
-  if (name === "password" && settingPassword && value.length < 8)
-    return "Use at least 8 characters.";
-  if (
-    name === "password_confirmation" &&
-    value !== form.getFieldValue("password")
-  )
-    return "Passwords must match.";
-  return undefined;
-}
-
 export function AuthForm(props: AuthFormProps) {
   const { mode } = props;
   const destination = authRedirect(props.redirect);
@@ -81,12 +59,85 @@ export function AuthForm(props: AuthFormProps) {
   const [serverErrors, setServerErrors] = useState<
     Partial<Record<AuthField, string>>
   >({});
+
+  const fields = [
+    ...(registering
+      ? [
+          {
+            name: "display_name",
+            label: "Display name",
+            type: "text",
+            autoComplete: "name",
+          } as const,
+        ]
+      : []),
+    ...(mode !== "reset-password"
+      ? [
+          {
+            name: "email",
+            label: "Email address",
+            type: "email",
+            autoComplete: "email",
+          } as const,
+        ]
+      : []),
+    ...(mode !== "reset-request"
+      ? [
+          {
+            name: "password",
+            label: "Password",
+            type: "password",
+            autoComplete: settingPassword ? "new-password" : "current-password",
+          } as const,
+        ]
+      : []),
+    ...(settingPassword
+      ? [
+          {
+            name: "password_confirmation",
+            label: "Confirm password",
+            type: "password",
+            autoComplete: "new-password",
+          } as const,
+        ]
+      : []),
+  ];
+
   const form = useForm({
     defaultValues: {
       display_name: "",
       email: "",
       password: "",
       password_confirmation: "",
+    },
+    // Show no errors until the first submit, except a filled confirmation field that
+    // does not match. After a submit attempt, re-validate on every change so errors
+    // clear as soon as they are fixed.
+    validationLogic: ({ form: formApi, validators, event, runValidation }) =>
+      runValidation({
+        form: formApi,
+        validators: shouldValidate({
+          event: event.type,
+          attempted: formApi.state.submissionAttempts > 0,
+          confirmationLeft:
+            !!formApi.state.fieldMeta.password_confirmation?.isBlurred,
+        })
+          ? [{ fn: validators?.onDynamic, cause: "dynamic" }]
+          : [],
+      }),
+    validators: {
+      onDynamic: ({ value, formApi }) => ({
+        fields: validateAuthFields(fields, value, {
+          settingPassword,
+          attempted: formApi.state.submissionAttempts > 0,
+        }),
+      }),
+    },
+    onSubmitInvalid: ({ formApi }) => {
+      const first = fields.find(
+        ({ name }) => !formApi.getFieldMeta(name)?.isValid
+      );
+      if (first) document.getElementById(first.name)?.focus();
     },
     onSubmit: async ({ value }) => {
       setError("");
@@ -173,49 +224,6 @@ export function AuthForm(props: AuthFormProps) {
     );
   }
 
-  const fields = [
-    ...(registering
-      ? [
-          {
-            name: "display_name",
-            label: "Display name",
-            type: "text",
-            autoComplete: "name",
-          },
-        ]
-      : []),
-    ...(mode !== "reset-password"
-      ? [
-          {
-            name: "email",
-            label: "Email address",
-            type: "email",
-            autoComplete: "email",
-          },
-        ]
-      : []),
-    ...(mode !== "reset-request"
-      ? [
-          {
-            name: "password",
-            label: "Password",
-            type: "password",
-            autoComplete: settingPassword ? "new-password" : "current-password",
-          },
-        ]
-      : []),
-    ...(settingPassword
-      ? [
-          {
-            name: "password_confirmation",
-            label: "Confirm password",
-            type: "password",
-            autoComplete: "new-password",
-          },
-        ]
-      : []),
-  ];
-
   return (
     <>
       <h1 className="text-3xl font-semibold tracking-tight">{copy.title}</h1>
@@ -225,50 +233,17 @@ export function AuthForm(props: AuthFormProps) {
       <form
         id={`${mode}-form`}
         className="mt-8 space-y-5"
+        noValidate
         onSubmit={event => {
           event.preventDefault();
           void form.handleSubmit();
         }}
       >
         {fields.map(({ name, label, type, autoComplete }) => (
-          <form.Field
-            key={name}
-            name={name as AuthField}
-            validators={
-              name === "password_confirmation"
-                ? {
-                    // onBlur errors are kept apart from onChange errors and would go stale
-                    // when the password changes, leaving the button disabled.
-                    onChange: ({ value, fieldApi }) =>
-                      validateField(
-                        name,
-                        label,
-                        value,
-                        settingPassword,
-                        fieldApi.form
-                      ),
-                    onChangeListenTo: ["password"],
-                  }
-                : {
-                    onBlur: ({ value, fieldApi }) =>
-                      validateField(
-                        name,
-                        label,
-                        value,
-                        settingPassword,
-                        fieldApi.form
-                      ),
-                  }
-            }
-          >
+          <form.Field key={name} name={name}>
             {field => {
-              const serverError = serverErrors[name as AuthField];
-              const invalid =
-                !!serverError ||
-                ((name === "password_confirmation"
-                  ? field.state.meta.isBlurred
-                  : field.state.meta.isTouched) &&
-                  !field.state.meta.isValid);
+              const serverError = serverErrors[name];
+              const invalid = !!serverError || !field.state.meta.isValid;
               return (
                 <Field data-invalid={invalid}>
                   <FieldLabel htmlFor={name}>{label}</FieldLabel>
@@ -281,10 +256,6 @@ export function AuthForm(props: AuthFormProps) {
                     spellCheck={false}
                     required
                     maxLength={name === "display_name" ? 100 : undefined}
-                    pattern={name === "display_name" ? ".*\\S.*" : undefined}
-                    minLength={
-                      name === "password" && settingPassword ? 8 : undefined
-                    }
                     value={field.state.value}
                     onChange={event => {
                       field.handleChange(event.target.value);
@@ -317,15 +288,12 @@ export function AuthForm(props: AuthFormProps) {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <form.Subscribe
-          selector={state => [state.canSubmit, state.isSubmitting]}
-        >
-          {([canSubmit, submitting]) => (
+        <form.Subscribe selector={state => state.isSubmitting}>
+          {submitting => (
             <Button
               id="auth-submit"
               type="submit"
               isLoading={submitting}
-              disabled={!canSubmit}
               className="w-full"
             >
               {copy.button}
