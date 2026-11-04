@@ -131,6 +131,7 @@ function NotePage() {
         section="body"
         label="Text"
         hint="Write anything: a plot, a guide, a handout."
+        audienceState={{ visibility: note.visibility }}
         initial={note.bodyJson}
       />
     </div>

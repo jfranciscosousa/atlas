@@ -3,10 +3,12 @@ defmodule Atlas.Mcp.ReadBlocks do
   Reads some blocks of one rich-text section as the actor, or an outline of all of them. It
   implements `read_blocks`, for a section that is too long to read whole with `get_*`.
 
-  The normal read policies and field policies apply, as for `get_*`.
+  The normal read policies and field policies apply, as for `get_*`. The result also names the
+  audience of the section (see `Atlas.Audience`).
   """
   use Ash.Resource.Actions.Implementation
 
+  alias Atlas.Audience
   alias Atlas.Mcp.{BlockView, Records}
   alias Atlas.RichText
   alias Atlas.RichText.Collab
@@ -45,22 +47,23 @@ defmodule Atlas.Mcp.ReadBlocks do
 
     # The campaigns of all sections are read in one query, and each campaign is named once.
     readable =
-      for {:ok, _args, _blocks, _revision, record} = section <- sections, do: {section, record}
+      for {:ok, _args, _blocks, _revision, _audience, record} = section <- sections,
+          do: {section, record}
 
     campaign_ids = readable |> Enum.map(&elem(&1, 1)) |> Records.campaign_ids()
 
     labels =
       readable
       |> Enum.zip(campaign_ids)
-      |> Enum.map(fn {{{:ok, _args, blocks, _revision, _record}, _}, campaign_id} ->
+      |> Enum.map(fn {{{:ok, _args, blocks, _revision, _audience, _record}, _}, campaign_id} ->
         {campaign_id, [blocks]}
       end)
       |> Records.labels(actor)
 
     {results, []} =
       Enum.map_reduce(sections, campaign_ids, fn
-        {:ok, args, blocks, revision, _record}, [campaign_id | rest] ->
-          {render(args, blocks, revision, Map.fetch!(labels, campaign_id)), rest}
+        {:ok, args, blocks, revision, audience, _record}, [campaign_id | rest] ->
+          {render(args, blocks, revision, audience, Map.fetch!(labels, campaign_id)), rest}
 
         {:error, message}, rest ->
           {{:error, message}, rest}
@@ -86,7 +89,7 @@ defmodule Atlas.Mcp.ReadBlocks do
     with {:ok, record} <- Map.fetch(records, {target.resource, target.id}),
          true <- Collab.kind_matches?(target, record),
          {:ok, blocks, revision} <- section(record, target.section) do
-      {:ok, args, blocks, revision, record}
+      {:ok, args, blocks, revision, Audience.of_record(record, target.section), record}
     else
       _ -> {:error, "is not a section that exists and that you may read"}
     end
@@ -94,9 +97,9 @@ defmodule Atlas.Mcp.ReadBlocks do
 
   defp section_of(_args, {:error, message}, _records), do: {:error, message}
 
-  defp render(args, blocks, revision, labels) do
+  defp render(args, blocks, revision, audience, labels) do
     case result(blocks, labels, args) do
-      {:ok, result} -> {:ok, Map.put(result, :revision, revision)}
+      {:ok, result} -> {:ok, Map.merge(result, %{revision: revision, audience: audience})}
       {:error, message} when is_binary(message) -> {:error, message}
       {:error, _} -> {:error, "is not a section that exists and that you may read"}
     end

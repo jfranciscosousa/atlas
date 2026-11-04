@@ -12,7 +12,7 @@ defmodule Atlas.Mcp.EditBlocksMany do
   """
   use Ash.Resource.Actions.Implementation
 
-  alias Atlas.Mcp.{Batch, EditBlocks}
+  alias Atlas.Mcp.{Batch, EditBlocks, Records}
   alias Atlas.RichText.Collab
 
   @impl true
@@ -88,12 +88,15 @@ defmodule Atlas.Mcp.EditBlocksMany do
 
   defp plan_all(edits, targets, actor) do
     states = Collab.read_states(targets, actor)
+    records = Records.fetch_targets(targets, actor)
 
     [edits, targets, states]
     |> Enum.zip()
     |> Enum.with_index()
     |> Enum.reduce_while({:ok, []}, fn {{edit, target, state}, index}, {:ok, plans} ->
-      case plan(actor, edit, target, state) do
+      record = Map.get(records, {target.resource, target.id})
+
+      case plan(actor, edit, target, state, record) do
         {:ok, plan} -> {:cont, {:ok, [plan | plans]}}
         {:error, reason} -> {:halt, {:error, failure(index, reason)}}
       end
@@ -105,12 +108,15 @@ defmodule Atlas.Mcp.EditBlocksMany do
   end
 
   # A section that was rebuilt since the batch read it is read again, on its own.
-  defp plan(actor, edit, target, {:ok, :reset}) do
-    with {:ok, state} <- EditBlocks.state(target, actor), do: EditBlocks.plan(actor, edit, state)
+  defp plan(actor, edit, target, {:ok, :reset}, record) do
+    with {:ok, state} <- EditBlocks.state(target, actor),
+         do: EditBlocks.plan(actor, edit, state, record)
   end
 
-  defp plan(actor, edit, _target, {:ok, state}), do: EditBlocks.plan(actor, edit, state)
-  defp plan(_actor, _edit, _target, {:error, reason}), do: {:error, reason}
+  defp plan(actor, edit, _target, {:ok, state}, record),
+    do: EditBlocks.plan(actor, edit, state, record)
+
+  defp plan(_actor, _edit, _target, {:error, reason}, _record), do: {:error, reason}
 
   defp store(plans, actor) do
     entries = Enum.map(plans, &{&1.target, &1.update, expected_revision: &1.expected_revision})

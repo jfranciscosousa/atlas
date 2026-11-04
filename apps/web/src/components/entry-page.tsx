@@ -48,6 +48,7 @@ export function EntryPage({
   const RichTextEditor = getEditor();
   const canManage = !!campaign.isGm && !preview;
   const kind = ENTRY_KIND_LABELS[entry.kind];
+  const audienceState = { hidden: entry.hidden, archivedAt: entry.archivedAt };
 
   const commitName = () => {
     const next = name.trim();
@@ -184,6 +185,7 @@ export function EntryPage({
               label="Description"
               hideLabel
               hint="Write what the entry is: its state, details and relationships. Players read this once you show the entry."
+              audienceState={audienceState}
               initial={entry.descriptionJson}
             />
           </TabsContent>
@@ -205,6 +207,7 @@ export function EntryPage({
           parent={{ kind: entry.kind, id: entry.id }}
           section="description"
           label="Description"
+          audienceState={audienceState}
           initial={entry.descriptionJson}
           readOnly
         />

@@ -33,8 +33,12 @@ defmodule Atlas.Search.Reader do
     sessions = read(Session, actor, [:id, :campaign_id, :number, :title], campaign_ids)
     session_map = Map.new(sessions, &{&1.id, &1})
     characters = read(Character, actor, [:id, :campaign_id, :name], campaign_ids)
-    notes = read(Note, actor, [:id, :campaign_id, :title, :archived_at], campaign_ids)
-    world = read(Entry, actor, [:id, :campaign_id, :kind, :name, :archived_at], campaign_ids)
+
+    notes =
+      read(Note, actor, [:id, :campaign_id, :title, :visibility, :archived_at], campaign_ids)
+
+    world =
+      read(Entry, actor, [:id, :campaign_id, :kind, :name, :hidden, :archived_at], campaign_ids)
 
     logs =
       PlayerLog
@@ -53,12 +57,14 @@ defmodule Atlas.Search.Reader do
         Enum.map(
           notes,
           &(entry(:note, &1, &1.campaign_id, &1.title)
-            |> Map.put(:archived?, not is_nil(&1.archived_at)))
+            |> Map.put(:archived?, not is_nil(&1.archived_at))
+            |> Map.put(:audience_state, Map.take(&1, [:visibility])))
         ) ++
         Enum.map(
           world,
           &(entry(&1.kind, &1, &1.campaign_id, &1.name)
-            |> Map.put(:archived?, not is_nil(&1.archived_at)))
+            |> Map.put(:archived?, not is_nil(&1.archived_at))
+            |> Map.put(:audience_state, Map.take(&1, [:hidden, :archived_at])))
         ) ++
         Enum.map(logs, fn log ->
           session = Map.fetch!(session_map, log.session_id)
@@ -92,7 +98,14 @@ defmodule Atlas.Search.Reader do
   end
 
   defp entry(kind, record, campaign_id, title),
-    do: %{kind: kind, id: record.id, campaign_id: campaign_id, title: title, archived?: false}
+    do: %{
+      kind: kind,
+      id: record.id,
+      campaign_id: campaign_id,
+      title: title,
+      archived?: false,
+      audience_state: %{}
+    }
 
   defp session_title(%{number: number, title: nil}), do: "Session #{number}"
   defp session_title(%{number: number, title: title}), do: "Session #{number}: #{title}"

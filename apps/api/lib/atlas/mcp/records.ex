@@ -29,6 +29,22 @@ defmodule Atlas.Mcp.Records do
   end
 
   @doc """
+  Reads the parent record of each section target as the actor, in one query for each resource:
+  `%{{resource, id} => record}`. A record that the actor may not read is absent.
+  """
+  @spec fetch_targets([struct()], term()) :: %{{module(), String.t()} => struct()}
+  def fetch_targets(targets, actor) do
+    targets
+    |> Enum.group_by(& &1.resource, & &1.id)
+    |> Enum.flat_map(fn {resource, ids} ->
+      resource
+      |> fetch(ids, actor)
+      |> Enum.map(fn {id, record} -> {{resource, id}, record} end)
+    end)
+    |> Map.new()
+  end
+
+  @doc """
   The campaign ID of each record, in the order of the records. A skill has none. The sessions of
   player logs are read in one query.
   """

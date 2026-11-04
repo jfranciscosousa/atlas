@@ -4,13 +4,15 @@ defmodule Atlas.Mcp.Describe do
   and the blocks of the listed rich-text sections, in the form `edit_blocks` takes (see
   `Atlas.Mcp.BlockView`). Each section also has a `<section>_revision`, for the
   `expected_revision` of a write. The normal read policies and field policies apply, so a hidden
-  section and its revision come back as `nil`.
+  section and its revision come back as `nil`. Each section also has a `<section>_audience`, who
+  reads it (see `Atlas.Audience`).
 
   A section listed in `:markdown` comes back as Markdown text instead of blocks, for a text that
   an agent follows and never edits (see `Atlas.RichText.Markdown`).
   """
   use Ash.Resource.Actions.Implementation
 
+  alias Atlas.Audience
   alias Atlas.Mcp.{BlockView, Records}
 
   @impl true
@@ -69,9 +71,15 @@ defmodule Atlas.Mcp.Describe do
          field(Map.fetch!(record, Atlas.RichText.revision_attribute(section)))}
       end)
 
+    audiences =
+      Map.new(opts[:sections], fn section ->
+        {:"#{section}_audience", Audience.of_record(record, section)}
+      end)
+
     fields
     |> Map.merge(sections)
     |> Map.merge(revisions)
+    |> Map.merge(audiences)
   end
 
   @doc "The ID of the campaign that a record belongs to. A skill belongs to none."

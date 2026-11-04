@@ -13,10 +13,15 @@ defmodule Atlas.Mcp.EditBlocks do
   that removes more than 10 blocks needs `delete_many`. Two warnings go back with the result
   and change nothing: an `update` that drops bold, links or mentions the block had, and an
   `update` that carries no `hash`, so a human's edit in the same block could be overwritten.
+
+  The result names the audience of the section (see `Atlas.Audience`). When players read the
+  section, a warning also names each hidden or archived world entry that the edit mentions (see
+  `Atlas.Mcp.AudienceCheck`).
   """
   use Ash.Resource.Actions.Implementation
 
-  alias Atlas.Mcp.BlockView
+  alias Atlas.Audience
+  alias Atlas.Mcp.{AudienceCheck, BlockView, Describe, Records}
   alias Atlas.RichText.Collab
   alias Atlas.RichText.Collab.Blocks
   alias Atlas.RichText.Document
@@ -50,21 +55,43 @@ defmodule Atlas.Mcp.EditBlocks do
 
   @doc """
   Works out one edit without storing it: the section, the Yjs update, the IDs of the inserted
-  blocks and the warnings. `Collab.apply_update/4` or `Collab.apply_updates/2` stores the update.
-  A caller that read the state of many sections at once passes the state of this one.
+  blocks, the audience of the section and the warnings. `Collab.apply_update/4` or
+  `Collab.apply_updates/2` stores the update. A caller that read the state and the parent record of
+  many sections at once passes the state and the record of this one.
   """
-  def plan(actor, args, state \\ nil) do
+  def plan(actor, args, state \\ nil, record \\ nil) do
     with {:ok, target} <- target_of(args),
          {:ok, state} <- if(state, do: {:ok, state}, else: state(target, actor)),
-         {:ok, update, inserted, warnings} <- change(state, args) do
+         {:ok, update, inserted, warnings, mentions} <- change(state, args),
+         {:ok, record} <- parent(record, target, actor) do
+      audience = Audience.of_record(record, target.section)
+
+      mention_warnings =
+        actor
+        |> AudienceCheck.mentions(Describe.campaign_id(record), audience, mentions)
+        |> Enum.map(&"the edit #{&1}")
+
       {:ok,
        %{
          target: target,
          update: update,
          inserted: inserted,
-         warnings: warnings,
+         audience: audience,
+         warnings: warnings ++ mention_warnings,
          expected_revision: Map.get(args, :expected_revision)
        }}
+    end
+  end
+
+  defp parent(%_{} = record, _target, _actor), do: {:ok, record}
+
+  defp parent(nil, target, actor) do
+    target.resource
+    |> Records.fetch([target.id], actor)
+    |> Map.fetch(target.id)
+    |> case do
+      {:ok, record} -> {:ok, record}
+      :error -> {:error, :forbidden}
     end
   end
 
@@ -79,11 +106,24 @@ defmodule Atlas.Mcp.EditBlocks do
       {:collab_update, plan.update}
     )
 
-    %{saved: true, revision: revision, inserted: plan.inserted, warnings: plan.warnings}
+    %{
+      saved: true,
+      revision: revision,
+      inserted: plan.inserted,
+      audience: plan.audience,
+      warnings: plan.warnings
+    }
   end
 
-  def publish(plan, :unchanged),
-    do: %{saved: false, revision: nil, inserted: plan.inserted, warnings: plan.warnings}
+  def publish(plan, :unchanged) do
+    %{
+      saved: false,
+      revision: nil,
+      inserted: plan.inserted,
+      audience: plan.audience,
+      warnings: plan.warnings
+    }
+  end
 
   # The section was rebuilt from other JSON since the caller read it: the plan is out of date.
   def settled(:reset), do: {:error, :stale}
@@ -127,7 +167,8 @@ defmodule Atlas.Mcp.EditBlocks do
          {:ok, after_edit} <- Blocks.project(doc),
          :ok <- guard(before, after_edit, args),
          {:ok, update} <- Yex.encode_state_as_update(doc, vector) do
-      {:ok, update, inserted, warnings}
+      added = Document.mention_refs(after_edit) -- Document.mention_refs(before)
+      {:ok, update, inserted, warnings, added}
     else
       {:error, reason} when is_atom(reason) ->
         {:error, "the section has a shape that edits cannot change"}

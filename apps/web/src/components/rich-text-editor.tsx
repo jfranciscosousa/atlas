@@ -22,6 +22,7 @@ import type { EntrySection } from "../hooks/use-entries";
 import type { CharacterSection } from "../hooks/use-characters";
 
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
 import { revealBlock } from "../lib/reveal-block";
 import { summarize, type Person } from "../lib/presence";
@@ -43,6 +44,12 @@ import {
   mentionsToAtlasLinks,
   type BlockNoteDocument,
 } from "../lib/blocknote-schema";
+import {
+  AUDIENCE_HINTS,
+  AUDIENCE_LABELS,
+  audienceOf,
+  type AudienceState,
+} from "../lib/audience";
 import { useTheme } from "../hooks/use-theme";
 import { useSearchTarget } from "../hooks/use-search-target";
 import { useMentionEntries } from "../hooks/use-mentions";
@@ -85,6 +92,8 @@ type Props = {
   hint?: string;
   // The label stays for screen readers. Use it when a tab already shows the name.
   hideLabel?: boolean;
+  // What the audience label depends on: the hidden flag of a world entry, the visibility of a note.
+  audienceState?: AudienceState;
   // The text as last saved. It shows while the live connection starts.
   initial: BlockNoteDocument;
   // The editor stays read-only, whatever the server allows.
@@ -141,6 +150,7 @@ export default function RichTextEditor({
   label,
   hint,
   hideLabel = false,
+  audienceState,
   initial,
   readOnly = false,
   onReplace,
@@ -151,6 +161,7 @@ export default function RichTextEditor({
   const { resolvedTheme } = useTheme();
   const meta = () => queryClient.getDefaultOptions().mutations?.meta;
   const ref = `${kindName(parent.kind)}:${parent.id}:${section}`;
+  const audience = audienceOf(kindName(parent.kind), section, audienceState);
   const target = useSearchTarget();
   // A search hit that points into this section.
   const aimedBlock =
@@ -332,15 +343,24 @@ export default function RichTextEditor({
     <section id={`${id}-section`} aria-labelledby={`${id}-heading`}>
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2
-            id={`${id}-heading`}
-            className={cn(
-              "font-heading text-xl font-semibold tracking-tight",
-              hideLabel && "sr-only"
-            )}
-          >
-            {label}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2
+              id={`${id}-heading`}
+              className={cn(
+                "font-heading text-xl font-semibold tracking-tight",
+                hideLabel && "sr-only"
+              )}
+            >
+              {label}
+            </h2>
+            <Badge
+              id={`${id}-audience`}
+              variant={audience === "everyone" ? "secondary" : "outline"}
+              title={AUDIENCE_HINTS[audience]}
+            >
+              {AUDIENCE_LABELS[audience]}
+            </Badge>
+          </div>
           {hint && (
             <p className="mt-0.5 text-sm text-muted-foreground">{hint}</p>
           )}

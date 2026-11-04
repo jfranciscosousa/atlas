@@ -47,7 +47,7 @@ defmodule Atlas.Content do
       with one section. Exact matches rank first. Hidden entries and sections are never searched.
       Mentions use only names you may read; images use their name and caption, not image pixels.
       Each hit includes kind, id, title, campaign_id, campaign_name and matching sections with
-      block ids and snippets. A player_log hit also has session_id. Use get_* or read_blocks for more. kinds filters entry types
+      block ids and snippets, and the audience of each matching section. A player_log hit also has session_id. Use get_* or read_blocks for more. #{Atlas.Mcp.Guide.audience_reminder()} kinds filters entry types
       (#{Enum.join(Atlas.Kinds.names(), ", ")}). limit defaults to 20, at most 50.
       more is true when limit cuts the results. Archived notes and skills are excluded.
       A skill hit has no campaign_id and no campaign_name: skills are global and private to you.
@@ -66,7 +66,7 @@ defmodule Atlas.Content do
 
     tool :set_note_visibility, Atlas.Content.Note, :set_visibility,
       description:
-        "Set who reads a note: only_me (the owner alone), me_and_gm (the owner and the GM), character (also the player of the linked character, give character_id), or everyone (every member)."
+        "Set who reads a note: only_me (the owner alone), me_and_gm (the owner and the GM), character (also the player of the linked character, give character_id), or everyone (every member). A wider level publishes the body to more people at once: read the body first, and widen it only when the user asked you to."
 
     tool :list_notes, Atlas.Content.Note, :list,
       select: [:id, :title, :visibility],
@@ -76,7 +76,7 @@ defmodule Atlas.Content do
 
     tool :get_note, Atlas.Content.Note, :describe,
       description:
-        "Read a note: its title, state and body as blocks (see edit_blocks), with the revision of the body."
+        "Read a note: its title, state and body as blocks (see edit_blocks), with the revision and the audience of the body (body_audience). #{Atlas.Mcp.Guide.audience_reminder()}"
 
     tool :list_skills, Atlas.Content.Skill, :list,
       select: [:id, :name, :description],
@@ -110,7 +110,7 @@ defmodule Atlas.Content do
 
     tool :set_entry_hidden, Atlas.Content.Entry, :set_hidden,
       description:
-        "Show an entry to the players (hidden false) or hide it from them (hidden true). Only the GM may. A hidden entry is invisible to players everywhere: lists, search and mentions."
+        "Show an entry to the players (hidden false) or hide it from them (hidden true). Only the GM may. A hidden entry is invisible to players everywhere: lists, search and mentions. #{Atlas.Mcp.Guide.show_warning()}"
 
     tool :archive_entry, Atlas.Content.Entry, :archive,
       description: "Archive an entry. Entries are never deleted. Only the GM may."

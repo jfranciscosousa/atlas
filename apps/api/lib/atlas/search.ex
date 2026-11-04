@@ -97,6 +97,7 @@ defmodule Atlas.Search do
           found != [] do
         %{
           section: section,
+          audience: Atlas.Audience.of(kind, section, entry.audience_state),
           blocks:
             found
             |> Enum.take(@blocks_per_section)
