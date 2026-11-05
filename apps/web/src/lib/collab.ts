@@ -56,6 +56,14 @@ export function openDocument(
   let selfKey: string | undefined;
   const saves = createSaveTracker(handlers.onSaveState);
 
+  // Yjs calls update listeners in the order they were added. The provider sends an unthrottled
+  // update from its own listener, so this one must come first: the push must cover its own edit.
+  doc.on("update", (_update: Uint8Array, origin: unknown) => {
+    if (origin === provider) return;
+    saves.edit();
+    if (channel.state !== "joined") unsynced = true;
+  });
+
   // The provider ignores the reply to a push. Follow the replies of the pushes that store edits.
   const push = channel.push.bind(channel);
   channel.push = (event, payload, timeout) => {
@@ -138,12 +146,6 @@ export function openDocument(
       synced ? "synced" : everSynced ? "offline" : "connecting"
     );
   });
-  doc.on("update", (_update: Uint8Array, origin: unknown) => {
-    if (origin === provider) return;
-    saves.edit();
-    if (channel.state !== "joined") unsynced = true;
-  });
-
   const collab: Collab = {
     doc,
     provider,
