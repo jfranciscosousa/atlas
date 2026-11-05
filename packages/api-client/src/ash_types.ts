@@ -64,7 +64,7 @@ export type CampaignAttributesOnlySchema = {
 // Character Schema
 export type CharacterResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "campaignId" | "campaignName" | "claimPath" | "claimed" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "gmName" | "id" | "isMine" | "name" | "playerLabel" | "playerName" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
+  __primitiveFields: "campaignId" | "campaignName" | "claimPath" | "claimed" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "gmName" | "id" | "isMine" | "name" | "playerLabel" | "playerName" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion" | "status";
   campaignId: UUID;
   campaignName: string | null;
   claimPath: string | null;
@@ -81,6 +81,7 @@ export type CharacterResourceSchema = {
   secretNotesJson: Array<Record<string, unknown>>;
   secretNotesRevision: number;
   secretNotesSchemaVersion: number;
+  status: "active" | "dead" | "retired";
   campaign: { __type: "Relationship"; __resource: CampaignResourceSchema; };
 };
 
@@ -88,7 +89,7 @@ export type CharacterResourceSchema = {
 
 export type CharacterAttributesOnlySchema = {
   __type: "Resource";
-  __primitiveFields: "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "name" | "playerLabel" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
+  __primitiveFields: "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "id" | "name" | "playerLabel" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion" | "status";
   campaignId: UUID;
   descriptionJson: Array<Record<string, unknown>>;
   descriptionRevision: number;
@@ -99,6 +100,7 @@ export type CharacterAttributesOnlySchema = {
   secretNotesJson: Array<Record<string, unknown>>;
   secretNotesRevision: number;
   secretNotesSchemaVersion: number;
+  status: "active" | "dead" | "retired";
 };
 
 
@@ -717,6 +719,16 @@ export type CharacterFilterInput = {
     greaterThan?: number;
     lessThanOrEqual?: number;
     greaterThanOrEqual?: number;
+  };
+
+  status?: {
+    eq?: "active" | "dead" | "retired";
+    notEq?: "active" | "dead" | "retired";
+    in?: Array<"active" | "dead" | "retired">;
+    lessThan?: "active" | "dead" | "retired";
+    greaterThan?: "active" | "dead" | "retired";
+    lessThanOrEqual?: "active" | "dead" | "retired";
+    greaterThanOrEqual?: "active" | "dead" | "retired";
   };
 
   campaign?: CampaignFilterInput;
@@ -1495,7 +1507,7 @@ export type UserFilterField = (typeof userFilterFields)[number];
 export const campaignFilterFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isGm", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
 export type CampaignFilterField = (typeof campaignFilterFields)[number];
 
-export const characterFilterFields = ["campaignId", "campaignName", "claimPath", "claimed", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isMine", "name", "playerLabel", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "campaign"] as const;
+export const characterFilterFields = ["campaignId", "campaignName", "claimPath", "claimed", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isMine", "name", "playerLabel", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "status", "campaign"] as const;
 export type CharacterFilterField = (typeof characterFilterFields)[number];
 
 export const invitationFilterFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token", "campaign"] as const;
@@ -1533,7 +1545,7 @@ export type UserSortField = (typeof userSortFields)[number];
 export const campaignSortFields = ["descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isGm", "name", "progressRewardsJson", "progressRewardsRevision", "progressRewardsSchemaVersion"] as const;
 export type CampaignSortField = (typeof campaignSortFields)[number];
 
-export const characterSortFields = ["campaignId", "campaignName", "claimPath", "claimed", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isMine", "name", "playerLabel", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion"] as const;
+export const characterSortFields = ["campaignId", "campaignName", "claimPath", "claimed", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "gmName", "id", "isMine", "name", "playerLabel", "playerName", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "status"] as const;
 export type CharacterSortField = (typeof characterSortFields)[number];
 
 export const invitationSortFields = ["campaignId", "campaignName", "gmName", "id", "revokedAt", "token"] as const;

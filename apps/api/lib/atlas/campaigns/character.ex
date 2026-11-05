@@ -14,9 +14,9 @@ defmodule Atlas.Campaigns.Character do
   join action needs only a signed-in account. Joining creates the first character; joining again
   keeps it. A player adds more characters with `create`. Leaving and removal do not exist yet.
 
-  Every member reads a character and its description. The player and the GM write the
-  description and the name. The secret notes belong to the GM alone: no
-  other member reads or writes them.
+  Every member reads a character, its status, and its description. The player and the GM write the
+  description and the name. Only the GM sets the status (active, retired, or dead). The secret
+  notes belong to the GM alone: no other member reads or writes them.
   """
   use Ash.Resource,
     otp_app: :atlas,
@@ -117,12 +117,17 @@ defmodule Atlas.Campaigns.Character do
       accept [:name]
     end
 
+    update :set_status do
+      accept [:status]
+      validate present(:status)
+    end
+
     # Plain text for a language model, as the actor may read it. Used by the MCP tools.
     action :describe, :map do
       argument :id, :uuid, allow_nil?: false
 
       run {Atlas.Mcp.Describe,
-           fields: [:id, :name, :player_name, :claimed, :claim_path],
+           fields: [:id, :name, :status, :player_name, :claimed, :claim_path],
            load: [:player_name, :claimed, :claim_path],
            sections: [:description, :secret_notes]}
     end
@@ -170,6 +175,10 @@ defmodule Atlas.Campaigns.Character do
       authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
     end
 
+    policy action(:set_status) do
+      authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
+    end
+
     policy action(:save_description) do
       authorize_if expr(user_id == ^actor(:id))
       authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
@@ -186,6 +195,14 @@ defmodule Atlas.Campaigns.Character do
     attribute :name, :string do
       public? true
       constraints max_length: 200, trim?: true
+    end
+
+    # A dead or retired character keeps its text, notes, and mentions. Only the list groups it.
+    attribute :status, :atom do
+      allow_nil? false
+      default :active
+      public? true
+      constraints one_of: [:active, :retired, :dead]
     end
 
     # Shown as the player's name until someone claims the character.

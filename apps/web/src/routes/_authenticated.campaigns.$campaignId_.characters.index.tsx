@@ -17,6 +17,10 @@ import { Badge } from "../components/ui/badge";
 import { PageHeader } from "../components/page-header";
 import { NewUnclaimedCharacterButton } from "../components/new-unclaimed-character-button";
 import { NewCharacterButton } from "../components/new-character-button";
+import {
+  CHARACTER_STATUS_LABELS,
+  CharacterStatusBadge,
+} from "../components/character-status";
 import { InvitePlayersButton } from "../components/campaign-players";
 
 export const Route = createFileRoute(
@@ -47,6 +51,7 @@ function CharactersPage() {
   const { campaignId } = Route.useParams();
   const campaign = useCampaign(campaignId).data;
   const characters = useCharactersList(campaignId).data;
+  const active = characters.filter(character => character.status === "active");
 
   return (
     <div className="space-y-8">
@@ -87,36 +92,78 @@ function CharactersPage() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <ul id="character-list" className="grid gap-3">
-          {characters.map(character => (
-            <li key={character.id}>
-              <Link
-                id={`character-${character.id}`}
-                to="/campaigns/$campaignId/characters/$characterId"
-                params={{ campaignId, characterId: character.id }}
-                className="group flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs transition-all outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/30"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-heading text-lg font-semibold">
-                    {character.name ?? "Unnamed character"}
-                  </span>
-                  <span className="block truncate text-sm text-muted-foreground">
-                    Played by {character.playerName ?? "a player"}
-                  </span>
-                </span>
-                {character.isMine && <Badge variant="secondary">You</Badge>}
-                {!character.claimed && (
-                  <Badge variant="outline">Unclaimed</Badge>
-                )}
-                <ChevronRightIcon
-                  aria-hidden="true"
-                  className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+        <>
+          {active.length > 0 ? (
+            <CharacterList id="character-list" characters={active} />
+          ) : (
+            <p id="characters-no-active" className="text-muted-foreground">
+              No active characters.
+            </p>
+          )}
+          {/* Retired and dead characters keep everything. Only the list sets them apart. */}
+          {INACTIVE_STATUSES.map(status => {
+            const group = characters.filter(
+              character => character.status === status
+            );
+            if (group.length === 0) return null;
+            return (
+              <details key={status} id={`characters-${status}`}>
+                <summary className="cursor-pointer text-lg font-semibold select-none">
+                  {CHARACTER_STATUS_LABELS[status]} ({group.length})
+                </summary>
+                <CharacterList
+                  id={`character-list-${status}`}
+                  characters={group}
                 />
-              </Link>
-            </li>
-          ))}
-        </ul>
+              </details>
+            );
+          })}
+        </>
       )}
     </div>
+  );
+}
+
+const INACTIVE_STATUSES = ["retired", "dead"] as const;
+
+type ListedCharacter = ReturnType<typeof useCharactersList>["data"][number];
+
+function CharacterList({
+  id,
+  characters,
+}: {
+  id: string;
+  characters: ListedCharacter[];
+}) {
+  const { campaignId } = Route.useParams();
+  return (
+    <ul id={id} className="mt-3 grid gap-3">
+      {characters.map(character => (
+        <li key={character.id}>
+          <Link
+            id={`character-${character.id}`}
+            to="/campaigns/$campaignId/characters/$characterId"
+            params={{ campaignId, characterId: character.id }}
+            className="group flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs transition-all outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/30"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-heading text-lg font-semibold">
+                {character.name ?? "Unnamed character"}
+              </span>
+              <span className="block truncate text-sm text-muted-foreground">
+                Played by {character.playerName ?? "a player"}
+              </span>
+            </span>
+            <CharacterStatusBadge status={character.status} />
+            {character.isMine && <Badge variant="secondary">You</Badge>}
+            {!character.claimed && <Badge variant="outline">Unclaimed</Badge>}
+            <ChevronRightIcon
+              aria-hidden="true"
+              className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

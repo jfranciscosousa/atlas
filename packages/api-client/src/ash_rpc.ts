@@ -1055,6 +1055,82 @@ export async function validateRenameCharacter(
 }
 
 
+export type SetCharacterStatusInput = {
+  status?: "active" | "dead" | "retired";
+};
+
+export type SetCharacterStatusFields = UnifiedFieldSelection<CharacterResourceSchema>[];
+
+export type InferSetCharacterStatusResult<
+  Fields extends SetCharacterStatusFields | undefined,
+> = InferResult<CharacterResourceSchema, Fields>;
+
+export type SetCharacterStatusResult<Fields extends SetCharacterStatusFields | undefined = undefined> = | { success: true; data: InferSetCharacterStatusResult<Fields>; }
+| { success: false; errors: AshRpcError[]; }
+
+;
+
+/**
+ * Update an existing Character
+ *
+ * @ashActionType :update
+ */
+export async function setCharacterStatus<Fields extends SetCharacterStatusFields | undefined = undefined>(
+  config: {
+  tenant?: string;
+  identity: UUID;
+  input?: SetCharacterStatusInput;
+  fields?: Fields;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<SetCharacterStatusResult<Fields extends undefined ? [] : Fields>> {
+  const payload = {
+    action: "set_character_status",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    identity: config.identity,
+    input: config.input,
+    ...(config.fields !== undefined && { fields: config.fields })
+  };
+
+  return executeActionRpcRequest<SetCharacterStatusResult<Fields extends undefined ? [] : Fields>>(
+    payload,
+    config
+  );
+}
+
+
+/**
+ * Validate: Update an existing Character
+ *
+ * @ashActionType :update
+ * @validation true
+ */
+export async function validateSetCharacterStatus(
+  config: {
+  tenant?: string;
+  identity: UUID | string;
+  input?: SetCharacterStatusInput;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<ValidationResult> {
+  const payload = {
+    action: "set_character_status",
+    ...(config.tenant !== undefined && { tenant: config.tenant }),
+    identity: config.identity,
+    input: config.input
+  };
+
+  return executeValidationRpcRequest<ValidationResult>(
+    payload,
+    config
+  );
+}
+
+
 export type GetActiveInvitationInput = {
   campaignId: UUID;
 };

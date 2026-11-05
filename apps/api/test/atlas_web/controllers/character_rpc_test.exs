@@ -322,4 +322,99 @@ defmodule AtlasWeb.CharacterRpcTest do
                fields: ["id"]
              })
   end
+
+  describe "character status" do
+    setup ctx do
+      assert %{"data" => %{"token" => token}} = invite(ctx)
+      assert %{"success" => true, "data" => %{"id" => id}} = join(ctx.player, token)
+      {:ok, character_id: id}
+    end
+
+    defp set_status(who, id, status),
+      do:
+        rpc(who, "set_character_status", %{
+          identity: id,
+          input: %{status: status},
+          fields: ["id", "status"]
+        })
+
+    defp status_of(who, ctx) do
+      assert %{"success" => true, "data" => [%{"status" => status}]} =
+               rpc(who, "list_characters", %{
+                 input: %{campaignId: ctx.campaign_id},
+                 fields: ["id", "status"]
+               })
+
+      status
+    end
+
+    test "a character starts active, and every member reads the status", ctx do
+      assert status_of(ctx.gm, ctx) == "active"
+      assert status_of(ctx.player, ctx) == "active"
+    end
+
+    test "only the GM sets the status, in any direction", ctx do
+      for status <- ["retired", "dead", "active"] do
+        assert %{"success" => true, "data" => %{"status" => ^status}} =
+                 set_status(ctx.gm, ctx.character_id, status)
+
+        assert status_of(ctx.player, ctx) == status
+      end
+    end
+
+    test "a player cannot set the status of their own character", ctx do
+      refute set_status(ctx.player, ctx.character_id, "dead")["success"]
+      assert status_of(ctx.gm, ctx) == "active"
+    end
+
+    test "a stranger cannot set the status", ctx do
+      refute set_status(ctx.stranger, ctx.character_id, "dead")["success"]
+      assert status_of(ctx.gm, ctx) == "active"
+    end
+
+    test "the status must be a known value", ctx do
+      refute set_status(ctx.gm, ctx.character_id, "missing")["success"]
+      refute set_status(ctx.gm, ctx.character_id, nil)["success"]
+      assert status_of(ctx.gm, ctx) == "active"
+    end
+
+    test "a dead character keeps its name, its description, and its player", ctx do
+      assert %{"success" => true} =
+               rpc(ctx.player, "rename_character", %{
+                 identity: ctx.character_id,
+                 input: %{name: "Gale"},
+                 fields: ["id"]
+               })
+
+      assert {:ok, _} =
+               Atlas.Fixtures.save_section(
+                 Atlas.Campaigns.Character,
+                 ctx.character_id,
+                 :description,
+                 [paragraph("Lost at sea")],
+                 "player@example.com"
+               )
+
+      assert %{"success" => true} = set_status(ctx.gm, ctx.character_id, "dead")
+
+      assert %{"success" => true, "data" => character} =
+               rpc(ctx.player, "get_character", %{
+                 getBy: %{id: ctx.character_id},
+                 fields: ["name", "status", "playerName", "isMine", "descriptionJson"]
+               })
+
+      assert %{"name" => "Gale", "status" => "dead", "isMine" => true} = character
+      assert inspect(character["descriptionJson"]) =~ "Lost at sea"
+
+      # The player still edits the description and the name.
+      assert {:ok, _} =
+               Atlas.Fixtures.save_section(
+                 Atlas.Campaigns.Character,
+                 ctx.character_id,
+                 :description,
+                 [paragraph("Found again")],
+                 "player@example.com"
+               )
+    end
+  end
 end

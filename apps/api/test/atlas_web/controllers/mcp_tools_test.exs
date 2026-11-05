@@ -276,6 +276,44 @@ defmodule AtlasWeb.McpToolsTest do
              ok!(token_for(player), "get_character", %{input: %{id: unclaimed.id}})
   end
 
+  test "MCP and the app show and set a character status the same way", ctx do
+    {player, character} = join_player(ctx)
+    load = [:status]
+
+    assert %{"status" => "active"} =
+             ok!(ctx.token, "get_character", %{input: %{id: character.id}})
+
+    assert %{"status" => "dead"} =
+             ok!(ctx.token, "set_character_status", %{
+               id: character.id,
+               input: %{status: "dead"}
+             })
+
+    app = Ash.get!(Atlas.Campaigns.Character, character.id, actor: player, load: load)
+    assert app.status == :dead
+
+    assert [%{"status" => "dead"}] =
+             ok!(token_for(player), "list_characters", %{input: %{campaign_id: ctx.campaign.id}})
+
+    assert %{"status" => "dead"} =
+             ok!(token_for(player), "get_character", %{input: %{id: character.id}})
+
+    # Only the GM sets it, through MCP too.
+    assert {true, _} =
+             call(token_for(player), "set_character_status", %{
+               id: character.id,
+               input: %{status: "active"}
+             })
+
+    assert {true, _} =
+             call(ctx.token, "set_character_status", %{
+               id: character.id,
+               input: %{status: "missing"}
+             })
+
+    assert Ash.get!(Atlas.Campaigns.Character, character.id, actor: ctx.gm).status == :dead
+  end
+
   test "MCP and the app show a character note the same way", ctx do
     player = Fixtures.user()
 

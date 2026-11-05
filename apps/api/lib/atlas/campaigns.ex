@@ -28,6 +28,7 @@ defmodule Atlas.Campaigns do
       rpc_action :get_character, :read, get_by: [:id]
       rpc_action :create_character, :create
       rpc_action :rename_character, :rename
+      rpc_action :set_character_status, :set_status
       rpc_action :join_campaign, :join
       rpc_action :create_unclaimed_character, :create_unclaimed
       rpc_action :claim_character, :claim
@@ -55,6 +56,10 @@ defmodule Atlas.Campaigns do
 
     tool :rename_character, Atlas.Campaigns.Character, :rename,
       description: "Change the name of a character."
+
+    tool :set_character_status, Atlas.Campaigns.Character, :set_status,
+      description:
+        "Set the status of a character in a campaign you run as GM: active, retired, or dead. The character keeps its description, notes, and mentions. The app lists retired and dead characters apart from active ones."
 
     tool :create_unclaimed_character, Atlas.Campaigns.Character, :create_unclaimed,
       load: [:player_name, :claim_path],
@@ -87,14 +92,14 @@ defmodule Atlas.Campaigns do
         "Read a session: its details, the log and the GM-only prep as blocks (see edit_blocks), with their revisions and audiences (log_audience, prep_audience). The prep is a GM secret: do not copy it into the log or tell it to players. #{Atlas.Mcp.Guide.audience_reminder()}"
 
     tool :list_characters, Atlas.Campaigns.Character, :list,
-      select: [:id, :name],
+      select: [:id, :name, :status],
       load: [:player_name, :claimed],
       description:
-        "List the characters of a campaign, who plays them, and whether a player has claimed each one."
+        "List the characters of a campaign, their status (active, retired, or dead), who plays them, and whether a player has claimed each one."
 
     tool :get_character, Atlas.Campaigns.Character, :describe,
       description:
-        "Read a character: its name, player, description and GM-only secret notes as blocks (see edit_blocks), with their revisions and audiences (description_audience, secret_notes_audience). The secret notes are a GM secret: do not copy them into the description or tell them to players. The GM also gets the path of the claim link of an unclaimed character. #{Atlas.Mcp.Guide.audience_reminder()}"
+        "Read a character: its name, status, player, description and GM-only secret notes as blocks (see edit_blocks), with their revisions and audiences (description_audience, secret_notes_audience). The secret notes are a GM secret: do not copy them into the description or tell them to players. The GM also gets the path of the claim link of an unclaimed character. #{Atlas.Mcp.Guide.audience_reminder()}"
   end
 
   resources do

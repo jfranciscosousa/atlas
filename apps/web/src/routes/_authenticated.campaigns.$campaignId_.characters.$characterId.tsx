@@ -8,6 +8,7 @@ import {
   characterQueryOptions,
   useCharacter,
   useCharacterRename,
+  useCharacterSetStatus,
 } from "../hooks/use-characters";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import {
@@ -16,6 +17,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "../components/ui/tabs";
+import { NativeSelect } from "../components/ui/native-select";
 import { Input } from "../components/ui/input";
 import { buttonVariants } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -24,6 +26,11 @@ import { PageHeader } from "../components/page-header";
 import { NoteVisibilityBadge } from "../components/note-visibility";
 import { NewNoteButton } from "../components/new-note-button";
 import { ClaimLink } from "../components/claim-link";
+import {
+  CHARACTER_STATUS_LABELS,
+  CharacterStatusBadge,
+  type CharacterStatus,
+} from "../components/character-status";
 
 export const Route = createFileRoute(
   "/_authenticated/campaigns/$campaignId_/characters/$characterId"
@@ -79,6 +86,7 @@ function CharacterPage() {
   const campaign = useCampaign(campaignId).data;
   const character = useCharacter(characterId).data;
   const rename = useCharacterRename(campaignId, characterId);
+  const setStatus = useCharacterSetStatus(campaignId, characterId);
   const notes = useNotesList(campaignId, false).data.filter(
     note => note.characterId === characterId
   );
@@ -103,7 +111,36 @@ function CharacterPage() {
         ]}
         title={title}
         description={`Played by ${character.playerName ?? "a player"}${character.claimed ? "" : " (unclaimed)"}`}
+        actions={<CharacterStatusBadge status={character.status} />}
       />
+      {campaign.isGm && (
+        <div className="grid gap-2">
+          <label htmlFor="character-status-select" className="text-sm">
+            Status
+          </label>
+          <NativeSelect
+            id="character-status-select"
+            value={character.status}
+            disabled={setStatus.isPending}
+            onChange={event =>
+              setStatus.mutate(event.target.value as CharacterStatus)
+            }
+          >
+            {(Object.keys(CHARACTER_STATUS_LABELS) as CharacterStatus[]).map(
+              status => (
+                <option key={status} value={status}>
+                  {CHARACTER_STATUS_LABELS[status]}
+                </option>
+              )
+            )}
+          </NativeSelect>
+          {setStatus.error && (
+            <Alert id="character-status-error" variant="destructive">
+              <AlertDescription>{setStatus.error.message}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
       {character.claimPath && (
         <ClaimLink
           claimPath={character.claimPath}

@@ -6,6 +6,7 @@ import {
   getCharacter,
   listCharacters,
   renameCharacter,
+  setCharacterStatus,
 } from "@atlas/api-client";
 
 import { campaignsKey } from "./use-campaigns.ts";
@@ -20,7 +21,7 @@ export function charactersQueryOptions(campaignId: string) {
     run =>
       run({
         input: { campaignId },
-        fields: ["id", "name", "playerName", "isMine", "claimed"],
+        fields: ["id", "name", "status", "playerName", "isMine", "claimed"],
       }),
     { fallback: "Could not load the characters." }
   );
@@ -75,6 +76,7 @@ export function characterQueryOptions(characterId: string) {
           "id",
           "campaignId",
           "name",
+          "status",
           "playerName",
           "isMine",
           "claimed",
@@ -93,6 +95,23 @@ export function characterQueryOptions(characterId: string) {
 
 export function useCharacter(characterId: string) {
   return useSuspenseQuery(characterQueryOptions(characterId));
+}
+
+export function useCharacterSetStatus(campaignId: string, characterId: string) {
+  return useRpcMutation(
+    setCharacterStatus,
+    (run, status: "active" | "retired" | "dead") =>
+      run({ identity: characterId, input: { status }, fields: ["status"] }),
+    {
+      fallback: "Could not change the status.",
+      onSuccess: (updated, queryClient) =>
+        queryClient.setQueryData(
+          characterQueryOptions(characterId).queryKey,
+          character => character && { ...character, ...updated }
+        ),
+      invalidate: [charactersKey(campaignId)],
+    }
+  );
 }
 
 export function useCharacterRename(campaignId: string, characterId: string) {
