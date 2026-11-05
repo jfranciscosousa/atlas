@@ -16,6 +16,9 @@ defmodule AtlasWeb.EntryRpcTest do
     "kind",
     "name",
     "hidden",
+    "insertedAt",
+    "editedAt",
+    "lastSessionNumber",
     "campaignId",
     "archivedAt",
     "isGm",
@@ -69,6 +72,8 @@ defmodule AtlasWeb.EntryRpcTest do
       fields: @fields
     })["data"]
   end
+
+  defp instant(iso), do: iso |> DateTime.from_iso8601() |> elem(1)
 
   defp fetch(who, id), do: rpc(who, "get_entry", %{getBy: %{id: id}, fields: @fields})
 
@@ -201,6 +206,11 @@ defmodule AtlasWeb.EntryRpcTest do
 
           assert {entry["kind"], entry["name"], entry["hidden"]} ==
                    {mcp["kind"], mcp["name"], mcp["hidden"]}
+
+          assert {instant(entry["insertedAt"]), instant(entry["editedAt"])} ==
+                   {instant(mcp["inserted_at"]), instant(mcp["edited_at"])}
+
+          assert entry["lastSessionNumber"] == mcp["last_session_number"]
         end
 
         # An archived entry and a hidden one are in neither list for a player.
@@ -219,6 +229,84 @@ defmodule AtlasWeb.EntryRpcTest do
 
           assert text(app_entry["descriptionJson"]) == text(mcp["description"])
         end
+      end
+
+      test "every sort orders the list alike through the app and MCP (#{who})", ctx do
+        {app, token} = viewer(ctx, unquote(who))
+        gm = Atlas.Fixtures.user_by_email("gm@example.com")
+        id_of = fn name -> Enum.find(ctx.entries, &(&1["name"] == name))["id"] end
+
+        mention = fn name ->
+          [
+            %{
+              "id" => "p1",
+              "type" => "paragraph",
+              "props" => %{},
+              "content" => [
+                %{
+                  "type" => "mention",
+                  "props" => %{"kind" => "npc", "id" => id_of.(name)}
+                }
+              ],
+              "children" => []
+            }
+          ]
+        end
+
+        # Session 1 mentions Vex and session 2 mentions Spy.
+        for mentioned <- ["Vex", "Spy"] do
+          session =
+            Ash.create!(Atlas.Campaigns.Session, %{campaign_id: ctx.campaign_id}, actor: gm)
+
+          Atlas.Fixtures.save_section!(
+            Atlas.Campaigns.Session,
+            session.id,
+            :log,
+            mention.(mentioned),
+            gm
+          )
+        end
+
+        ids = fn list -> Enum.map(list, & &1["id"]) end
+        by_name = ids.(list(app, ctx))
+
+        for sort <- ~w(name last_edited last_created last_mentioned) do
+          app_ids = ids.(list(app, ctx, %{sort: sort}))
+
+          mcp_ids =
+            ids.(
+              ok!(token, "list_entries", %{input: %{campaign_id: ctx.campaign_id, sort: sort}})
+            )
+
+          assert app_ids == mcp_ids, sort
+          assert Enum.sort(app_ids) == Enum.sort(by_name), sort
+        end
+
+        # The sort changes the order. It never adds or hides an entry.
+        created = ids.(list(app, ctx, %{sort: "last_created"}))
+
+        assert created ==
+                 Enum.filter(Enum.reverse(Enum.map(ctx.entries, & &1["id"])), &(&1 in by_name))
+
+        # The session number shown on a row is the same on both surfaces: Vex is in session 1.
+        app_rows = list(app, ctx, %{sort: "last_mentioned"})
+
+        mcp_rows =
+          ok!(token, "list_entries", %{
+            input: %{campaign_id: ctx.campaign_id, sort: "last_mentioned"}
+          })
+
+        assert Enum.map(app_rows, & &1["lastSessionNumber"]) ==
+                 Enum.map(mcp_rows, & &1["last_session_number"])
+
+        assert Enum.find(app_rows, &(&1["id"] == id_of.("Vex")))["lastSessionNumber"] == 1
+
+        # Spy is hidden, so its mention in session 2 is not visible to a player.
+        mentioned = ids.(list(app, ctx, %{sort: "last_mentioned"}))
+
+        if unquote(who) == :player,
+          do: assert(hd(mentioned) == id_of.("Vex")),
+          else: assert(hd(mentioned) == id_of.("Spy"))
       end
 
       test "a player and the GM see the secret notes alike through the app and MCP (#{who})",

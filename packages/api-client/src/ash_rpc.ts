@@ -2071,6 +2071,7 @@ export type ListEntriesInput = {
   kind?: "creature" | "faction" | "item" | "location" | "npc" | "plot" | null;
   archived?: boolean;
   asPlayer?: boolean;
+  sort?: "last_created" | "last_edited" | "last_mentioned" | "name";
 };
 
 export type ListEntriesFields = UnifiedFieldSelection<EntryResourceSchema>[];

@@ -198,16 +198,19 @@ export type SessionAttributesOnlySchema = {
 // Entry Schema
 export type EntryResourceSchema = {
   __type: "Resource";
-  __primitiveFields: "archivedAt" | "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "hidden" | "id" | "isGm" | "kind" | "name" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion" | "shown";
+  __primitiveFields: "archivedAt" | "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "editedAt" | "hidden" | "id" | "insertedAt" | "isGm" | "kind" | "lastSessionNumber" | "name" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion" | "shown";
   archivedAt: UtcDateTimeUsec | null;
   campaignId: UUID;
   descriptionJson: Array<Record<string, unknown>>;
   descriptionRevision: number;
   descriptionSchemaVersion: number;
+  editedAt: UtcDateTimeUsec;
   hidden: boolean;
   id: UUID;
+  insertedAt: UtcDateTimeUsec;
   isGm: boolean | null;
   kind: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  lastSessionNumber: number | null;
   name: string;
   secretNotesJson: Array<Record<string, unknown>>;
   secretNotesRevision: number;
@@ -220,14 +223,16 @@ export type EntryResourceSchema = {
 
 export type EntryAttributesOnlySchema = {
   __type: "Resource";
-  __primitiveFields: "archivedAt" | "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "hidden" | "id" | "kind" | "name" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
+  __primitiveFields: "archivedAt" | "campaignId" | "descriptionJson" | "descriptionRevision" | "descriptionSchemaVersion" | "editedAt" | "hidden" | "id" | "insertedAt" | "kind" | "name" | "secretNotesJson" | "secretNotesRevision" | "secretNotesSchemaVersion";
   archivedAt: UtcDateTimeUsec | null;
   campaignId: UUID;
   descriptionJson: Array<Record<string, unknown>>;
   descriptionRevision: number;
   descriptionSchemaVersion: number;
+  editedAt: UtcDateTimeUsec;
   hidden: boolean;
   id: UUID;
+  insertedAt: UtcDateTimeUsec;
   kind: "creature" | "faction" | "item" | "location" | "npc" | "plot";
   name: string;
   secretNotesJson: Array<Record<string, unknown>>;
@@ -1082,6 +1087,16 @@ export type EntryFilterInput = {
     greaterThanOrEqual?: number;
   };
 
+  editedAt?: {
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
+  };
+
   hidden?: {
     eq?: boolean;
     notEq?: boolean;
@@ -1096,6 +1111,16 @@ export type EntryFilterInput = {
     greaterThan?: UUID;
     lessThanOrEqual?: UUID;
     greaterThanOrEqual?: UUID;
+  };
+
+  insertedAt?: {
+    eq?: UtcDateTimeUsec;
+    notEq?: UtcDateTimeUsec;
+    in?: Array<UtcDateTimeUsec>;
+    lessThan?: UtcDateTimeUsec;
+    greaterThan?: UtcDateTimeUsec;
+    lessThanOrEqual?: UtcDateTimeUsec;
+    greaterThanOrEqual?: UtcDateTimeUsec;
   };
 
   isGm?: {
@@ -1113,6 +1138,17 @@ export type EntryFilterInput = {
     greaterThan?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
     lessThanOrEqual?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
     greaterThanOrEqual?: "creature" | "faction" | "item" | "location" | "npc" | "plot";
+  };
+
+  lastSessionNumber?: {
+    isNil?: boolean;
+    eq?: number;
+    notEq?: number;
+    in?: Array<number>;
+    lessThan?: number;
+    greaterThan?: number;
+    lessThanOrEqual?: number;
+    greaterThanOrEqual?: number;
   };
 
   name?: {
@@ -1519,7 +1555,7 @@ export type PlayerLogFilterField = (typeof playerLogFilterFields)[number];
 export const sessionFilterFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title", "campaign"] as const;
 export type SessionFilterField = (typeof sessionFilterFields)[number];
 
-export const entryFilterFields = ["archivedAt", "campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "hidden", "id", "isGm", "kind", "name", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown", "campaign"] as const;
+export const entryFilterFields = ["archivedAt", "campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "editedAt", "hidden", "id", "insertedAt", "isGm", "kind", "lastSessionNumber", "name", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown", "campaign"] as const;
 export type EntryFilterField = (typeof entryFilterFields)[number];
 
 export const noteFilterFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "characterId", "characterName", "id", "isOwner", "ownerName", "title", "visibility", "campaign", "character"] as const;
@@ -1557,7 +1593,7 @@ export type PlayerLogSortField = (typeof playerLogSortFields)[number];
 export const sessionSortFields = ["campaignId", "id", "logJson", "logRevision", "logSchemaVersion", "number", "playedOn", "prepJson", "prepRevision", "prepSchemaVersion", "status", "title"] as const;
 export type SessionSortField = (typeof sessionSortFields)[number];
 
-export const entrySortFields = ["archivedAt", "campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "hidden", "id", "isGm", "kind", "name", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown"] as const;
+export const entrySortFields = ["archivedAt", "campaignId", "descriptionJson", "descriptionRevision", "descriptionSchemaVersion", "editedAt", "hidden", "id", "insertedAt", "isGm", "kind", "lastSessionNumber", "name", "secretNotesJson", "secretNotesRevision", "secretNotesSchemaVersion", "shown"] as const;
 export type EntrySortField = (typeof entrySortFields)[number];
 
 export const noteSortFields = ["archivedAt", "bodyJson", "bodyRevision", "bodySchemaVersion", "campaignId", "characterId", "characterName", "id", "isOwner", "ownerName", "title", "visibility"] as const;

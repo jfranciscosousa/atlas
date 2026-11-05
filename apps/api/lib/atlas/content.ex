@@ -99,7 +99,8 @@ defmodule Atlas.Content do
     tool :restore_skill, Atlas.Content.Skill, :restore, description: "Restore an archived skill."
 
     tool :list_entries, Atlas.Content.Entry, :list,
-      select: [:id, :kind, :name, :hidden],
+      select: [:id, :kind, :name, :hidden, :inserted_at, :edited_at],
+      load: [:last_session_number],
       description: Atlas.Mcp.Guide.list_entries()
 
     tool :get_entry, Atlas.Content.Entry, :describe, description: Atlas.Mcp.Guide.get_entry()

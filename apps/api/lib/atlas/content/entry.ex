@@ -25,6 +25,9 @@ defmodule Atlas.Content.Entry do
     table "entries"
     repo Atlas.Repo
 
+    # Existing rows get their last update as the date of their last edit.
+    migration_defaults edited_at: ~s|fragment("(now() AT TIME ZONE 'utc')")|
+
     custom_indexes do
       index [:campaign_id, :kind, :name]
     end
@@ -75,7 +78,14 @@ defmodule Atlas.Content.Entry do
                  (not (^arg(:as_player)) or hidden == false)
              )
 
-      prepare build(sort: [name: :asc, id: :asc])
+      argument :sort, :atom,
+        default: :name,
+        allow_nil?: false,
+        constraints: [one_of: [:name, :last_edited, :last_created, :last_mentioned]],
+        description:
+          "Order of the list. name: A to Z (default). last_edited: changed most recently first. last_created: created most recently first. last_mentioned: the entry in the latest session log first; entries that no log mentions come last."
+
+      prepare Atlas.Content.Entry.SortList
     end
 
     create :create do
@@ -174,6 +184,14 @@ defmodule Atlas.Content.Entry do
     end
   end
 
+  changes do
+    # Every update counts as an edit, except the GM-only secret notes: a player would learn when
+    # the GM wrote them from the date, and from the order of the list.
+    change atomic_update(:edited_at, expr(now())),
+      on: [:update],
+      where: [negate(action_is(:save_secret_notes))]
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -199,7 +217,16 @@ defmodule Atlas.Content.Entry do
 
     attribute :archived_at, :utc_datetime_usec, public?: true
 
-    create_timestamp :inserted_at
+    # The last change to what players may read: the name, the hidden flag, the archive state and
+    # the description. Saving the secret notes does not move it (see `changes`).
+    attribute :edited_at, :utc_datetime_usec do
+      allow_nil? false
+      default &DateTime.utc_now/0
+      writable? false
+      public? true
+    end
+
+    create_timestamp :inserted_at, public?: true
     update_timestamp :updated_at
   end
 
@@ -212,6 +239,10 @@ defmodule Atlas.Content.Entry do
   end
 
   calculations do
+    # The number of the latest session whose log mentions the entry, or nil. Every member reads
+    # the logs, so it is the same for the GM and for a player. Prep never counts.
+    calculate :last_session_number, :integer, Atlas.Content.Entry.LastSessionNumber, public?: true
+
     calculate :is_gm, :boolean, expr(exists(campaign, gm_id == ^actor(:id))), public?: true
 
     # True when players read this entry. A player gets true for every entry that is readable.

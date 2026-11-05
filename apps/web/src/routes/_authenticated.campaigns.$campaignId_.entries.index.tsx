@@ -2,9 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
+  CalendarPlusIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   GlobeIcon,
+  PencilLineIcon,
+  ScrollTextIcon,
   SearchIcon,
 } from "lucide-react";
 import {
@@ -23,11 +26,20 @@ import {
   parsePage,
 } from "../lib/pagination";
 import {
+  DEFAULT_ENTRY_SORT,
+  ENTRY_SORT_LABELS,
+  ENTRY_SORTS,
+  entrySortOf,
+  isEntrySort,
+  type EntrySort,
+} from "../lib/entry-sort";
+import {
   ENTRY_KIND_LABELS,
   ENTRY_KINDS,
   isEntryKind,
   type EntryKind,
 } from "../lib/entry-kinds";
+import { formatExactly, formatWhen } from "../lib/entry-dates";
 import { useScopedSearch } from "../hooks/use-search";
 import {
   entriesQueryOptions,
@@ -38,6 +50,7 @@ import {
 import { useDebounced } from "../hooks/use-debounced";
 import { campaignQueryOptions, useCampaign } from "../hooks/use-campaigns";
 import { Spinner } from "../components/ui/spinner";
+import { NativeSelect } from "../components/ui/native-select";
 import { Input } from "../components/ui/input";
 import {
   Empty,
@@ -52,6 +65,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { PageHeader } from "../components/page-header";
 import { NewEntryButton } from "../components/new-entry-button";
 import { Marked } from "../components/marked";
+import { EntryMeta } from "../components/entry-meta";
 import { ENTRY_ICONS } from "../components/entry-icons";
 import {
   EntryHiddenBadge,
@@ -66,17 +80,26 @@ type Search = {
   archived?: true;
   /** The words in the search box. */
   q?: string;
+  /** The order of the list. The default, by name, has none. */
+  sort?: EntrySort;
   /** From 2 up. The first page has none. */
   page?: number;
 };
 
-type View = { kind?: EntryKind; archived?: boolean; q?: string; page?: number };
+type View = {
+  kind?: EntryKind;
+  archived?: boolean;
+  q?: string;
+  sort?: EntrySort;
+  page?: number;
+};
 
 /** The URL of a view. A default value leaves no trace in the URL. */
-const searchOf = ({ kind, archived, q, page }: View): Search => ({
+const searchOf = ({ kind, archived, q, sort, page }: View): Search => ({
   ...(kind && { kind }),
   ...(archived && { archived: true as const }),
   ...(q && { q }),
+  ...(sort && sort !== DEFAULT_ENTRY_SORT && { sort }),
   ...(page && page > 1 && { page }),
 });
 
@@ -95,10 +118,13 @@ export const Route = createFileRoute(
       String(search.q).trim() && {
         q: String(search.q).trim().slice(0, QUERY_MAX_LENGTH),
       }),
+    ...(isEntrySort(search.sort) &&
+      search.sort !== DEFAULT_ENTRY_SORT && { sort: search.sort }),
     ...(parsePage(search.page) && { page: parsePage(search.page) }),
   }),
   loaderDeps: ({ search }) => ({
     archived: search.archived ?? false,
+    sort: entrySortOf(search.sort),
   }),
   // A kept route would not show entries created or edited since it loaded.
   gcTime: 0,
@@ -112,6 +138,7 @@ export const Route = createFileRoute(
         context.queryClient.fetchQuery({
           ...entriesQueryOptions(params.campaignId, {
             archived: deps.archived,
+            sort: deps.sort,
           }),
           staleTime: 0,
         }),
@@ -129,16 +156,23 @@ type Row = {
   name: string;
   /** Unknown when a hit is not in the loaded list. Then the row has no hidden controls. */
   hidden?: boolean;
+  /** Unknown for the same reason as `hidden`. */
+  insertedAt?: string;
+  editedAt?: string;
+  /** The latest session whose log mentions the entry. Null when none does. */
+  lastSessionNumber?: number | null;
   /** The text around the match. Only a search gives one. */
   snippet?: { section: string; text: string };
 };
 
 function EntriesPage() {
   const { campaignId } = Route.useParams();
-  const { kind, archived = false, q = "", page = 1 } = Route.useSearch();
+  const search = Route.useSearch();
+  const { kind, archived = false, q = "", page = 1 } = search;
+  const sort = entrySortOf(search.sort);
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId).data;
-  const all = useEntriesList(campaignId, { archived }).data;
+  const all = useEntriesList(campaignId, { archived, sort }).data;
   const archiveEntry = useEntryArchive(campaignId);
   const restoreEntry = useEntryRestore(campaignId);
   const archive = archived ? restoreEntry : archiveEntry;
@@ -164,7 +198,7 @@ function EntriesPage() {
     void navigate({
       to: "/campaigns/$campaignId/entries",
       params: { campaignId },
-      search: searchOf({ kind, archived, q: debounced }),
+      search: searchOf({ kind, archived, q: debounced, sort }),
       replace: true,
     });
   }, [debounced]);
@@ -194,6 +228,9 @@ function EntriesPage() {
             kind: hit.kind,
             name: hit.title,
             hidden: byId.get(hit.id)?.hidden,
+            insertedAt: byId.get(hit.id)?.insertedAt,
+            editedAt: byId.get(hit.id)?.editedAt,
+            lastSessionNumber: byId.get(hit.id)?.lastSessionNumber,
             ...(section &&
               text && { snippet: { section: section.section, text } }),
           },
@@ -204,7 +241,7 @@ function EntriesPage() {
     ? (found.data?.more ?? false)
     : current < pageCount(filtered.length);
   const firstRow = (current - 1) * PAGE_SIZE + 1;
-  const view = { kind, archived, q: searching ? q : undefined };
+  const view = { kind, archived, q: searching ? q : undefined, sort };
   const entriesLink = (to: View) => ({
     to: "/campaigns/$campaignId/entries" as const,
     params: { campaignId },
@@ -243,33 +280,56 @@ function EntriesPage() {
         }
       />
       {(all.length > 0 || input !== "") && (
-        <div role="search" className="relative max-w-md">
-          <SearchIcon
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            id="entry-search"
-            type="text"
-            aria-label={`Search ${noun.toLowerCase()}`}
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            maxLength={QUERY_MAX_LENGTH}
-            placeholder="Search names and text…"
-            value={input}
-            onChange={event => setInput(event.target.value)}
-            onKeyDown={event => {
-              if (event.key === "Escape" && input !== "") {
-                event.preventDefault();
-                setInput("");
-              }
+        <div className="flex flex-wrap items-center gap-3">
+          <div role="search" className="relative max-w-md min-w-52 flex-1">
+            <SearchIcon
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              id="entry-search"
+              type="text"
+              aria-label={`Search ${noun.toLowerCase()}`}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={QUERY_MAX_LENGTH}
+              placeholder="Search names and text…"
+              value={input}
+              onChange={event => setInput(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === "Escape" && input !== "") {
+                  event.preventDefault();
+                  setInput("");
+                }
+              }}
+              className="pr-9 pl-9"
+            />
+            {waiting && (
+              <Spinner className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground" />
+            )}
+          </div>
+          <NativeSelect
+            id="entry-sort"
+            aria-label="Sort entries"
+            className="w-auto"
+            value={sort}
+            disabled={searching}
+            title={
+              searching ? "Search results are ranked by relevance." : undefined
+            }
+            onChange={event => {
+              const next = event.target.value;
+              if (isEntrySort(next))
+                void navigate(entriesLink({ sort: next, page: undefined }));
             }}
-            className="pr-9 pl-9"
-          />
-          {waiting && (
-            <Spinner className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground" />
-          )}
+          >
+            {ENTRY_SORTS.map(option => (
+              <option key={option} value={option}>
+                {ENTRY_SORT_LABELS[option]}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
       )}
       <nav
@@ -416,6 +476,12 @@ function EntriesPage() {
                         <Marked text={entry.snippet.text} terms={terms} />
                       </span>
                     )}
+                    <EntryMeta
+                      editedAt={entry.editedAt}
+                      insertedAt={entry.insertedAt}
+                      lastSessionNumber={entry.lastSessionNumber}
+                      sort={sort}
+                    />
                   </span>
                   {campaign.isGm && entry.hidden !== undefined && (
                     <EntryHiddenBadge hidden={entry.hidden} />

@@ -13,6 +13,7 @@ import {
 import type { EntryKind } from "../lib/entry-kinds.ts";
 
 import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
+import { DEFAULT_ENTRY_SORT, type EntrySort } from "../lib/entry-sort.ts";
 
 // Matches every list of one campaign: by kind, archived, or as a player.
 const entriesKey = (campaignId: string) =>
@@ -25,13 +26,19 @@ type ListOptions = {
   kind?: EntryKind;
   archived?: boolean;
   asPlayer?: boolean;
+  sort?: EntrySort;
 };
 
 export function entriesQueryOptions(
   campaignId: string,
   options: ListOptions = {}
 ) {
-  const { kind, archived = false, asPlayer = false } = options;
+  const {
+    kind,
+    archived = false,
+    asPlayer = false,
+    sort = DEFAULT_ENTRY_SORT,
+  } = options;
   return rpcQuery(
     listEntries,
     run =>
@@ -42,8 +49,19 @@ export function entriesQueryOptions(
           // The GM lists what a player reads, for Preview as player.
           ...(asPlayer && { asPlayer }),
           ...(kind && { kind }),
+          // The default leaves no trace, so other lists keep one cache entry.
+          ...(sort !== DEFAULT_ENTRY_SORT && { sort }),
         },
-        fields: ["id", "kind", "name", "hidden", "shown"],
+        fields: [
+          "id",
+          "kind",
+          "name",
+          "hidden",
+          "shown",
+          "insertedAt",
+          "editedAt",
+          "lastSessionNumber",
+        ],
       }),
     { fallback: "Could not load the entries." }
   );
