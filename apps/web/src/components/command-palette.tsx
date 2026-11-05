@@ -28,11 +28,11 @@ import {
   DialogDescription,
   DialogTitle,
 } from "./ui/dialog";
+import { Marked } from "./marked";
 import { ENTRY_ICONS } from "./entry-icons";
 import { CampaignAvatar } from "./campaign-avatar";
 import {
   KIND_NAMES,
-  highlight,
   hitHref,
   queryTerms,
   sectionLabel,
@@ -40,6 +40,7 @@ import {
   type SearchKind,
 } from "../lib/search";
 import { useSearch } from "../hooks/use-search";
+import { useDebounced } from "../hooks/use-debounced";
 import { useCampaignsList } from "../hooks/use-campaigns";
 
 const QUERY_MAX_LENGTH = 200;
@@ -91,34 +92,6 @@ function hitItem(hit: SearchHit): Item {
       ? { campaign: { id: hit.id, name: hit.title } }
       : { icon: KIND_ICONS[hit.kind] }),
   };
-}
-
-function useDebounced(value: string, delay: number) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
-
-function Marked({ text, terms }: { text: string; terms: string[] }) {
-  return (
-    <>
-      {highlight(text, terms).map((part, index) =>
-        part.match ? (
-          <mark
-            key={index}
-            className="rounded-sm bg-gold/30 px-0.5 text-inherit"
-          >
-            {part.text}
-          </mark>
-        ) : (
-          part.text
-        )
-      )}
-    </>
-  );
 }
 
 function Kbd({ children }: { children: ReactNode }) {

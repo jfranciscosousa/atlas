@@ -102,6 +102,64 @@ defmodule Atlas.Content.EntrySurfacesTest do
       assert 2 == length(hits(ctx.gm, "zephyr"))
     end
 
+    test "the archived filter keeps active and archived entries apart", ctx do
+      entry(ctx.gm, ctx.campaign, :npc, "Wren active", %{shown: true})
+      old = entry(ctx.gm, ctx.campaign, :npc, "Wren archived", %{shown: true})
+      Ash.update!(old, %{}, action: :archive, actor: ctx.gm)
+
+      kinds = Atlas.Content.EntrySpec.kinds()
+
+      assert [{:npc, "Wren active"}] =
+               hits(ctx.gm, "wren", %{kinds: kinds, archived: false})
+
+      assert [{:npc, "Wren archived"}] =
+               hits(ctx.gm, "wren", %{kinds: kinds, archived: true})
+
+      assert 2 == length(hits(ctx.gm, "wren", %{kinds: kinds}))
+    end
+
+    test "the archived filter never shows a player a hidden entry", ctx do
+      entry(ctx.gm, ctx.campaign, :npc, "Quill active")
+      hidden = entry(ctx.gm, ctx.campaign, :npc, "Quill archived")
+      shown = entry(ctx.gm, ctx.campaign, :npc, "Quill kept", %{shown: true})
+      for old <- [hidden, shown], do: Ash.update!(old, %{}, action: :archive, actor: ctx.gm)
+
+      for archived <- [nil, false, true] do
+        extra = if archived == nil, do: %{}, else: %{archived: archived}
+        titles = for {_, title} <- hits(ctx.player, "quill", extra), do: title
+        refute "Quill active" in titles
+        refute "Quill archived" in titles
+      end
+
+      assert [{:npc, "Quill kept"}] = hits(ctx.player, "quill", %{archived: true})
+      assert [] = hits(ctx.player, "quill", %{archived: false})
+    end
+
+    test "offset reads the next page of the ranked hits, and more says when it ends", ctx do
+      for n <- 1..5, do: entry(ctx.gm, ctx.campaign, :npc, "Pilot #{n}", %{shown: true})
+
+      page = fn offset -> search(ctx.gm, "pilot", %{limit: 2, offset: offset}) end
+      all = for hit <- search(ctx.gm, "pilot", %{limit: 5}).hits, do: hit.id
+
+      assert %{more: true, hits: first} = page.(0)
+      assert %{more: true, hits: second} = page.(2)
+      assert %{more: false, hits: third} = page.(4)
+      assert all == Enum.map(first ++ second ++ third, & &1.id)
+
+      assert %{more: false, hits: []} = page.(6)
+    end
+
+    test "offset never reveals a hidden entry to a player", ctx do
+      for n <- 1..3, do: entry(ctx.gm, ctx.campaign, :npc, "Lark #{n}")
+      entry(ctx.gm, ctx.campaign, :npc, "Lark shown", %{shown: true})
+
+      assert %{more: false, hits: [%{title: "Lark shown"}]} =
+               search(ctx.player, "lark", %{limit: 1})
+
+      assert %{more: false, hits: []} = search(ctx.player, "lark", %{limit: 1, offset: 1})
+      assert %{more: true} = search(ctx.gm, "lark", %{limit: 1, offset: 2})
+    end
+
     test "the title ranks before text, and entries rank with other kinds", ctx do
       entry(ctx.gm, ctx.campaign, :npc, "Mirelda", %{shown: true})
 

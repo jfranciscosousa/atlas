@@ -24,7 +24,13 @@ defmodule Atlas.Search do
       if args[:campaign_id] && campaigns == [] do
         {:error, error(:campaign_id, "is not a campaign that you can read")}
       else
-        entries = Enum.filter(all_entries, &(&1.kind in kinds and not archived_skill?(&1)))
+        entries =
+          Enum.filter(
+            all_entries,
+            &(&1.kind in kinds and not archived_skill?(&1) and
+                archived_match?(&1, args[:archived]))
+          )
+
         labels = Reader.labels(all_entries)
         matches = Reader.matches(entries, terms, actor, labels)
         sections = Reader.sections(matches) |> Enum.group_by(&{&1.kind, &1.id})
@@ -66,9 +72,10 @@ defmodule Atlas.Search do
          %{
            hits:
              hits
+             |> Enum.drop(args.offset)
              |> Enum.take(args.limit)
              |> Enum.map(&finish_hit(&1, cache)),
-           more: length(hits) > args.limit
+           more: length(hits) > args.offset + args.limit
          }}
       end
     else
@@ -78,6 +85,9 @@ defmodule Atlas.Search do
 
   # A skill is archived to retire it. A note or a world entry is archived to leave the lists only.
   defp archived_skill?(entry), do: entry.kind == :skill and entry.archived?
+
+  defp archived_match?(_entry, nil), do: true
+  defp archived_match?(entry, archived), do: entry.archived? == archived
 
   defp query_terms([]), do: {:error, {:query, "must contain letters or numbers"}}
   defp query_terms(_terms), do: :ok

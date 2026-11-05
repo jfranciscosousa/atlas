@@ -17,7 +17,18 @@ defmodule Atlas.Search.Request do
 
       argument :kinds, {:array, :atom}, constraints: [items: [one_of: Atlas.Kinds.kinds()]]
 
+      # Omit it to find archived and active notes and world entries alike. True finds only the
+      # archived ones, false only the active ones.
+      argument :archived, :boolean
+
       argument :limit, :integer, allow_nil?: false, default: 20, constraints: [min: 1, max: 50]
+
+      # Skips the first hits of the ranked list, to read the next page.
+      argument :offset, :integer,
+        allow_nil?: false,
+        default: 0,
+        constraints: [min: 0, max: 10_000]
+
       run Atlas.Search
     end
   end

@@ -3630,7 +3630,9 @@ export type SearchInput = {
   campaignId?: UUID | null;
   query: string;
   kinds?: Array<"campaign" | "character" | "creature" | "faction" | "item" | "location" | "note" | "npc" | "player_log" | "plot" | "session" | "skill"> | null;
+  archived?: boolean | null;
   limit?: number;
+  offset?: number;
 };
 
 export type InferSearchResult = Record<string, any>;

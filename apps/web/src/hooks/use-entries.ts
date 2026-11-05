@@ -6,6 +6,7 @@ import {
   listEntries,
   renameEntry,
   restoreEntry,
+  search,
   setEntryHidden,
 } from "@atlas/api-client";
 
@@ -16,6 +17,9 @@ import { rpcKey, rpcQuery, useRpcMutation } from "../lib/rpc-query.ts";
 // Matches every list of one campaign: by kind, archived, or as a player.
 const entriesKey = (campaignId: string) =>
   rpcKey(listEntries, { input: { campaignId } });
+
+// Every cached search. A rename, a hidden flag or an archive changes what a search finds.
+const searchesKey = () => rpcKey(search);
 
 type ListOptions = {
   kind?: EntryKind;
@@ -108,7 +112,7 @@ export function useEntryRename(campaignId: string, entryId: string) {
     {
       fallback: "Could not rename the entry.",
       onSuccess: patchEntry(entryId),
-      invalidate: [entriesKey(campaignId)],
+      invalidate: [entriesKey(campaignId), searchesKey()],
     }
   );
 }
@@ -126,7 +130,7 @@ export function useEntryHidden(campaignId: string, entryId: string) {
     {
       fallback: "Could not update the entry.",
       onSuccess: patchEntry(entryId),
-      invalidate: [entriesKey(campaignId)],
+      invalidate: [entriesKey(campaignId), searchesKey()],
     }
   );
 }
@@ -144,7 +148,7 @@ export function useEntryArchive(campaignId: string, openEntryId?: string) {
       fallback: "Could not update the entry.",
       onSuccess: (data, queryClient) =>
         openEntryId && patchEntry(openEntryId)(data, queryClient),
-      invalidate: [entriesKey(campaignId)],
+      invalidate: [entriesKey(campaignId), searchesKey()],
     }
   );
 }
@@ -158,7 +162,7 @@ export function useEntryRestore(campaignId: string, openEntryId?: string) {
       fallback: "Could not update the entry.",
       onSuccess: (data, queryClient) =>
         openEntryId && patchEntry(openEntryId)(data, queryClient),
-      invalidate: [entriesKey(campaignId)],
+      invalidate: [entriesKey(campaignId), searchesKey()],
     }
   );
 }

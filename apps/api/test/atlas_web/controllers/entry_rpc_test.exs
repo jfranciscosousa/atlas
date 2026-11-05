@@ -268,6 +268,48 @@ defmodule AtlasWeb.EntryRpcTest do
           assert [_] = player_hits.("lich")
         end
       end
+
+      test "a filtered, paged search shows the same hits to the #{who}", ctx do
+        {app, token} = viewer(ctx, unquote(who))
+        kinds = ~w(npc location faction item creature plot)
+
+        inputs = [
+          %{query: "guild", kinds: kinds},
+          %{query: "guild", kinds: kinds, archived: false},
+          %{query: "guild", kinds: kinds, limit: 1},
+          %{query: "guild", kinds: kinds, limit: 1, offset: 1},
+          %{query: "guild", kinds: kinds, limit: 1, offset: 2},
+          %{query: "blade", kinds: kinds, archived: true},
+          %{query: "blade", kinds: kinds, archived: false},
+          %{query: "spy", kinds: kinds, archived: false}
+        ]
+
+        for input <- inputs do
+          app_search = rpc(app, "search", %{input: input})["data"]
+          mcp_search = ok!(token, "search", %{input: input})
+
+          assert Enum.map(app_search["hits"], &{&1["kind"], &1["id"], &1["archived"]}) ==
+                   Enum.map(mcp_search["hits"], &{&1["kind"], &1["id"], &1["archived"]}),
+                 inspect(input)
+
+          assert app_search["more"] == mcp_search["more"], inspect(input)
+        end
+
+        titles = fn archived, query ->
+          input = %{query: query, kinds: kinds, archived: archived}
+          for hit <- rpc(app, "search", %{input: input})["data"]["hits"], do: hit["title"]
+        end
+
+        # The archived filter splits the readable entries. A hidden entry stays out for a player.
+        assert ["Old blade"] = titles.(true, "blade")
+        assert [] = titles.(false, "blade")
+
+        if unquote(who) == :player do
+          assert [] = titles.(false, "spy")
+        else
+          assert ["Spy"] = titles.(false, "spy")
+        end
+      end
     end
 
     test "a mention shows the same label in the app list and through MCP", ctx do

@@ -49,7 +49,8 @@ defmodule Atlas.Content do
       Each hit includes kind, id, title, archived, campaign_id, campaign_name and matching sections with
       block ids and snippets, and the audience of each matching section. A player_log hit also has session_id. Use get_* or read_blocks for more. #{Atlas.Mcp.Guide.audience_reminder()} kinds filters entry types
       (#{Enum.join(Atlas.Kinds.names(), ", ")}). limit defaults to 20, at most 50.
-      more is true when limit cuts the results. Archived notes and world entries are searched like the others: archived is true for them. Archived skills are excluded.
+      offset skips that many hits of the ranked list, to read the next page.
+      more is true when hits remain after limit and offset. Archived notes and world entries are searched like the others: archived is true for them. Set the archived argument to true to find only archived notes and world entries, or to false to find only active ones. Archived skills are excluded.
       A skill hit has no campaign_id and no campaign_name: skills are global and private to you.
       """
 
