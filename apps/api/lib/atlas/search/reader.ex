@@ -64,7 +64,7 @@ defmodule Atlas.Search.Reader do
           world,
           &(entry(&1.kind, &1, &1.campaign_id, &1.name)
             |> Map.put(:archived?, not is_nil(&1.archived_at))
-            |> Map.put(:audience_state, Map.take(&1, [:hidden, :archived_at])))
+            |> Map.put(:audience_state, Map.take(&1, [:hidden])))
         ) ++
         Enum.map(logs, fn log ->
           session = Map.fetch!(session_map, log.session_id)
@@ -114,8 +114,7 @@ defmodule Atlas.Search.Reader do
     entries
     |> Enum.filter(&(&1.kind in Atlas.Kinds.mention_kinds()))
     |> Map.new(fn entry ->
-      {{entry.campaign_id, to_string(entry.kind), entry.id},
-       if(entry.archived?, do: "Deleted entry", else: entry.title)}
+      {{entry.campaign_id, to_string(entry.kind), entry.id}, entry.title}
     end)
   end
 

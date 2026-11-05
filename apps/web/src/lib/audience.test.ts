@@ -11,21 +11,11 @@ test("the secret sections are GM only, wherever they are", () => {
     assert.equal(audienceOf(kind, "secret_notes"), "gm_only");
 });
 
-test("a world entry description is GM only until the GM shows the entry", () => {
+test("a world entry description is GM only until the GM shows the entry, archived or not", () => {
   for (const kind of ENTRY_KINDS) {
+    assert.equal(audienceOf(kind, "description", { hidden: true }), "gm_only");
     assert.equal(
-      audienceOf(kind, "description", { hidden: true, archivedAt: null }),
-      "gm_only"
-    );
-    assert.equal(
-      audienceOf(kind, "description", {
-        hidden: false,
-        archivedAt: "2026-01-01T00:00:00Z",
-      }),
-      "gm_only"
-    );
-    assert.equal(
-      audienceOf(kind, "description", { hidden: false, archivedAt: null }),
+      audienceOf(kind, "description", { hidden: false }),
       "everyone"
     );
   }

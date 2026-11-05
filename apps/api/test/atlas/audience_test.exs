@@ -36,10 +36,10 @@ defmodule Atlas.AudienceTest do
         do: assert(Audience.of(kind, :secret_notes, state) == :gm_only)
   end
 
-  test "a world entry description is for the GM alone until the GM shows the entry" do
+  test "a world entry description is for the GM alone until the GM shows the entry, archived or not" do
     for kind <- Atlas.Content.EntrySpec.kinds() do
       assert Audience.of(kind, :description, @states.hidden) == :gm_only
-      assert Audience.of(kind, :description, @states.archived) == :gm_only
+      assert Audience.of(kind, :description, @states.archived) == :everyone
       assert Audience.of(kind, :description, @states.shown) == :everyone
     end
   end

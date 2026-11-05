@@ -40,7 +40,6 @@ export const FIXED_AUDIENCE: Record<string, Audience> = {
 
 export type AudienceState = {
   hidden?: boolean;
-  archivedAt?: string | null;
   visibility?: Exclude<Audience, "gm_only">;
 };
 
@@ -60,6 +59,6 @@ export function audienceOf(
     return state.visibility ?? "only_me";
   if (section === "secret_notes") return "gm_only";
   if (section === "description")
-    return state.hidden === false && !state.archivedAt ? "everyone" : "gm_only";
+    return state.hidden === false ? "everyone" : "gm_only";
   return "only_me";
 }

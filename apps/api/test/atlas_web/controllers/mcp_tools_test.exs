@@ -1179,7 +1179,7 @@ defmodule AtlasWeb.McpToolsTest do
       assert hd(hits)["id"] == note.id
     end
 
-    test "global fuzzy search excludes private notes, archived notes and restricted mention names",
+    test "global fuzzy search excludes private notes and restricted mention names, and finds archived notes",
          ctx do
       private =
         Ash.create!(
@@ -1212,7 +1212,10 @@ defmodule AtlasWeb.McpToolsTest do
         }
       ])
 
-      assert %{"hits" => [], "more" => false} =
+      # The GM cannot read the private note. The archived note is still found.
+      archived_id = archived.id
+
+      assert %{"hits" => [%{"id" => ^archived_id, "archived" => true}], "more" => false} =
                ok!(ctx.token, "search", %{input: %{query: "obsidan", limit: 1}})
 
       assert %{"hits" => player_hits} =
@@ -1220,6 +1223,7 @@ defmodule AtlasWeb.McpToolsTest do
 
       assert Enum.any?(player_hits, &(&1["id"] == private.id))
       assert Enum.any?(player_hits, &(&1["id"] == ctx.session.id))
+      assert Enum.any?(player_hits, &(&1["id"] == archived.id and &1["archived"] == true))
 
       assert %{"hits" => [], "more" => false} =
                ok!(token_for(ctx.player), "search", %{input: %{query: "dragn"}})

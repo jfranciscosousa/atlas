@@ -11,7 +11,8 @@ defmodule Atlas.Content.Note do
     * `:everyone` - every member reads and edits the body.
 
   The owner or the GM changes the visibility and may link a character. The GM never reads a
-  player's `:only_me` note. Other members never see an archived note.
+  player's `:only_me` note. Archiving removes a note from the default list only: whoever read it
+  before still reads it.
   """
   use Ash.Resource,
     otp_app: :atlas,
@@ -64,7 +65,7 @@ defmodule Atlas.Content.Note do
       accept [:title]
     end
 
-    # Notes are archived, never deleted. An archived note keeps its ID and stays readable by link.
+    # Notes are archived, never deleted. An archived note keeps its ID and its readers.
     update :archive do
       require_atomic? false
       change set_attribute(:archived_at, &DateTime.utc_now/0)
@@ -93,7 +94,7 @@ defmodule Atlas.Content.Note do
 
   # The owner and the GM see and manage a note, except the GM never reads a player's `:only_me`
   # note. The player of the linked character reads it at `:character`, and every member reads it
-  # at `:everyone`; both edit its body. Everyone else gets not found.
+  # at `:everyone`; both edit its body, unless the note is archived. Everyone else gets not found.
   policies do
     policy always() do
       forbid_unless actor_present()
@@ -107,14 +108,10 @@ defmodule Atlas.Content.Note do
     policy action_type(:read) do
       authorize_if expr(owner_id == ^actor(:id))
       authorize_if expr(visibility != :only_me and exists(campaign, gm_id == ^actor(:id)))
+      authorize_if expr(visibility == :character and exists(character, user_id == ^actor(:id)))
 
       authorize_if expr(
-                     visibility == :character and is_nil(archived_at) and
-                       exists(character, user_id == ^actor(:id))
-                   )
-
-      authorize_if expr(
-                     visibility == :everyone and is_nil(archived_at) and
+                     visibility == :everyone and
                        exists(campaign.characters, user_id == ^actor(:id))
                    )
     end

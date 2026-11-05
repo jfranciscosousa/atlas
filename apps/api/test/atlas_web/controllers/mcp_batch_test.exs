@@ -162,8 +162,8 @@ defmodule AtlasWeb.McpBatchTest do
       assert [hidden_r, shown_r, archived_r, private_r, public_r, skill_r, missing_r] =
                get_many(ctx.player_token, refs)
 
-      # Hidden, archived, private, other people's and missing records give the same answer.
-      for result <- [hidden_r, archived_r, private_r, skill_r, missing_r] do
+      # Hidden, private, other people's and missing records give the same answer.
+      for result <- [hidden_r, private_r, skill_r, missing_r] do
         assert %{"error" => @not_found} = Map.take(result, ["error"])
         refute Map.has_key?(result, "record")
       end
@@ -172,6 +172,10 @@ defmodule AtlasWeb.McpBatchTest do
                ok!(ctx.player_token, "get_entry", %{input: %{id: shown.id}})
 
       assert %{"secret_notes" => nil, "secret_notes_revision" => nil} = shown_r["record"]
+
+      # An archived entry that is shown keeps its readers.
+      assert archived_r["record"] ==
+               ok!(ctx.player_token, "get_entry", %{input: %{id: archived.id}})
 
       assert public_r["record"] ==
                ok!(ctx.player_token, "get_note", %{input: %{id: public}})

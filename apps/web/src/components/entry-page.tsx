@@ -48,7 +48,7 @@ export function EntryPage({
   const RichTextEditor = getEditor();
   const canManage = !!campaign.isGm && !preview;
   const kind = ENTRY_KIND_LABELS[entry.kind];
-  const audienceState = { hidden: entry.hidden, archivedAt: entry.archivedAt };
+  const audienceState = { hidden: entry.hidden };
 
   const commitName = () => {
     const next = name.trim();
@@ -129,20 +129,26 @@ export function EntryPage({
           )
         }
       />
-      {canManage && entry.archivedAt && (
+      {entry.archivedAt && (
         <Alert id="entry-archived">
           <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-            This entry is archived. Players do not see it.
-            <Button
-              id="entry-restore"
-              variant="outline"
-              size="sm"
-              disabled={restore.isPending}
-              onClick={() => restore.mutate(entry.id)}
-            >
-              <ArchiveRestoreIcon aria-hidden="true" data-icon="inline-start" />
-              Restore
-            </Button>
+            This entry is archived. It is not in the lists, but it can still be
+            opened, mentioned and searched.
+            {canManage && (
+              <Button
+                id="entry-restore"
+                variant="outline"
+                size="sm"
+                disabled={restore.isPending}
+                onClick={() => restore.mutate(entry.id)}
+              >
+                <ArchiveRestoreIcon
+                  aria-hidden="true"
+                  data-icon="inline-start"
+                />
+                Restore
+              </Button>
+            )}
           </AlertDescription>
         </Alert>
       )}

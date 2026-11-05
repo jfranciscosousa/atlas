@@ -137,7 +137,7 @@ defmodule AtlasWeb.EntryRpcTest do
     assert %{"data" => %{"name" => "Vex"}} = fetch(ctx.gm, id)
   end
 
-  test "a player cannot read a hidden or archived entry by ID", ctx do
+  test "a player cannot read a hidden entry by ID, archived or not", ctx do
     hidden = create(ctx, "npc", "Spy")
     shown = create(ctx, "npc", "Vex")
     show(ctx, shown["id"])
@@ -146,7 +146,9 @@ defmodule AtlasWeb.EntryRpcTest do
     assert %{"success" => true} = fetch(ctx.player, shown["id"])
 
     act(ctx.gm, "archive_entry", shown["id"])
-    assert %{"success" => false} = fetch(ctx.player, shown["id"])
+    act(ctx.gm, "archive_entry", hidden["id"])
+    assert %{"success" => true} = fetch(ctx.player, shown["id"])
+    assert %{"success" => false} = fetch(ctx.player, hidden["id"])
   end
 
   describe "the app and MCP match" do
@@ -251,7 +253,7 @@ defmodule AtlasWeb.EntryRpcTest do
           assert app_hits == mcp_hits, query
         end
 
-        # The hidden spy and the GM-only notes never reach a player.
+        # The hidden spy and the GM-only notes never reach a player. An archived shown entry does.
         player_hits = fn query ->
           rpc(app, "search", %{input: %{query: query}})["data"]["hits"]
         end
@@ -259,7 +261,7 @@ defmodule AtlasWeb.EntryRpcTest do
         if unquote(who) == :player do
           assert [] = player_hits.("spy")
           assert [] = player_hits.("lich")
-          assert [] = player_hits.("blade")
+          assert [%{"kind" => "item", "archived" => true}] = player_hits.("blade")
           assert [%{"kind" => "npc"}] = player_hits.("vex")
         else
           assert [_] = player_hits.("spy")

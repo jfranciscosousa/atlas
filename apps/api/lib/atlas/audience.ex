@@ -13,7 +13,7 @@ defmodule Atlas.Audience do
 
   `of/3` has one clause for each section of each kind, and no fallback. A new section raises until
   someone decides its audience here. A hidden world entry has the audience `:gm_only` in its
-  description, because only the GM reads it until the GM shows it.
+  description, because only the GM reads it until the GM shows it. Archiving changes no audience.
 
   The web app shows the same labels (`labels/0`). `apps/web/src/lib/audience.ts` repeats them, and
   `Atlas.AudienceTest` fails when the two differ.
@@ -48,7 +48,7 @@ defmodule Atlas.Audience do
 
   @doc """
   The audience of one section. `state` holds what the audience depends on: `:visibility` of a note,
-  `:hidden` and `:archived_at` of a world entry. Other kinds ignore it.
+  `:hidden` of a world entry. Other kinds ignore it.
   """
   @spec of(atom(), atom(), map()) :: t()
   def of(kind, section, state \\ %{})
@@ -65,9 +65,8 @@ defmodule Atlas.Audience do
   def of(:note, :body, %{visibility: visibility}), do: visibility
   def of(kind, :secret_notes, _state) when kind in @entry_kinds, do: :gm_only
 
-  def of(kind, :description, %{hidden: hidden, archived_at: archived_at})
-      when kind in @entry_kinds,
-      do: if(hidden or not is_nil(archived_at), do: :gm_only, else: :everyone)
+  def of(kind, :description, %{hidden: hidden}) when kind in @entry_kinds,
+    do: if(hidden, do: :gm_only, else: :everyone)
 
   @doc "The audience of a section of a record that was read."
   @spec of_record(struct(), atom()) :: t()
@@ -75,7 +74,7 @@ defmodule Atlas.Audience do
     of(
       Kinds.record_kind(resource, record),
       section,
-      Map.take(record, [:hidden, :archived_at, :visibility])
+      Map.take(record, [:hidden, :visibility])
     )
   end
 end

@@ -270,15 +270,16 @@ defmodule AtlasWeb.NoteRpcTest do
              rpc(ctx.gm, "get_note", %{getBy: %{id: id}, fields: @fields})
   end
 
-  test "other players never see an archived note; the owner and the GM do", ctx do
+  test "an archived note leaves the default list, and its readers still read it", ctx do
     assert %{"data" => %{"id" => id}} = create(ctx.ann, ctx.campaign_id)
     assert %{"success" => true} = set_visibility(ctx.ann, id, "everyone")
     assert readable?(ctx.bob, id)
 
     assert %{"success" => true} = note_action(ctx.ann, "archive_note", id)
 
-    refute readable?(ctx.bob, id)
-    assert [] = list(ctx.bob, ctx.campaign_id, true)
+    assert readable?(ctx.bob, id)
+    assert [] = list(ctx.bob, ctx.campaign_id)
+    assert [%{"id" => ^id}] = list(ctx.bob, ctx.campaign_id, true)
     assert [%{"id" => ^id}] = list(ctx.ann, ctx.campaign_id, true)
     assert [%{"id" => ^id}] = list(ctx.gm, ctx.campaign_id, true)
     assert {:error, %Ash.Error.Forbidden{}} = save("bob@example.com", id)
@@ -366,9 +367,11 @@ defmodule AtlasWeb.NoteRpcTest do
     assert %{"success" => false} = set_visibility(ctx.ann, id, "everyone")
     assert %{"success" => false} = note_action(ctx.ann, "archive_note", id)
 
-    # The player no longer reads an archived character note.
+    # The player still reads an archived character note, but no longer edits it.
     assert %{"success" => true} = note_action(ctx.gm, "archive_note", id)
-    refute readable?(ctx.ann, id)
+    assert readable?(ctx.ann, id)
+    refute readable?(ctx.bob, id)
+    assert {:error, %Ash.Error.Forbidden{}} = save("ann@example.com", id)
   end
 
   test "a character note needs a character of the campaign, and a player links only their own",

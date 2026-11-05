@@ -18,6 +18,8 @@ export type SearchHit = {
   kind: SearchKind;
   id: string;
   title: string;
+  /** True for an archived note or world entry: it is not in the lists, but it is found here. */
+  archived: boolean;
   /** A skill is global: its hit has no campaign. */
   campaign_id: string | null;
   campaign_name: string | null;

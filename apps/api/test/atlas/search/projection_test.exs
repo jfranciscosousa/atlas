@@ -202,9 +202,9 @@ defmodule Atlas.Search.ProjectionTest do
     assert ids(ctx.gm, "moonstone", %{kinds: [:session]}) == [ctx.session.id]
 
     note = Ash.update!(note, %{}, action: :archive, actor: ctx.gm)
-    assert ids(ctx.gm, "moonstone") == []
-    assert ids(ctx.gm, "deleted") == [ctx.session.id]
-    assert ids(ctx.player, "deleted") == []
+    assert MapSet.new(ids(ctx.gm, "moonstone")) == MapSet.new([note.id, ctx.session.id])
+    assert ids(ctx.gm, "deleted") == []
+    assert ids(ctx.player, "moonstone") == []
     note = Ash.update!(note, %{}, action: :restore, actor: ctx.gm)
     assert MapSet.new(ids(ctx.gm, "moonstone")) == MapSet.new([note.id, ctx.session.id])
     assert ids(ctx.player, "moonstone") == []

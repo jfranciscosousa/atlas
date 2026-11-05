@@ -4,7 +4,7 @@ defmodule Atlas.RichText.Mentions do
 
   A text stores only the kind and the ID of a mention. The normal read policies decide what the
   actor may see: an entry that the actor cannot read has no name here, and the caller shows
-  "Restricted entry". An archived note or world entry that the actor may read is "Deleted entry".
+  "Restricted entry". An archived note or world entry that the actor may read has its name.
   An entry of another campaign is restricted too, as in the editor, which lists one campaign.
   """
   require Ash.Query
@@ -48,10 +48,7 @@ defmodule Atlas.RichText.Mentions do
   defp label("session", %{number: number, title: nil}), do: "Session #{number}"
   defp label("session", %{number: number, title: title}), do: "Session #{number}: #{title}"
 
-  defp label("note", %{archived_at: nil, title: title}), do: title
-  defp label("note", _archived), do: "Deleted entry"
+  defp label("note", note), do: note.title
 
-  # An entry that the actor may read and that is archived: only the GM reads one.
-  defp label(_world_kind, %{archived_at: nil, name: name}), do: name
-  defp label(_world_kind, _archived), do: "Deleted entry"
+  defp label(_world_kind, entry), do: entry.name
 end

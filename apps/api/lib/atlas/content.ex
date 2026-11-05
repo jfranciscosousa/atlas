@@ -46,10 +46,10 @@ defmodule Atlas.Content do
       4–7 characters and two for longer words. Every query word must match the title together
       with one section. Exact matches rank first. Hidden entries and sections are never searched.
       Mentions use only names you may read; images use their name and caption, not image pixels.
-      Each hit includes kind, id, title, campaign_id, campaign_name and matching sections with
+      Each hit includes kind, id, title, archived, campaign_id, campaign_name and matching sections with
       block ids and snippets, and the audience of each matching section. A player_log hit also has session_id. Use get_* or read_blocks for more. #{Atlas.Mcp.Guide.audience_reminder()} kinds filters entry types
       (#{Enum.join(Atlas.Kinds.names(), ", ")}). limit defaults to 20, at most 50.
-      more is true when limit cuts the results. Archived notes and skills are excluded.
+      more is true when limit cuts the results. Archived notes and world entries are searched like the others: archived is true for them. Archived skills are excluded.
       A skill hit has no campaign_id and no campaign_name: skills are global and private to you.
       """
 

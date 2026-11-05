@@ -100,7 +100,7 @@ defmodule Atlas.Mcp.Guide do
 
     The result has the audience of the section: who reads what you wrote. Players read the
     audiences everyone and character. Do not write text from a narrower audience into a wider one
-    unless the GM told you to. A warning names each hidden or archived entry that your edit
+    unless the GM told you to. A warning names each hidden entry that your edit
     mentions in text that players read.
 
     Take care: people work in these sections, and the layout is theirs.
@@ -235,7 +235,8 @@ defmodule Atlas.Mcp.Guide do
   def list_entries do
     """
     List the world entries of a campaign that you can read: NPCs, locations, factions, items,
-    creatures and plots. Set kind to list one kind, and archived to true for the archived ones.
+    creatures and plots. Set kind to list one kind. The list leaves out archived entries; set archived to true for them.
+    An archived entry is still readable, mentionable and searchable.
     A player never gets a hidden entry. Each row has the id, the kind, the name and the hidden
     flag. A hidden entry is a GM secret: do not mention it to players. Use get_entry for the text.
     """
@@ -248,9 +249,9 @@ defmodule Atlas.Mcp.Guide do
     its GM-only secret notes as blocks (see edit_blocks), their revisions and their audiences
     (description_audience, secret_notes_audience). An entry is text:
     read the description to learn what the entry is. Its state, details and relationships are in
-    that text, not in fields. A player never receives the secret notes. A hidden or archived entry
-    is readable by the GM alone, and its description has the audience gm_only until the GM shows
-    it. #{audience_reminder()}
+    that text, not in fields. A player never receives the secret notes. A hidden entry is readable
+    by the GM alone, and its description has the audience gm_only until the GM shows it. An archived
+    entry keeps its readers. #{audience_reminder()}
     """
   end
 

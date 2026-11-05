@@ -2,7 +2,7 @@ defmodule Atlas.Mcp.AudienceCheck do
   @moduledoc """
   Warnings for an MCP edit that puts a pointer to secret text into a section that players read.
 
-  A mention of a hidden or archived world entry in text that players read tells them that the
+  A mention of a hidden world entry in text that players read tells them that the
   entry exists: the mention stores its kind and ID, and the player sees "Restricted entry". The
   edit still applies. The warning tells the agent what it did, so the agent can undo it or ask the
   GM.
@@ -28,14 +28,12 @@ defmodule Atlas.Mcp.AudienceCheck do
       []
     else
       Entry
-      |> Ash.Query.filter(
-        campaign_id == ^campaign_id and id in ^ids and (hidden == true or not is_nil(archived_at))
-      )
+      |> Ash.Query.filter(campaign_id == ^campaign_id and id in ^ids and hidden == true)
       |> Ash.Query.select([:id, :name])
       |> Ash.read!(actor: actor)
       |> Enum.sort_by(& &1.name)
       |> Enum.map(
-        &("mentions the hidden or archived entry #{inspect(&1.name)} (#{&1.id}), but players read this " <>
+        &("mentions the hidden entry #{inspect(&1.name)} (#{&1.id}), but players read this " <>
             "section: they see \"Restricted entry\" and learn that the entry exists. Remove the " <>
             "mention unless the GM asked for it")
       )

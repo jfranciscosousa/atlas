@@ -464,17 +464,18 @@ defmodule AtlasWeb.RichTextChannelTest do
   end
 
   describe "access ends at once" do
-    test "archiving a note closes the channel of a player who had it open", ctx do
+    test "archiving a note turns the channel of a player who had it open read-only", ctx do
       reveal(ctx)
-      {_, bob, _} = open(ctx.bob, note_ref(ctx))
-      {_, ann, ann_doc} = open(ctx.ann, note_ref(ctx))
+      {%{canWrite: true}, bob, bob_doc} = open(ctx.bob, note_ref(ctx))
 
       assert %{"success" => true} =
                rpc(ctx.gm, "archive_note", %{identity: ctx.note_id, fields: ["id"]})
 
-      send_update(ann, type(ann_doc, "After the archive."))
-      assert_push "revoked", %{}
-      _ = bob
+      send_update(bob, type(bob_doc, "After the archive."))
+      assert_push "permissions", %{canWrite: false}
+      assert_push "rejected", %{reason: "forbidden"}
+      refute_push "revoked", %{}, 100
+      assert %{"bodyRevision" => 0} = note(ctx.ann, ctx.note_id)
     end
 
     test "a player who lost access cannot read the document either", ctx do

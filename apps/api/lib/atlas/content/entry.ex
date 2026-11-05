@@ -8,7 +8,8 @@ defmodule Atlas.Content.Entry do
 
   Only the GM creates, edits, archives and restores entries. A new entry is hidden, and only the
   GM reads a hidden entry. The GM shows it to the players with `set_hidden`, and may hide it again.
-  A player never sees a hidden entry or an archived one. An entry is archived, never deleted.
+  A player never sees a hidden entry. An entry is archived, never deleted. Archiving only removes
+  it from the default lists: a reader still opens, mentions and searches it.
   """
   use Ash.Resource,
     otp_app: :atlas,
@@ -71,7 +72,7 @@ defmodule Atlas.Content.Entry do
                campaign_id == ^arg(:campaign_id) and
                  (is_nil(^arg(:kind)) or kind == ^arg(:kind)) and
                  not is_nil(archived_at) == ^arg(:archived) and
-                 (not (^arg(:as_player)) or (hidden == false and is_nil(archived_at)))
+                 (not (^arg(:as_player)) or hidden == false)
              )
 
       prepare build(sort: [name: :asc, id: :asc])
@@ -91,7 +92,7 @@ defmodule Atlas.Content.Entry do
       accept [:hidden]
     end
 
-    # Entries are archived, never deleted. An archived entry keeps its ID, and the GM reads it.
+    # Entries are archived, never deleted. An archived entry keeps its ID and its readers.
     update :archive do
       change atomic_update(:archived_at, expr(now()))
     end
@@ -138,8 +139,8 @@ defmodule Atlas.Content.Entry do
     end
   end
 
-  # The GM reads and writes every entry. A player reads an entry only when it is shown and not
-  # archived. Everyone else gets not found.
+  # The GM reads and writes every entry. A player reads an entry only when it is shown, archived
+  # or not. Everyone else gets not found.
   policies do
     policy always() do
       forbid_unless actor_present()
@@ -150,7 +151,7 @@ defmodule Atlas.Content.Entry do
       authorize_if expr(exists(campaign, gm_id == ^actor(:id)))
 
       authorize_if expr(
-                     hidden == false and is_nil(archived_at) and
+                     hidden == false and
                        exists(campaign.characters, user_id == ^actor(:id))
                    )
     end
@@ -214,6 +215,6 @@ defmodule Atlas.Content.Entry do
     calculate :is_gm, :boolean, expr(exists(campaign, gm_id == ^actor(:id))), public?: true
 
     # True when players read this entry. A player gets true for every entry that is readable.
-    calculate :shown, :boolean, expr(hidden == false and is_nil(archived_at)), public?: true
+    calculate :shown, :boolean, expr(hidden == false), public?: true
   end
 end

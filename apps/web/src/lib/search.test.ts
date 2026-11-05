@@ -117,6 +117,7 @@ const found = (
   kind,
   id: "h1",
   title: "Keep",
+  archived: false,
   campaign_id: "c1",
   campaign_name: "Keep",
   session_id: null,

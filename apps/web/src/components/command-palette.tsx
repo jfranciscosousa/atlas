@@ -185,9 +185,13 @@ function ResultRow({
           </span>
           {hit && (
             <span className="ml-auto max-w-[50%] shrink-0 truncate text-xs text-muted-foreground">
-              {hit.campaign_name
-                ? `${KIND_NAMES[hit.kind]} · ${hit.campaign_name}`
-                : KIND_NAMES[hit.kind]}
+              {[
+                KIND_NAMES[hit.kind],
+                hit.archived && "Archived",
+                hit.campaign_name,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </span>
           )}
         </span>

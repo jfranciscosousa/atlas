@@ -15,7 +15,7 @@ defmodule Atlas.Mcp.EditBlocks do
   `update` that carries no `hash`, so a human's edit in the same block could be overwritten.
 
   The result names the audience of the section (see `Atlas.Audience`). When players read the
-  section, a warning also names each hidden or archived world entry that the edit mentions (see
+  section, a warning also names each hidden world entry that the edit mentions (see
   `Atlas.Mcp.AudienceCheck`).
   """
   use Ash.Resource.Actions.Implementation

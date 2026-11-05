@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { archivedEntries, buildEntries, describeMention } from "./mentions.ts";
+import { buildEntries, describeMention } from "./mentions.ts";
 
 const entries = buildEntries({
   characters: [
@@ -19,74 +19,50 @@ const entries = buildEntries({
 });
 
 test("an entry the reader can list shows its current name", () => {
-  assert.deepEqual(describeMention(entries, [], "character", "c1"), {
+  assert.deepEqual(describeMention(entries, "character", "c1"), {
     status: "found",
     label: "Mira",
   });
   assert.equal(
-    describeMention(entries, [], "character", "c2").label,
+    describeMention(entries, "character", "c2").label,
     "Unnamed character"
   );
-  assert.equal(
-    describeMention(entries, [], "session", "s1").label,
-    "Session 3"
-  );
+  assert.equal(describeMention(entries, "session", "s1").label, "Session 3");
 });
 
-test("an unknown ID is a restricted entry, and an archived note is a deleted entry", () => {
-  assert.equal(describeMention(entries, [], "note", "n9").status, "restricted");
-  assert.equal(
-    describeMention(entries, [{ kind: "note", id: "n9" }], "note", "n9").status,
-    "deleted"
-  );
-  // The kind is part of the identity.
-  assert.equal(
-    describeMention(entries, [], "session", "c1").status,
-    "restricted"
-  );
+test("an unknown ID is a restricted entry, and the kind is part of the identity", () => {
+  assert.equal(describeMention(entries, "note", "n9").status, "restricted");
+  assert.equal(describeMention(entries, "session", "c1").status, "restricted");
 });
 
 test("a world entry shows its name, and its kind is part of its identity", () => {
-  assert.deepEqual(describeMention(entries, [], "npc", "e1"), {
+  assert.deepEqual(describeMention(entries, "npc", "e1"), {
     status: "found",
     label: "Vex",
   });
-  assert.equal(
-    describeMention(entries, [], "location", "e1").status,
-    "restricted"
-  );
+  assert.equal(describeMention(entries, "location", "e1").status, "restricted");
 });
 
-test("an entry the reader cannot list is restricted, and an archived one is deleted", () => {
+test("an entry the reader cannot list is restricted", () => {
   // A hidden entry is missing from a player's list.
-  assert.equal(
-    describeMention(entries, [], "npc", "e9").label,
-    "Restricted entry"
-  );
-  assert.deepEqual(
-    describeMention(entries, [{ kind: "faction", id: "e9" }], "faction", "e9"),
-    { status: "deleted", label: "Deleted entry" }
-  );
-  assert.equal(
-    describeMention(entries, [{ kind: "faction", id: "e9" }], "item", "e9")
-      .status,
-    "restricted"
-  );
+  assert.equal(describeMention(entries, "npc", "e9").label, "Restricted entry");
 });
 
-test("the archived notes and entries merge into one list", () => {
-  assert.deepEqual(
-    archivedEntries({
-      characters: [],
-      sessions: [],
-      notes: [],
-      entries: [],
-      archivedNotes: [{ id: "n1" }],
-      archivedEntries: [{ id: "e1", kind: "plot" }],
-    }),
-    [
-      { kind: "note", id: "n1" },
-      { kind: "plot", id: "e1" },
-    ]
-  );
+test("an archived note or entry keeps its name and is marked archived", () => {
+  const withArchived = buildEntries({
+    characters: [],
+    sessions: [],
+    notes: [],
+    entries: [],
+    archivedNotes: [{ id: "n1", title: "Old plan" }],
+    archivedEntries: [{ id: "e1", kind: "plot" as const, name: "Old plot" }],
+  });
+  assert.deepEqual(withArchived, [
+    { kind: "note", id: "n1", label: "Old plan", archived: true },
+    { kind: "plot", id: "e1", label: "Old plot", archived: true },
+  ]);
+  assert.deepEqual(describeMention(withArchived, "plot", "e1"), {
+    status: "found",
+    label: "Old plot",
+  });
 });

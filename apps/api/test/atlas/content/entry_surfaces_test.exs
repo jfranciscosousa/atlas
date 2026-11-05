@@ -79,7 +79,7 @@ defmodule Atlas.Content.EntrySurfacesTest do
       assert [%{section: :secret_notes}] = hit.sections
     end
 
-    test "the kinds filter and the archive work for entries", ctx do
+    test "the kinds filter works for entries, and archived entries are still found", ctx do
       entry(ctx.gm, ctx.campaign, :npc, "Ashford")
       entry(ctx.gm, ctx.campaign, :location, "Ashford Keep")
       old = entry(ctx.gm, ctx.campaign, :item, "Ashford blade")
@@ -88,7 +88,18 @@ defmodule Atlas.Content.EntrySurfacesTest do
       assert 3 == length(hits(ctx.gm, "ashford"))
 
       Ash.update!(old, %{}, action: :archive, actor: ctx.gm)
-      assert 2 == length(hits(ctx.gm, "ashford"))
+      assert 3 == length(hits(ctx.gm, "ashford"))
+      assert [%{archived: true}] = Enum.filter(search(ctx.gm, "ashford").hits, & &1.archived)
+    end
+
+    test "a player finds an archived shown entry, and never an archived hidden one", ctx do
+      shown = entry(ctx.gm, ctx.campaign, :item, "Zephyr blade", %{shown: true})
+      hidden = entry(ctx.gm, ctx.campaign, :item, "Zephyr secret")
+      for old <- [shown, hidden], do: Ash.update!(old, %{}, action: :archive, actor: ctx.gm)
+
+      assert [{:item, "Zephyr blade"}] = hits(ctx.player, "zephyr")
+      assert [%{archived: true}] = search(ctx.player, "zephyr").hits
+      assert 2 == length(hits(ctx.gm, "zephyr"))
     end
 
     test "the title ranks before text, and entries rank with other kinds", ctx do
@@ -149,15 +160,19 @@ defmodule Atlas.Content.EntrySurfacesTest do
       assert player_labels[{"location", shown.id}] == "Keep"
     end
 
-    test "an archived entry is Deleted entry for the GM, and restricted for a player", ctx do
+    test "an archived entry keeps its name, and a hidden one stays restricted for a player",
+         ctx do
       old = entry(ctx.gm, ctx.campaign, :item, "Old sword", %{shown: true})
       Ash.update!(old, %{}, action: :archive, actor: ctx.gm)
-      doc = [say([mention("item", old.id)])]
+      secret = entry(ctx.gm, ctx.campaign, :item, "Old secret")
+      Ash.update!(secret, %{}, action: :archive, actor: ctx.gm)
+      doc = [say([mention("item", old.id), mention("item", secret.id)])]
 
-      assert %{{"item", old.id} => "Deleted entry"} ==
+      assert %{{"item", old.id} => "Old sword", {"item", secret.id} => "Old secret"} ==
                Mentions.labels([doc], ctx.gm, ctx.campaign.id)
 
-      assert %{} == Mentions.labels([doc], ctx.player, ctx.campaign.id)
+      assert %{{"item", old.id} => "Old sword"} ==
+               Mentions.labels([doc], ctx.player, ctx.campaign.id)
     end
 
     test "a mention names the kind of its entry, not just its ID", ctx do

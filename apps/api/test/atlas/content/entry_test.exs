@@ -159,15 +159,27 @@ defmodule Atlas.Content.EntryTest do
       assert {:error, _} = Ash.get(Entry, hidden.id, actor: ctx.player, load: [:campaign])
     end
 
-    test "an archived entry is readable by the GM alone, even when it was shown", ctx do
+    test "an archived entry leaves the default list and keeps its readers", ctx do
       entry = entry(ctx.gm, ctx.campaign, :npc, "Vex", %{shown: true})
       modify(entry, %{}, ctx.gm, :archive)
 
       assert {:ok, _} = Ash.get(Entry, entry.id, actor: ctx.gm)
-      assert {:error, _} = Ash.get(Entry, entry.id, actor: ctx.player)
+      assert {:ok, _} = Ash.get(Entry, entry.id, actor: ctx.player)
+      assert {:error, _} = Ash.get(Entry, entry.id, actor: ctx.outsider)
 
       assert [] = list(ctx.gm, ctx.campaign)
+      assert [] = list(ctx.player, ctx.campaign)
       assert [%{name: "Vex"}] = list(ctx.gm, ctx.campaign, %{archived: true})
+      assert [%{name: "Vex"}] = list(ctx.player, ctx.campaign, %{archived: true})
+    end
+
+    test "an archived hidden entry stays hidden from a player", ctx do
+      entry = entry(ctx.gm, ctx.campaign, :npc, "Spy")
+      modify(entry, %{}, ctx.gm, :archive)
+
+      assert {:ok, _} = Ash.get(Entry, entry.id, actor: ctx.gm)
+      assert {:error, _} = Ash.get(Entry, entry.id, actor: ctx.player)
+      assert [%{name: "Spy"}] = list(ctx.gm, ctx.campaign, %{archived: true})
       assert [] = list(ctx.player, ctx.campaign, %{archived: true})
     end
 
@@ -183,13 +195,16 @@ defmodule Atlas.Content.EntryTest do
       assert ["Shown one"] ==
                ctx.gm |> list(ctx.campaign, %{as_player: true}) |> Enum.map(& &1.name)
 
-      assert [] = list(ctx.gm, ctx.campaign, %{as_player: true, archived: true})
+      assert ["Old one"] ==
+               ctx.gm
+               |> list(ctx.campaign, %{as_player: true, archived: true})
+               |> Enum.map(& &1.name)
 
       # The flag changes nothing for a player.
       assert list(ctx.player, ctx.campaign) == list(ctx.player, ctx.campaign, %{as_player: true})
     end
 
-    test "shown tells whether players read an entry", ctx do
+    test "shown tells whether players read an entry, archived or not", ctx do
       hidden = entry(ctx.gm, ctx.campaign, :npc, "A")
       shown = entry(ctx.gm, ctx.campaign, :npc, "B", %{shown: true})
       old = entry(ctx.gm, ctx.campaign, :npc, "C", %{shown: true})
@@ -199,7 +214,7 @@ defmodule Atlas.Content.EntryTest do
         for entry <- [hidden, shown, old],
             do: Ash.get!(Entry, entry.id, actor: ctx.gm, load: [:shown]).shown
 
-      assert flags == [false, true, false]
+      assert flags == [false, true, true]
       assert Ash.get!(Entry, shown.id, actor: ctx.player, load: [:shown]).shown
     end
 

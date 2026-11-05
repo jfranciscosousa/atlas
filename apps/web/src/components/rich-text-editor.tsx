@@ -413,6 +413,7 @@ export default function RichTextEditor({
                   filterSuggestionItems(
                     mentionable.map(entry => ({
                       title: entry.label,
+                      subtext: entry.archived ? "Archived" : undefined,
                       group: MENTION_GROUPS[entry.kind],
                       onItemClick: () =>
                         editor.insertInlineContent([

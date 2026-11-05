@@ -252,8 +252,8 @@ defmodule AtlasWeb.McpEntriesTest do
       assert ["Restricted entry", "Keep"] = labels.(ctx.player_token)
 
       ok!(ctx.token, "archive_entry", %{id: keep})
-      assert ["Vex", "Deleted entry"] = labels.(ctx.token)
-      assert ["Restricted entry", "Restricted entry"] = labels.(ctx.player_token)
+      assert ["Vex", "Keep"] = labels.(ctx.token)
+      assert ["Restricted entry", "Keep"] = labels.(ctx.player_token)
     end
   end
 

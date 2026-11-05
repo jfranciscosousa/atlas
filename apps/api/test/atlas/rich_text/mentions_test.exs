@@ -78,7 +78,7 @@ defmodule Atlas.RichText.MentionsTest do
     for %{"type" => "mention", "props" => props} <- hd(blocks)["content"], do: props
   end
 
-  test "the GM reads every name, and an archived note is a deleted entry", ctx do
+  test "the GM reads every name, and an archived note keeps its name", ctx do
     %{description: blocks} = read_as(ctx.campaign, ctx.gm)
     mentions = mentions(blocks)
 
@@ -89,24 +89,26 @@ defmodule Atlas.RichText.MentionsTest do
 
     labels = Enum.map(mentions, & &1["label"])
     assert "Handout" in labels
-    assert "Deleted entry" in labels
+    assert "Old idea" in labels
     assert "Unnamed character" in labels
+    refute "Deleted entry" in labels
     refute "Other campaign" in labels
   end
 
-  test "a player gets no name for a hidden note, an archived note or an unknown entry", ctx do
+  test "a player gets no name for a hidden note or an unknown entry, and reads an archived one",
+       ctx do
     %{description: blocks} = read_as(ctx.campaign, ctx.player)
     mentions = mentions(blocks)
     labels = Enum.map(mentions, & &1["label"])
 
     assert "Session 1: The Keep" in labels
     assert "Handout" in labels
+    assert "Old idea" in labels
     assert "Unnamed character" in labels
     refute "Secret plot" in labels
-    refute "Old idea" in labels
     refute "Deleted entry" in labels
-    # The hidden note, the archived note, the unknown ID and the other campaign's note.
-    assert Enum.count(labels, &(&1 == "Restricted entry")) == 4
+    # The hidden note, the unknown ID and the other campaign's note.
+    assert Enum.count(labels, &(&1 == "Restricted entry")) == 3
     # The ID stays, so a client that writes the block back keeps the mention.
     assert Enum.any?(mentions, &(&1["id"] == ctx.hidden.id))
   end

@@ -98,7 +98,11 @@ defmodule AtlasWeb.McpAudienceTest do
       assert %{"description_audience" => "everyone", "secret_notes_audience" => "gm_only"} =
                record(ctx.token, "get_entry", npc.id)
 
+      # Archiving changes no audience.
       ok!(ctx.token, "archive_entry", %{id: npc.id})
+      assert %{"description_audience" => "everyone"} = record(ctx.token, "get_entry", npc.id)
+
+      ok!(ctx.token, "set_entry_hidden", %{id: npc.id, input: %{hidden: true}})
       assert %{"description_audience" => "gm_only"} = record(ctx.token, "get_entry", npc.id)
     end
 
@@ -266,12 +270,13 @@ defmodule AtlasWeb.McpAudienceTest do
           ])
         )
 
-      # The edit applies. The warnings name the two entries that players cannot read.
-      assert %{"saved" => true, "audience" => "everyone", "warnings" => [first, second]} = result
-      assert first =~ ~s("Old Keep")
-      assert second =~ ~s("Vex")
-      assert second =~ "players read this section"
+      # The edit applies. The warning names the one entry that players cannot read. An archived
+      # entry that is shown has the same readers as before, so it gives no warning.
+      assert %{"saved" => true, "audience" => "everyone", "warnings" => [warning]} = result
+      assert warning =~ ~s("Vex")
+      assert warning =~ "players read this section"
       refute Enum.any?(result["warnings"], &(&1 =~ "Ann"))
+      refute Enum.any?(result["warnings"], &(&1 =~ "Old Keep"))
     end
 
     test "and warns in a batch edit as well", ctx do

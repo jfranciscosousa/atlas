@@ -33,7 +33,7 @@ export async function loadEntryPage(
     ]);
     // The URL must name the campaign the entry belongs to.
     if (entry.campaignId !== params.campaignId) throw new Error("mismatch");
-    // A player cannot open a hidden or an archived entry, so neither can the preview.
+    // A player cannot open a hidden entry, so neither can the preview.
     if (preview && !entry.shown) throw new Error("not shown");
   } catch {
     throw notFound();
