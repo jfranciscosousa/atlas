@@ -4,11 +4,15 @@ Atlas is one app: a collaborative, text-first RPG campaign manager.
 
 ## Repository
 
-- `apps/api`: JSON-only Phoenix/Ash backend. Read `apps/api/AGENTS.md` before backend work.
+- `apps/api`: Phoenix/Ash JSON backend, optionally serving the compiled frontend in releases. Read `apps/api/AGENTS.md` before backend work.
 - `apps/web`: TanStack Start SPA. All application pages belong here.
 - `packages/api-client`: generated AshTypescript contracts. Run `pnpm run api:generate`
   from the root after changing exposed actions. Do not edit generated contracts by hand.
-- Phoenix must not build or serve frontend assets or add application LiveViews.
+- Application pages and frontend source stay in `apps/web`; do not add application LiveViews.
+- Approved release exception: Phoenix may serve public compiled frontend outputs when
+  `SERVE_FRONTEND=true`. Frontend compilation remains a separate build step, never a Mix task.
+  Keep API/auth/MCP/OAuth/socket/health/dev routes reserved, and keep local API/Vite behavior unchanged.
+  Historical files from `FRONTEND_ASSET_DIR` are available only under `/assets`, never as SPA HTML.
 - Preserve same-origin cookie authentication and CSRF protection.
 
 ## Package manager

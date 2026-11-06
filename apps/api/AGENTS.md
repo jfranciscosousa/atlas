@@ -5,7 +5,11 @@ These rules apply to the Phoenix/Ash backend. Shared rules are in the root `AGEN
 ## Backend
 
 - Run Mix tasks from `apps/api`.
-- Keep the backend JSON-only. Application pages and frontend assets belong in `apps/web`.
+- Keep application endpoints JSON-only. Application pages and frontend source belong in `apps/web`.
+- Approved release exception: `AtlasWeb.Plugs.Frontend` may serve public compiled outputs with
+  `SERVE_FRONTEND=true` (default off). Never build frontend assets in Mix or add application LiveViews.
+  Preserve reserved backend prefixes, missing-asset 404s, and GET/HEAD HTML negotiation.
+  Serve immutable assets, no-cache HTML, and historical files only under `/assets`; never historical HTML.
 - Use the included `Req` library for HTTP requests, not HTTPoison, Tesla, or `:httpc`.
 - Router scopes already prefix route modules with their configured alias. Do not duplicate it.
 - Do not use the removed `Phoenix.View` module.

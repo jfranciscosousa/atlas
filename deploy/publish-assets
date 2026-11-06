@@ -1,0 +1,153 @@
+#!/bin/bash
+# Append only fingerprinted public /assets files. HTML stays in the image.
+# The store is a trusted, UID-owned volume; all publishers must use this lock.
+# This is not a sandbox against a compromised process running as the same UID.
+set -euo pipefail
+umask 022
+
+fail() { printf 'frontend asset publication: %s\n' "$*" >&2; exit 1; }
+[[ $# == 2 ]] || fail 'expected PACKAGED_ASSETS_DIRECTORY RETAINED_ASSETS_DIRECTORY'
+readonly max_file=67108864 max_total=268435456 max_files=4096 max_nodes=8192 max_depth=8
+
+# Reject symlinks in every existing path component, including broken links.
+# In particular, realpath alone must never turn an unsafe input into a safe one.
+check_path() {
+  local path=$1 part current=
+  [[ $path != *$'\n'* && $path != *$'\r'* ]] || fail 'newlines in directory paths are forbidden'
+  [[ $path == /* && $path != / ]] || fail 'asset directories must be absolute and not /'
+  local -a parts
+  IFS=/ read -r -a parts <<< "$path"
+  for part in "${parts[@]}"; do
+    [[ -n $part ]] || continue
+    [[ $part != . && $part != .. ]] || fail 'dot path components are forbidden'
+    current+=/$part
+    [[ ! -L $current ]] || fail 'symlink in asset directory path'
+    if [[ -e $current && ! -d $current ]]; then fail 'non-directory in asset directory path'; fi
+  done
+}
+
+source=$1
+[[ $source == /* ]] || source=$PWD/$source
+destination=$2
+check_path "$source"
+check_path "$destination"
+source=$(realpath -e -- "$source")
+destination=$(realpath -m -- "$destination")
+[[ $source != / && $destination != / ]] || fail 'asset directories must not resolve to /'
+[[ -d $source ]] || fail 'missing packaged asset directory'
+[[ $source/ != "$destination/"* && $destination/ != "$source/"* ]] \
+  || fail 'packaged and retained directories must be disjoint'
+mkdir -p -- "$destination"
+
+check_store_dir() {
+  [[ -d $1 && ! -L $1 ]] || fail 'unsafe retained asset directory'
+  [[ $(stat -c %u -- "$1") == "$(id -u)" ]] || fail 'retained directory must belong to the runtime UID'
+  local mode
+  mode=$(stat -c %a -- "$1")
+  (( (8#$mode & 8#022) == 0 )) || fail 'retained directory must not be group/world writable'
+}
+check_store_dir "$destination"
+lock=$destination/.publish.lock
+[[ ! -L $lock && ( ! -e $lock || -f $lock ) ]] || fail 'unsafe publication lock'
+if [[ -e $lock ]]; then
+  [[ $(stat -c %h -- "$lock") == 1 && $(stat -c %u -- "$lock") == "$(id -u)" ]] \
+    || fail 'unsafe publication lock ownership/links'
+fi
+exec {lock_fd}>>"$lock"
+flock -x -w 60 "$lock_fd" || fail 'timed out acquiring publication lock'
+
+stage=$(mktemp -d -- "$destination/.publish.XXXXXXXX")
+cleanup() { rm -rf -- "$stage"; }
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
+
+shopt -s nullglob dotglob
+files=()
+sizes=()
+total=0
+nodes=0
+walk() {
+  local directory=$1 prefix=$2 depth=$3 item name relative lower size
+  (( depth <= max_depth )) || fail 'asset directory nesting budget exceeded'
+  local -a entries=("$directory"/*)
+  for item in "${entries[@]}"; do
+    nodes=$((nodes + 1))
+    (( nodes <= max_nodes )) || fail 'asset entry count budget exceeded'
+    name=${item##*/}
+    relative=$prefix$name
+    [[ $name =~ ^[A-Za-z0-9_][A-Za-z0-9._-]*$ ]] || fail 'unsafe packaged asset name'
+    [[ ! -L $item ]] || fail 'packaged asset symlinks are forbidden'
+    if [[ -d $item ]]; then
+      walk "$item" "$relative/" "$((depth + 1))"
+    elif [[ -f $item ]]; then
+      lower=${name,,}
+      case $lower in *.map|*.html|*.htm) continue ;; esac
+      # Vite's public immutable files carry a content fingerprint. Do not retain
+      # arbitrary unversioned public files, config, server code or source maps.
+      [[ $name =~ -[A-Za-z0-9_-]{8,}\.(js|mjs|css|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|avif|ico|wasm|json|mp3|mp4|ogg|webm)$ ]] \
+        || fail 'asset is not an allowed fingerprinted public file'
+      size=$(stat -c %s -- "$item")
+      (( size <= max_file )) || fail 'asset exceeds 64 MiB file budget'
+      total=$((total + size))
+      (( total <= max_total )) || fail 'assets exceed 256 MiB build budget'
+      files+=("$relative")
+      sizes+=("$size")
+      (( ${#files[@]} <= max_files )) || fail 'asset file count budget exceeded'
+    else
+      fail 'packaged assets must be regular files or directories'
+    fi
+  done
+}
+walk "$source" '' 0
+(( ${#files[@]} > 0 )) || fail 'no publishable frontend assets'
+
+ensure_parent() {
+  local relative=$1 parent=$destination component
+  local -a parts
+  IFS=/ read -r -a parts <<< "$relative"
+  unset 'parts[${#parts[@]}-1]'
+  for component in "${parts[@]}"; do
+    parent+=/$component
+    [[ ! -L $parent ]] || fail 'symlink in retained asset path'
+    if [[ ! -e $parent ]]; then mkdir -- "$parent"; fi
+    check_store_dir "$parent"
+  done
+}
+check_existing() {
+  local expected=$1 target=$2
+  [[ -f $target && ! -L $target && $(stat -c %h -- "$target") == 1 ]] \
+    || fail 'unsafe retained asset target'
+  cmp -s -- "$expected" "$target" || fail 'immutable asset filename collision'
+}
+
+# Check the entire build before publishing anything. A known collision must not
+# leave an otherwise partly-published build. Historical files are never pruned.
+for relative in "${files[@]}"; do
+  ensure_parent "$relative"
+  target=$destination/$relative
+  if [[ -e $target || -L $target ]]; then check_existing "$source/$relative" "$target"; fi
+done
+
+# Stage bounded copies on the same filesystem as the final atomic renames.
+for i in "${!files[@]}"; do
+  relative=${files[$i]}
+  [[ -f $source/$relative && ! -L $source/$relative ]] || fail 'packaged asset changed'
+  head -c "$((max_file + 1))" -- "$source/$relative" > "$stage/$i"
+  [[ $(stat -c %s -- "$stage/$i") == "${sizes[$i]}" ]] || fail 'packaged asset size changed'
+  cmp -s -- "$source/$relative" "$stage/$i" || fail 'packaged asset content changed'
+  chmod 0444 -- "$stage/$i"
+done
+for i in "${!files[@]}"; do
+  relative=${files[$i]}
+  ensure_parent "$relative"
+  target=$destination/$relative
+  if [[ -e $target || -L $target ]]; then
+    check_existing "$stage/$i" "$target"
+  else
+    # -n refuses replacement, -T refuses treating a raced-in directory as a
+    # destination directory. Even an unexpected concurrent target is checked.
+    mv -nT -- "$stage/$i" "$target"
+    if [[ -e $stage/$i ]]; then check_existing "$stage/$i" "$target"; fi
+  fi
+done
+printf 'frontend assets published: %s files, %s bytes (history retained)\n' "${#files[@]}" "$total"

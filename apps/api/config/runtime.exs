@@ -22,6 +22,11 @@ end
 
 config :atlas, AtlasWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# Local API/Vite development is unchanged unless delivery is explicitly enabled.
+config :atlas,
+  serve_frontend: System.get_env("SERVE_FRONTEND") == "true",
+  frontend_asset_dir: System.get_env("FRONTEND_ASSET_DIR")
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

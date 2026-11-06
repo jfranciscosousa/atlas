@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+# Resolve from this script, not the caller's working directory.
+cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)"
+
+if [ "${SERVE_FRONTEND:-false}" = true ] && [ -n "${FRONTEND_ASSET_DIR:-}" ]; then
+  set -- lib/atlas-*/priv/static/assets
+  if [ "$#" -ne 1 ] || [ ! -d "$1" ] || [ -L "$1" ]; then
+    printf '%s\n' 'frontend assets are missing or ambiguous' >&2
+    exit 1
+  fi
+  deploy/publish-assets "$1" "$FRONTEND_ASSET_DIR"
+fi
+
+# Read-only compatibility gate. Migrations are an explicit operator action.
+bin/atlas eval 'Atlas.Release.check_schema!()'
+exec bin/atlas start

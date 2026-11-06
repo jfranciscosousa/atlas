@@ -28,6 +28,10 @@ defmodule AtlasWeb.Endpoint do
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
+  # Runs before Plug.Head so static HEAD requests retain their original method.
+  # Disabled at runtime by default; reserved backend paths always pass through.
+  plug AtlasWeb.Plugs.Frontend
+
   plug Plug.Parsers,
     # Multipart carries image uploads: 25 MB plus form overhead.
     parsers: [:urlencoded, {:multipart, length: 27_000_000}, :json],
