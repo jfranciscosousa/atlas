@@ -130,7 +130,7 @@ function ResultRow({
       onMouseMove={() => !active && onActivate()}
       onClick={onOpen}
       className={cn(
-        "flex gap-3 rounded-xl px-2.5 py-2 text-sm outline-none",
+        "flex gap-3 rounded-xl px-2.5 py-2.5 text-sm outline-none sm:py-2",
         snippet ? "items-start" : "items-center",
         active && "bg-accent text-accent-foreground"
       )}
@@ -152,12 +152,12 @@ function ResultRow({
         )
       )}
       <span className="grid min-w-0 flex-1 gap-0.5">
-        <span className="flex items-baseline gap-2">
-          <span className="truncate font-medium">
+        <span className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
+          <span className="min-w-0 truncate font-medium">
             <Marked text={item.title} terms={terms} />
           </span>
           {hit && (
-            <span className="ml-auto max-w-[50%] shrink-0 truncate text-xs text-muted-foreground">
+            <span className="min-w-0 truncate text-xs text-muted-foreground sm:ml-auto sm:max-w-[50%] sm:shrink-0">
               {[
                 KIND_NAMES[hit.kind],
                 hit.archived && "Archived",
@@ -304,7 +304,7 @@ function PaletteBody({
           autoCorrect="off"
           spellCheck={false}
           maxLength={QUERY_MAX_LENGTH}
-          placeholder="Search campaigns, sessions, characters, notes…"
+          placeholder="Search names and text…"
           value={input}
           onChange={event => {
             setInput(event.target.value);
@@ -316,14 +316,23 @@ function PaletteBody({
           className="h-13 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm"
         />
         {waiting && <Spinner className="shrink-0 text-muted-foreground" />}
-        <Kbd>Esc</Kbd>
+        <span className="max-sm:hidden">
+          <Kbd>Esc</Kbd>
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="-mr-2 shrink-0 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:hidden"
+        >
+          Cancel
+        </button>
       </div>
 
       <div
         id="palette-results"
         role="listbox"
         aria-label="Results"
-        className="max-h-[min(55vh,26rem)] overflow-y-auto overscroll-contain p-2"
+        className="max-h-[min(55dvh,26rem)] overflow-y-auto overscroll-contain p-2"
       >
         {groups.map(group => (
           <div
@@ -381,13 +390,18 @@ function PaletteBody({
         )}
       </div>
 
-      <div className="flex items-center gap-4 border-t bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
+      <div
+        className={cn(
+          "flex items-center gap-4 border-t bg-muted/40 px-4 py-2 text-xs text-muted-foreground",
+          !(searching && search.data?.more) && "max-sm:hidden"
+        )}
+      >
+        <span className="flex items-center gap-1.5 max-sm:hidden">
           <Kbd>↑</Kbd>
           <Kbd>↓</Kbd>
           Move
         </span>
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5 max-sm:hidden">
           <Kbd>
             <CornerDownLeftIcon aria-hidden="true" className="size-3" />
           </Kbd>
@@ -447,7 +461,7 @@ export function CommandPalette({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="top-[10vh] translate-y-0 gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-xl"
+        className="top-[6dvh] translate-y-0 gap-0 overflow-hidden rounded-2xl p-0 sm:top-[10vh] sm:max-w-xl"
       >
         <DialogTitle className="sr-only">Search</DialogTitle>
         <DialogDescription className="sr-only">

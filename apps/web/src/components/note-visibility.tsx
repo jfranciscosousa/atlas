@@ -93,6 +93,7 @@ export function NoteVisibilityMenu({
             id={`note-visibility-${id}`}
             variant={icon ? "ghost" : "outline"}
             size={icon ? "icon" : "default"}
+            className={icon ? "max-sm:size-11" : undefined}
             aria-label={icon ? `${label}: ${title}` : undefined}
             title={label}
             disabled={setVisibility.isPending}

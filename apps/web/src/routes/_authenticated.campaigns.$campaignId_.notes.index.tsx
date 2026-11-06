@@ -88,7 +88,7 @@ function NotesPage() {
             : "Notes shared with you, and your own. A new note is visible to you and the GM until you share it."
         }
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Link
               id="notes-archived-toggle"
               to="/campaigns/$campaignId/notes"
@@ -135,7 +135,7 @@ function NotesPage() {
           )}
         </Empty>
       ) : (
-        <ul id="note-list" className="grid gap-3">
+        <ul id="note-list" className="grid grid-cols-1 gap-3">
           {notes.map(note => {
             // Other members read a shared note but cannot change what it is.
             const canManage = campaign.isGm || note.isOwner;
@@ -148,23 +148,32 @@ function NotesPage() {
                   id={`note-${note.id}`}
                   to="/campaigns/$campaignId/notes/$noteId"
                   params={{ campaignId, noteId: note.id }}
-                  className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl p-4 outline-none"
+                  className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] items-center gap-x-4 gap-y-2 rounded-2xl p-3.5 outline-none sm:flex sm:p-4"
                 >
-                  <span className="min-w-0 flex-1 truncate font-heading text-lg font-semibold">
-                    {note.title}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-heading text-lg font-semibold">
+                      {note.title}
+                    </span>
+                    {!note.isOwner && note.ownerName && (
+                      <span className="block truncate text-sm text-muted-foreground sm:hidden">
+                        {note.ownerName}
+                      </span>
+                    )}
                   </span>
                   {!note.isOwner && note.ownerName && (
                     <span className="hidden text-sm text-muted-foreground sm:inline">
                       {note.ownerName}
                     </span>
                   )}
-                  <NoteVisibilityBadge
-                    visibility={note.visibility}
-                    characterName={note.characterName}
-                  />
+                  <span className="justify-self-start">
+                    <NoteVisibilityBadge
+                      visibility={note.visibility}
+                      characterName={note.characterName}
+                    />
+                  </span>
                   <ChevronRightIcon
                     aria-hidden="true"
-                    className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                    className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 max-sm:hidden"
                   />
                 </Link>
                 {canManage && !archived && (
@@ -183,7 +192,7 @@ function NotesPage() {
                     id={`note-${archived ? "restore" : "archive"}-${note.id}`}
                     variant="ghost"
                     size="icon"
-                    className="mr-3"
+                    className="mr-2 max-sm:size-11 sm:mr-3"
                     aria-label={
                       archived
                         ? `Restore ${note.title}`

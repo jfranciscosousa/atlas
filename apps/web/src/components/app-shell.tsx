@@ -94,11 +94,11 @@ function SearchButton({ onClick }: { onClick: () => void }) {
       type="button"
       id="open-search"
       onClick={onClick}
-      className="flex h-9 w-full items-center gap-2 rounded-lg bg-sidebar-accent/40 px-2.5 text-sm text-sidebar-foreground/70 transition-colors outline-none hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+      className="flex h-10 w-full items-center gap-2 rounded-lg bg-sidebar-accent/40 px-2.5 text-sm text-sidebar-foreground/70 transition-colors outline-none hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring md:h-9"
     >
       <SearchIcon aria-hidden="true" className="size-4" />
       Search
-      <kbd className="ml-auto rounded-md border border-sidebar-border px-1.5 font-sans text-[0.6875rem] text-sidebar-foreground/60">
+      <kbd className="ml-auto rounded-md border border-sidebar-border px-1.5 font-sans text-[0.6875rem] text-sidebar-foreground/60 max-md:hidden">
         {shortcut}
       </kbd>
     </button>
@@ -323,22 +323,25 @@ export function AppShell({
         onOpenChange={setSearchOpen}
       />
       <SidebarInset>
-        <div className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b bg-background/85 px-3 backdrop-blur">
-          <SidebarTrigger aria-label="Toggle navigation" />
+        <div className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/85 px-2 backdrop-blur md:h-12 md:px-3">
+          <SidebarTrigger
+            aria-label="Toggle navigation"
+            className="max-md:size-10"
+          />
           <span className="font-heading text-base font-semibold md:hidden">
             Atlas
           </span>
           <Button
             variant="ghost"
             size="icon"
-            className="ml-auto md:hidden"
+            className="ml-auto max-md:size-10 md:hidden"
             aria-label="Search"
             onClick={() => setSearchOpen(true)}
           >
             <SearchIcon aria-hidden="true" />
           </Button>
         </div>
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-8 lg:py-12">
+        <main className="mx-auto w-full max-w-5xl min-w-0 flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-8 lg:py-12">
           {children}
         </main>
       </SidebarInset>

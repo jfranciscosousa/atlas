@@ -65,7 +65,7 @@ function SkillsPage() {
         title={archived ? "Archived skills" : "Skills"}
         description="Procedures for your AI agents. They apply in every campaign and only you can read them. An agent connected through MCP lists them first and opens the ones that fit its task."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Link
               id="skills-archived-toggle"
               to="/skills"
@@ -107,7 +107,7 @@ function SkillsPage() {
           )}
         </Empty>
       ) : (
-        <ul id="skill-list" className="grid gap-3">
+        <ul id="skill-list" className="grid grid-cols-1 gap-3">
           {skills.map(skill => (
             <li
               key={skill.id}
@@ -117,14 +117,14 @@ function SkillsPage() {
                 id={`skill-${skill.id}`}
                 to="/skills/$skillId"
                 params={{ skillId: skill.id }}
-                className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl p-4 outline-none"
+                className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl p-3.5 outline-none sm:p-4"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-heading text-lg font-semibold">
                     {skill.name}
                   </span>
                   {skill.description && (
-                    <span className="block truncate text-sm text-muted-foreground">
+                    <span className="line-clamp-2 text-sm text-muted-foreground sm:block sm:truncate">
                       {skill.description}
                     </span>
                   )}
@@ -138,7 +138,7 @@ function SkillsPage() {
                 id={`skill-${archived ? "restore" : "archive"}-${skill.id}`}
                 variant="ghost"
                 size="icon"
-                className="mr-3"
+                className="mr-2 max-sm:size-11 sm:mr-3"
                 aria-label={
                   archived ? `Restore ${skill.name}` : `Archive ${skill.name}`
                 }

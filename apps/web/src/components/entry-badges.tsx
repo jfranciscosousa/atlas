@@ -44,6 +44,7 @@ export function EntryHiddenToggle({
       id={`entry-hidden-${entryId}`}
       variant={icon ? "ghost" : "outline"}
       size={icon ? "icon" : "default"}
+      className={icon ? "max-sm:size-11" : undefined}
       aria-label={icon ? `${label}: ${name}` : undefined}
       title={label}
       disabled={setHidden.isPending}

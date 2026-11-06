@@ -31,7 +31,7 @@ function Chip({
     <span
       title={title}
       className={cn(
-        "inline-flex items-center gap-1",
+        "inline-flex items-center gap-1 whitespace-nowrap",
         active && "font-medium text-foreground"
       )}
     >
@@ -56,7 +56,7 @@ export function EntryMeta({
   const mentioned = lastSessionNumber != null;
 
   return (
-    <span className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+    <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground sm:gap-x-4">
       <Chip
         icon={PencilLineIcon}
         active={sort === "last_edited"}

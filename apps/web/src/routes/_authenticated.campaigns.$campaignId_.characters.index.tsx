@@ -137,14 +137,14 @@ function CharacterList({
 }) {
   const { campaignId } = Route.useParams();
   return (
-    <ul id={id} className="mt-3 grid gap-3">
+    <ul id={id} className="mt-3 grid grid-cols-1 gap-3">
       {characters.map(character => (
         <li key={character.id}>
           <Link
             id={`character-${character.id}`}
             to="/campaigns/$campaignId/characters/$characterId"
             params={{ campaignId, characterId: character.id }}
-            className="group flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs transition-all outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/30"
+            className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-2xl border bg-card p-3.5 shadow-xs transition-all outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/30 sm:flex sm:gap-4 sm:p-4"
           >
             <span className="min-w-0 flex-1">
               <span className="block truncate font-heading text-lg font-semibold">
@@ -154,12 +154,14 @@ function CharacterList({
                 Played by {character.playerName ?? "a player"}
               </span>
             </span>
-            <CharacterStatusBadge status={character.status} />
-            {character.isMine && <Badge variant="secondary">You</Badge>}
-            {!character.claimed && <Badge variant="outline">Unclaimed</Badge>}
+            <span className="col-start-1 row-start-2 flex flex-wrap items-center gap-1.5 empty:hidden sm:contents">
+              <CharacterStatusBadge status={character.status} />
+              {character.isMine && <Badge variant="secondary">You</Badge>}
+              {!character.claimed && <Badge variant="outline">Unclaimed</Badge>}
+            </span>
             <ChevronRightIcon
               aria-hidden="true"
-              className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+              className="col-start-2 row-start-1 size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
             />
           </Link>
         </li>

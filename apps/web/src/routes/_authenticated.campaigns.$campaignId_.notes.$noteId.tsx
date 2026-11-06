@@ -86,7 +86,7 @@ function NotePage() {
           !note.isOwner && note.ownerName ? `By ${note.ownerName}` : undefined
         }
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <NoteVisibilityBadge
               visibility={note.visibility}
               characterName={note.characterName}

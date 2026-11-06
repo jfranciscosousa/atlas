@@ -263,7 +263,7 @@ function EntriesPage() {
             : "What the GM has shown you of the world."
         }
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {campaign.isGm && (
               <Link
                 id="entries-archived-toggle"
@@ -281,7 +281,10 @@ function EntriesPage() {
       />
       {(all.length > 0 || input !== "") && (
         <div className="flex flex-wrap items-center gap-3">
-          <div role="search" className="relative max-w-md min-w-52 flex-1">
+          <div
+            role="search"
+            className="relative w-full min-w-52 flex-1 sm:max-w-md"
+          >
             <SearchIcon
               aria-hidden="true"
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -312,7 +315,7 @@ function EntriesPage() {
           <NativeSelect
             id="entry-sort"
             aria-label="Sort entries"
-            className="w-auto"
+            className="w-full sm:w-auto"
             value={sort}
             disabled={searching}
             title={
@@ -335,7 +338,7 @@ function EntriesPage() {
       <nav
         id="entry-kind-filter"
         aria-label="Kind of entry"
-        className="flex flex-wrap gap-2"
+        className="-mx-4 no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
       >
         <Link
           {...entriesLink({ kind: undefined })}
@@ -458,13 +461,13 @@ function EntriesPage() {
                   id={`entry-${entry.id}`}
                   to="/campaigns/$campaignId/entries/$entryId"
                   params={{ campaignId, entryId: entry.id }}
-                  className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl p-4 outline-none"
+                  className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl p-3.5 outline-none sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:gap-x-4 sm:p-4"
                 >
                   <Icon
                     aria-label={ENTRY_KIND_LABELS[entry.kind].label}
                     className="size-5 shrink-0 text-muted-foreground"
                   />
-                  <span className="grid min-w-0 flex-1 gap-1">
+                  <span className="grid min-w-0 gap-1">
                     <span className="truncate font-heading text-lg font-semibold">
                       <Marked text={entry.name} terms={terms} />
                     </span>
@@ -484,11 +487,13 @@ function EntriesPage() {
                     />
                   </span>
                   {campaign.isGm && entry.hidden !== undefined && (
-                    <EntryHiddenBadge hidden={entry.hidden} />
+                    <span className="col-start-2 justify-self-start sm:col-start-auto">
+                      <EntryHiddenBadge hidden={entry.hidden} />
+                    </span>
                   )}
                   <ChevronRightIcon
                     aria-hidden="true"
-                    className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                    className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 max-sm:hidden"
                   />
                 </Link>
                 {campaign.isGm && !archived && entry.hidden !== undefined && (
@@ -505,7 +510,7 @@ function EntriesPage() {
                     id={`entry-${archived ? "restore" : "archive"}-${entry.id}`}
                     variant="ghost"
                     size="icon"
-                    className="mr-3"
+                    className="mr-2 max-sm:size-11 sm:mr-3"
                     aria-label={
                       archived
                         ? `Restore ${entry.name}`

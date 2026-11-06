@@ -38,7 +38,7 @@ export function CampaignReadOnly({
           <CampaignAvatar
             id={campaign.id}
             name={campaign.name}
-            className="size-14 rounded-xl text-2xl"
+            className="size-11 rounded-xl text-xl sm:size-14 sm:text-2xl"
           />
         }
       />

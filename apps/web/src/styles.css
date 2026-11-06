@@ -144,6 +144,14 @@
   }
 }
 
+/* A row that scrolls sideways on a small screen needs no visible bar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* BlockNote reserves 54px on each side for its drag handle; small screens need that space. */
 .bn-container .bn-editor {
   padding-inline: 1rem;

@@ -86,17 +86,24 @@ function SessionsPage() {
           )}
         </Empty>
       ) : (
-        <ul id="session-list" className="grid gap-3">
+        <ul id="session-list" className="grid grid-cols-1 gap-3">
           {sessions.map(session => (
             <li key={session.id}>
               <Link
                 id={`session-${session.id}`}
                 to="/campaigns/$campaignId/sessions/$sessionId"
                 params={{ campaignId, sessionId: session.id }}
-                className="group flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs transition-all outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/30"
+                className="group flex items-center gap-3 rounded-2xl border bg-card p-3.5 shadow-xs transition-all outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/30 sm:gap-4 sm:p-4"
               >
-                <span className="min-w-0 flex-1 truncate font-heading text-lg font-semibold">
-                  {sessionLabel(session)}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-heading text-lg font-semibold">
+                    {sessionLabel(session)}
+                  </span>
+                  {session.playedOn && (
+                    <span className="block text-sm text-muted-foreground sm:hidden">
+                      {formatPlayedOn(session.playedOn)}
+                    </span>
+                  )}
                 </span>
                 {session.playedOn && (
                   <span className="hidden text-sm text-muted-foreground sm:inline">

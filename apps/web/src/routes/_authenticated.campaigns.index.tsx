@@ -60,15 +60,15 @@ function Campaigns() {
                 id={`campaign-${campaign.id}`}
                 to="/campaigns/$campaignId"
                 params={{ campaignId: campaign.id }}
-                className="group flex h-full items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs transition-all outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/30"
+                className="group flex h-full items-center gap-3 rounded-2xl border bg-card p-3.5 shadow-xs transition-all outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/30 sm:gap-4 sm:p-4"
               >
                 <CampaignAvatar
                   id={campaign.id}
                   name={campaign.name}
-                  className="size-14 rounded-xl text-2xl"
+                  className="size-11 rounded-xl text-xl sm:size-14 sm:text-2xl"
                 />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-heading text-lg font-semibold">
+                  <span className="line-clamp-2 font-heading text-lg/snug font-semibold wrap-break-word sm:truncate sm:text-lg">
                     {campaign.name}
                   </span>
                   <Badge variant="secondary" className="mt-1">

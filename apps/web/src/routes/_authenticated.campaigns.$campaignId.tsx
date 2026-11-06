@@ -70,7 +70,7 @@ function CampaignPage() {
           { label: campaign.name },
         ]}
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Link
               id="campaign-sessions"
               to="/campaigns/$campaignId/sessions"
@@ -115,11 +115,11 @@ function CampaignPage() {
           <CampaignAvatar
             id={campaign.id}
             name={campaign.name}
-            className="size-14 rounded-xl text-2xl"
+            className="size-11 rounded-xl text-xl sm:size-14 sm:text-2xl"
           />
         }
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Badge variant="secondary">You are the GM</Badge>
             <Link
               id="campaign-sessions"
