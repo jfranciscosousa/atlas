@@ -64,7 +64,7 @@ defmodule AtlasWeb.Plugs.Frontend do
 
     file =
       public_file(root, parts) ||
-        if not html_path?(rest), do: public_file(retained, rest)
+        if retained_asset?(rest), do: public_file(retained, rest)
 
     case file do
       nil -> not_found(conn)
@@ -100,6 +100,18 @@ defmodule AtlasWeb.Plugs.Frontend do
 
   # Other URLs that look like files must never silently become the SPA shell.
   defp page_path?(parts), do: Enum.all?(parts, &(Path.extname(&1) == ""))
+
+  # Match deploy/publish-assets: every path component is a public ASCII name,
+  # and the final filename has a Vite fingerprint and an allowed public extension.
+  # Packaged files intentionally bypass this policy and always take precedence.
+  defp retained_asset?(parts) do
+    parts != [] and
+      Enum.all?(parts, &Regex.match?(~r/\A[A-Za-z0-9_][A-Za-z0-9._-]*\z/, &1)) and
+      Regex.match?(
+        ~r/-[A-Za-z0-9_-]{8,}\.(js|mjs|css|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|avif|ico|wasm|json|mp3|mp4|ogg|webm)\z/,
+        List.last(parts)
+      )
+  end
 
   defp html_path?(parts) do
     parts != [] and

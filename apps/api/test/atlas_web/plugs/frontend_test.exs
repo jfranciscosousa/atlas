@@ -34,7 +34,7 @@ defmodule AtlasWeb.Plugs.FrontendTest do
           "/index.html",
           "/favicon.ico",
           "/assets/app-current.js",
-          "/assets/app-old.js"
+          "/assets/index-Dk_9a-B2.js"
         ] do
       original = conn(:get, path) |> put_req_header("accept", "*/*")
       assert Frontend.call(original, options(serve_frontend: false)) == original
@@ -118,11 +118,11 @@ defmodule AtlasWeb.Plugs.FrontendTest do
   test "packaged and retained assets are immutable, and packaged assets win" do
     for {path, body} <- [
           {"/assets/app-current.js", "packaged current"},
-          {"/assets/app-old.js", "retained old"},
+          {"/assets/index-Dk_9a-B2.js", "retained old"},
           {"/assets/shared.js", "packaged wins"},
           {"/assets/app-current.css", "color: black"},
           {"/assets/fonts/current.woff2", "packaged font"},
-          {"/assets/fonts/old.woff2", "retained font"}
+          {"/assets/fonts/old-B7q_3-xZ.woff2", "retained font"}
         ] do
       conn = request(path, "*/*")
       assert conn.status == 200
@@ -138,19 +138,103 @@ defmodule AtlasWeb.Plugs.FrontendTest do
            ]
   end
 
+  @tag :tmp_dir
+  test "packaged fingerprinted assets take precedence over matching retained files", %{
+    tmp_dir: root
+  } do
+    File.mkdir!(Path.join(root, "assets"))
+    File.write!(Path.join(root, "assets/shared-A9s_5-zV.js"), "packaged wins")
+
+    for method <- [:get, :head] do
+      conn = request("/assets/shared-A9s_5-zV.js", "*/*", method, static_dir: root)
+      assert conn.status == 200
+      assert conn.resp_body == if(method == :get, do: "packaged wins", else: "")
+      assert get_resp_header(conn, "content-length") == ["13"]
+      assert get_resp_header(conn, "cache-control") == ["public, max-age=31536000, immutable"]
+    end
+  end
+
+  @tag :tmp_dir
+  test "retained files require publisher-compatible fingerprints and public extensions", %{
+    tmp_dir: root
+  } do
+    # Vite hashes are case-sensitive base64url-like strings, not just hex digits.
+    for extension <-
+          ~w(js mjs css woff woff2 ttf otf eot svg png jpg jpeg gif webp avif ico wasm json mp3 mp4 ogg webm) do
+      name = "chunk-Dk_9a-B2.#{extension}"
+      File.write!(Path.join(root, name), "public asset")
+
+      for method <- [:get, :head] do
+        conn = request("/assets/#{name}", "*/*", method, asset_dir: root)
+        assert conn.status == 200, name
+        assert conn.resp_body == if(method == :get, do: "public asset", else: "")
+        assert get_resp_header(conn, "content-length") == ["12"]
+        assert get_resp_header(conn, "cache-control") == ["public, max-age=31536000, immutable"]
+      end
+    end
+  end
+
+  @tag :tmp_dir
+  test "retained maps, unversioned files, server sources and compound HTML fail GET and HEAD", %{
+    tmp_dir: root
+  } do
+    for name <- [
+          "app-abcdefgh.js.map",
+          "app-abcdefgh.JS.MAP",
+          "config.json",
+          "app.js",
+          "font.woff2",
+          "private.exs",
+          "private-abcdefgh.exs",
+          "server-abcdefgh.ex",
+          "server-abcdefgh.ts",
+          "page.html.gz",
+          "page-abcdefgh.html.gz",
+          "page-abcdefgh.html.js",
+          "page-abcdefgh.htm",
+          "page-abcdefgh.xhtml",
+          "page-abcdefgh.shtml",
+          "app-1234567.js",
+          "app-abcdefgh.JS",
+          "-app-abcdefgh.js",
+          "bad name-abcdefgh.js",
+          "café-abcdefgh.js",
+          "bad directory/app-abcdefgh.js",
+          "-directory/app-abcdefgh.js"
+        ] do
+      path = Path.join(root, name)
+      File.mkdir_p!(Path.dirname(path))
+      File.write!(path, "must not be public")
+
+      get = request("/assets/#{URI.encode(name)}", "text/html", :get, asset_dir: root)
+      head = request("/assets/#{URI.encode(name)}", "text/html", :head, asset_dir: root)
+      assert get.status == 404, name
+      assert head.status == 404, name
+      assert get.halted and head.halted
+      assert Jason.decode!(get.resp_body) == %{"errors" => %{"detail" => "Not Found"}}
+      assert head.resp_body == ""
+      assert head.resp_headers == get.resp_headers
+      assert get_resp_header(get, "cache-control") == ["no-store"]
+
+      assert get_resp_header(get, "content-length") == [
+               Integer.to_string(byte_size(get.resp_body))
+             ]
+    end
+  end
+
   test "root public outputs and HTML only come from the packaged image" do
     assert request("/favicon.ico", "*/*").resp_body == "packaged favicon fixture\n"
     assert request("/robots.txt", "*/*").resp_body =~ "User-agent"
     assert request("/index.html").resp_body =~ "Atlas fixture"
     assert get_resp_header(request("/index.html"), "cache-control") == ["no-cache"]
     assert get_resp_header(request("/favicon.ico"), "cache-control") == ["no-cache"]
-    assert request("/retained-only.svg").status == 404
+    assert request("/retained-only-C8r_4-yW.svg").status == 404
     assert request("/assets/index.html").status == 404
     assert request("/assets/old.html").status == 404
     assert request("/assets/old.xhtml").status == 404
     assert request("/assets/page.html").status == 200
     assert get_resp_header(request("/assets/page.html"), "cache-control") == ["no-cache"]
-    assert request("/assets/retained-only.svg").status == 200
+    assert request("/assets/retained-only-C8r_4-yW.svg").status == 200
   end
 
   test "missing files and all missing asset paths stay real 404s, never the SPA" do
@@ -183,7 +267,7 @@ defmodule AtlasWeb.Plugs.FrontendTest do
           "/index.html",
           "/favicon.ico",
           "/assets/app-current.js",
-          "/assets/app-old.js"
+          "/assets/index-Dk_9a-B2.js"
         ] do
       get = request(path)
       head = request(path, "text/html", :head)
@@ -244,16 +328,16 @@ defmodule AtlasWeb.Plugs.FrontendTest do
 
     File.ln_s!(
       Path.join(@fixtures, "public/assets/app-current.js"),
-      Path.join(root, "assets/leak.js")
+      Path.join(root, "assets/leak-abcdefgh.js")
     )
 
     File.ln_s!(Path.join(@fixtures, "public/assets"), Path.join(root, "assets/link"))
 
-    for path <- ["/leak.html", "/assets/leak.js", "/assets/link/app-current.js"] do
+    for path <- ["/leak.html", "/assets/leak-abcdefgh.js", "/assets/link/app-current.js"] do
       assert request(path, "text/html", :get, static_dir: root, asset_dir: nil).status == 404
     end
 
-    assert request("/assets/leak.js", "*/*", :get,
+    assert request("/assets/leak-abcdefgh.js", "*/*", :get,
              static_dir: Path.join(root, "missing"),
              asset_dir: Path.join(root, "assets")
            ).status == 404
@@ -266,7 +350,8 @@ defmodule AtlasWeb.Plugs.FrontendTest do
     assert request("/assets/app-current.js", "*/*", :get, asset_dir: nil).status == 200
 
     for invalid_root <- [nil, "", "relative/path"] do
-      assert request("/assets/app-old.js", "*/*", :get, asset_dir: invalid_root).status == 404
+      assert request("/assets/index-Dk_9a-B2.js", "*/*", :get, asset_dir: invalid_root).status ==
+               404
     end
   end
 end
