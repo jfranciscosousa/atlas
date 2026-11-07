@@ -79,11 +79,11 @@ defmodule Atlas.Content.Entry do
              )
 
       argument :sort, :atom,
-        default: :name,
+        default: :last_mentioned,
         allow_nil?: false,
-        constraints: [one_of: [:name, :last_edited, :last_created, :last_mentioned]],
+        constraints: [one_of: [:last_mentioned, :name, :last_edited, :last_created]],
         description:
-          "Order of the list. name: A to Z (default). last_edited: changed most recently first. last_created: created most recently first. last_mentioned: the entry in the latest session log first; entries that no log mentions come last."
+          "Order of the list. last_mentioned (default): the entry in the latest session log first; entries that no log mentions come last, by name. name: A to Z. last_edited: changed most recently first. last_created: created most recently first."
 
       prepare Atlas.Content.Entry.SortList
     end

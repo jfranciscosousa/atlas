@@ -237,8 +237,8 @@ defmodule Atlas.Mcp.Guide do
     List the world entries of a campaign that you can read: NPCs, locations, factions, items,
     creatures and plots. Set kind to list one kind. The list leaves out archived entries; set archived to true for them.
     An archived entry is still readable, mentionable and searchable.
-    Set sort to order the list: name (A to Z, the default), last_edited, last_created, or
-    last_mentioned (the entry in the latest session log first). The list is complete; sort only orders it.
+    Set sort to order the list: last_mentioned (the entry in the latest session log first; the default),
+    name (A to Z), last_edited, or last_created. The list is complete; sort only orders it.
     A player never gets a hidden entry. Each row has the id, the kind, the name, the hidden
     flag, inserted_at (created), edited_at (last edit of the name, the hidden flag, the archive state or
     the description; secret notes do not count) and last_session_number (the latest session whose log

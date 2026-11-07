@@ -45,10 +45,24 @@ defmodule Atlas.Content.EntrySortTest do
 
   defp npc(ctx, name, attrs \\ %{}), do: entry(ctx.gm, ctx.campaign, :npc, name, attrs)
 
-  test "the default order is by name", ctx do
+  test "name sorts A to Z, and entries no log mentions fall back to the name", ctx do
     for name <- ["Cora", "Ash", "Bram"], do: npc(ctx, name)
 
     assert ["Ash", "Bram", "Cora"] = names(ctx.gm, ctx.campaign)
+    assert ["Ash", "Bram", "Cora"] = names(ctx.gm, ctx.campaign, %{sort: :name})
+  end
+
+  test "the default order is the latest session mention", ctx do
+    ash = npc(ctx, "Ash")
+    npc(ctx, "Bram")
+    cora = npc(ctx, "Cora")
+    s1 = session!(ctx)
+    s2 = session!(ctx)
+    save_section!(Session, s1.id, :log, mentioning(cora), ctx.gm)
+    save_section!(Session, s2.id, :log, mentioning(ash), ctx.gm)
+
+    assert ["Ash", "Cora", "Bram"] = names(ctx.gm, ctx.campaign)
+    assert names(ctx.gm, ctx.campaign) == names(ctx.gm, ctx.campaign, %{sort: :last_mentioned})
     assert ["Ash", "Bram", "Cora"] = names(ctx.gm, ctx.campaign, %{sort: :name})
   end
 

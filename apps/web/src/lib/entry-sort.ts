@@ -1,19 +1,19 @@
 // The orders of the World list. The API validates the same names. The first is the default.
 export const ENTRY_SORTS = [
+  "last_mentioned",
   "name",
   "last_edited",
   "last_created",
-  "last_mentioned",
 ] as const;
 export type EntrySort = (typeof ENTRY_SORTS)[number];
 
-export const DEFAULT_ENTRY_SORT: EntrySort = "name";
+export const DEFAULT_ENTRY_SORT: EntrySort = "last_mentioned";
 
 export const ENTRY_SORT_LABELS: Record<EntrySort, string> = {
+  last_mentioned: "Latest session mention",
   name: "Name (A–Z)",
   last_edited: "Last edited",
   last_created: "Last created",
-  last_mentioned: "Latest session mention",
 };
 
 export const isEntrySort = (sort: unknown): sort is EntrySort =>
